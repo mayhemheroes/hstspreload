@@ -9,7 +9,7 @@ This directory contains tools that Chrome developers use to manage the preload l
 * The `hstspreload.appspot.com` directory contains an AppEngine app that is live at [https://hstspreload.appspot.com](https://hstspreload.appspot.com). This app allows people to register their sites for inclusion in the HSTS preload list.
 * The `hsts-review.go` tool is used to fetch the list of pending submissions from the AppEngine site and run some basic checks on them. It outputs a list of rejections to submission to the site and a JSON snippet, suitable for inclusion in the preload list.
 
-Note that, in order to build the `hsts-preload` app, you'll need a [Go workspace](https://golang.org/doc/code.html#Workspaces) configured and then you'll need to run `go get golang.org/x/net/publicsuffix` to install a needed package.
+Note that, in order to build the `hstspreload` app, you'll need a [Go workspace](https://golang.org/doc/code.html#Workspaces) configured and then you'll need to run `go get golang.org/x/net/publicsuffix` to install a needed package.
 
 ## Reviewing adding automated submissions to the HSTS preload list
 

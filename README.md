@@ -1,4 +1,4 @@
-# HSTS utility code.
+# HSTS Preload List – Utility Code
 
 HSTS is [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security), which is a policy system for web sites to express a desire only to be contacted over HTTPS.
 

@@ -207,7 +207,7 @@ func TestParseHeaderStringCaseBadMaxAgeNoValue(t *testing.T) {
 	testParseHeaderStringCaseExpectingError(
 		t,
 		"max-age",
-		"The max-age directive name is present without a value.")
+		"A max-age directive name is present without a value.")
 }
 
 // Motivated by https://crbug.com/596561
@@ -285,17 +285,17 @@ func TestCheckHeaderString(t *testing.T) {
 
 	testCheckHeaderStringCaseExpectingError(t,
 		"includeSubDomains; preload; max-age=0",
-		"The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=0",
+		"The The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=0",
 	)
 
 	testCheckHeaderStringCaseExpectingError(t,
 		"includeSubDomains; preload; max-age=100",
-		"The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=100",
+		"The The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=100",
 	)
 
 	testCheckHeaderStringCaseExpectingError(t,
 		"max-age=200; preload; includeSubDomains",
-		"The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=200",
+		"The The max-age must be at least 10886400 seconds (== 18 weeks). The header had max-age=200",
 	)
 
 }

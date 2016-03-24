@@ -11,7 +11,7 @@ func CheckDomain(host string) error {
 		return fmt.Errorf("Cannot connect to host (%s). Error: [%s]", host, err)
 	}
 
-  // TODO: Verify chain conditions, check subdomains, handle redirects, etc.
+	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.
 
 	return CheckResponse(response)
 }

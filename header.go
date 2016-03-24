@@ -24,7 +24,7 @@ type HSTSHeader struct {
 	maxAgeSeconds uint64
 }
 
-// Mainly useful for testing.
+// Mainly useful for ging.
 func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 	if header1.preload != header2.preload {
 		return false
@@ -141,21 +141,37 @@ func CheckHeader(hstsHeader HSTSHeader) error {
 		))
 	}
 
-	if len(errorStrings) == 0 {
-		return nil
-	} else if len(errorStrings) == 1 {
+	if len(missingDirectives) > 0 {
+		return errors.New("Must have the `" + missingDirectives[0] + "` directive.")
+	} else if len(errorStrings) > 0 {
 		return errors.New(errorStrings[0])
 	} else {
-		return fmt.Errorf("Multiple header issues: [%s]", strings.Join(errorStrings, "]["))
+		return nil
 	}
+
+	// if len(errorStrings) == 0 {
+	// 	return nil
+	// } else if len(errorStrings) == 1 {
+	// 	return errors.New(errorStrings[0])
+	// } else {
+	// 	return fmt.Errorf("Multiple header issues: [%s]", strings.Join(errorStrings, "]["))
+	// }
 }
 
-func CheckHeaderString(headerString string) error {
+func CheckHeaderString(headerString string) Issues {
+	issues := NewIssues()
+
 	hstsHeader, err := ParseHeaderString(headerString)
 
 	if err != nil {
-		return err
+		issues = issues.AddError(err.Error())
 	}
 
-	return CheckHeader(hstsHeader)
+	err2 := CheckHeader(hstsHeader)
+
+	if err2 != nil {
+		issues = issues.AddError(err2.Error())
+	}
+
+	return issues
 }

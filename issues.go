@@ -35,7 +35,7 @@ func (issues Issues) AddWarning(warning string) Issues {
 func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 	return Issues{
 		errors:   append(issues1.errors, issues2.errors...),
-		warnings: append(issues1.errors, issues2.errors...),
+		warnings: append(issues1.warnings, issues2.warnings...),
 	}
 }
 
@@ -60,8 +60,8 @@ func (issues Issues) String() string {
 	}
 
 	return fmt.Sprintf(`Issues {
-errors: string[]{%s},
-warnings: string[]{%s},
+	errors: string[]{%s},
+	warnings: string[]{%s},
 }`,
 		errorsString,
 		warningsString,

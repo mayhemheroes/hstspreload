@@ -16,10 +16,5 @@ func CheckDomain(host string) Issues {
 
 	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.
 
-	err = CheckResponse(response)
-	if err != nil {
-		issues = issues.AddError(err.Error())
-	}
-
-	return issues
+	return CombineIssues(issues, CheckResponse(response))
 }

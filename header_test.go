@@ -88,6 +88,7 @@ func TestParseHeaderStringMissingIncludeSubDomains(t *testing.T) {
 		t.Errorf("Header missing includeSubDomains directive should parse successfully.")
 	}
 }
+
 func TestParseHeaderStringMissingMaxAge(t *testing.T) {
 	expected := HSTSHeader{
 		preload:           true,

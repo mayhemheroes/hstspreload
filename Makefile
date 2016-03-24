@@ -1,7 +1,7 @@
 .PHONY: test
 test:
-	go test -v
+	go test -v -short
 
-.PHONY: test-external-domains
-test-external-domains:
-	DOMAIN_TEST=TEST_EXTRNAL_DOMAINS go test -v
+.PHONY: test-all
+test-all:
+	go test -v

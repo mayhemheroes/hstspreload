@@ -74,13 +74,13 @@ func ParseHeaderString(headerString string) (HSTSHeader, error) {
 			// TODO the numerical string contains only digits, no symbols (no "+")
 			maxAge, err := strconv.ParseUint(maxAgeNumericalString, 10, 63)
 			if err != nil {
-				issues.AddError(fmt.Sprintf("Could not parse max-age value [%s].", maxAgeNumericalString))
+				return hstsHeader, fmt.Errorf("Could not parse max-age value [%s].", maxAgeNumericalString)
 			}
 			hstsHeader.maxAgePresent = true
 			hstsHeader.maxAgeSeconds = maxAge
 
 		case strings.HasPrefix(part, "max-age"):
-			issues.AddError("A max-age directive name is present without a value.")
+			return hstsHeader, errors.New("A max-age directive name is present without a value.")
 
 			// TODO: warn on unknown directives/tokens.
 		}
@@ -121,9 +121,9 @@ func CheckHeader(hstsHeader HSTSHeader) error {
 		// return fmt.Errorf("Must have the `includeSubDomains` directive.")
 	}
 
-	if (len(missingDirectives) > 0) {
+	if len(missingDirectives) > 0 {
 		pluralizedDirective := "directive"
-		if (len(missingDirectives) > 1) {
+		if len(missingDirectives) > 1 {
 			pluralizedDirective += "s"
 		}
 

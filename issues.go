@@ -39,7 +39,7 @@ func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 }
 
 // Includes ordering of errors and warnings.
-func AreIssuesEqual(issues1 Issues, issues2 Issues) bool {
+func issuesEqual(issues1 Issues, issues2 Issues) bool {
 	// reflect.DeepEqual seems to have false negatives, so we don't use it.
 
 	if len(issues1.errors) != len(issues2.errors) {
@@ -65,22 +65,26 @@ func AreIssuesEqual(issues1 Issues, issues2 Issues) bool {
 	return true
 }
 
+func formatIssueListForString(list []string) string {
+	output := ""
+	if len(list) > 1 {
+		output = fmt.Sprintf(`
+		"%s", 
+	`, strings.Join(list, `",
+		"`))
+	} else if len(list) == 1 {
+		output = fmt.Sprintf(`"%s"`, list[0])
+	}
+
+	return output
+}
+
 func (issues Issues) String() string {
-	errorsString := ""
-	if len(issues.errors) > 0 {
-		errorsString = fmt.Sprintf(`"%s"`, strings.Join(issues.errors, "\", \""))
-	}
-
-	warningsString := ""
-	if len(issues.warnings) > 0 {
-		warningsString = fmt.Sprintf(`"%s"`, strings.Join(issues.warnings, "\", \""))
-	}
-
 	return fmt.Sprintf(`Issues {
-	errors: string[]{%s},
-	warnings: string[]{%s},
+	errors: []string{%s},
+	warnings: []string{%s},
 }`,
-		errorsString,
-		warningsString,
+		formatIssueListForString(issues.errors),
+		formatIssueListForString(issues.warnings),
 	)
 }

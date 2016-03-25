@@ -25,35 +25,35 @@ func getCaller(levelsUp int) (file string, line int) {
 
 func expectIssuesEqualImpl(t *testing.T, actual Issues, expected Issues, levelsUp int) {
 	file, line := getCaller(levelsUp + 1)
-	if !AreIssuesEqual(expected, actual) {
+	if !issuesEqual(actual, expected) {
 		t.Errorf(`Issues should be equal. (%s:%d)
+
+## Actual
+
+%v
 
 ## Expected
 
 %v
 
-## Actual
-
-%v
-
-`, file, line, expected, actual)
+`, file, line, actual, expected)
 	}
 }
 
 func expectIssuesNotEqual(t *testing.T, actual Issues, expected Issues) {
 	file, line := getCaller(1)
-	if AreIssuesEqual(expected, actual) {
+	if issuesEqual(actual, expected) {
 		t.Errorf(`Issues should not be equal. (%s:%d)
-
-## (Not) Expected
-
-%v
 
 ## Actual
 
 %v
 
-`, file, line, expected, actual)
+## (Not) Expected
+
+%v
+
+`, file, line, actual, expected)
 	}
 }
 

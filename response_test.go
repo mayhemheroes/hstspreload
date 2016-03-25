@@ -15,7 +15,7 @@ func TestCheckResponseGoodHeader(t *testing.T) {
 	expectIssuesEmpty(t, CheckResponse(&response))
 }
 
-func TestCheckResponseMissingPreload(t *testing.T) {
+func TestCheckResponseMultipleErrors(t *testing.T) {
 	var response http.Response
 	response.Header = http.Header{}
 
@@ -23,7 +23,13 @@ func TestCheckResponseMissingPreload(t *testing.T) {
 	response.Header.Add(key, "includeSubdomains; max-age=100")
 
 	expectIssuesEqual(t, CheckResponse(&response),
-		NewIssues().AddError("Must have the `preload` directive."),
+		Issues{
+			errors: []string{
+				"Header must contain the `preload` directive.",
+				"The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100.",
+			},
+			warnings: []string{},
+		},
 	)
 }
 
@@ -32,10 +38,10 @@ func TestCheckResponseMissingIncludeSubDomains(t *testing.T) {
 	response.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	response.Header.Add(key, "preload; max-age=100")
+	response.Header.Add(key, "preload; max-age=10886400")
 
 	expectIssuesEqual(t, CheckResponse(&response),
-		NewIssues().AddError("Must have the `includeSubDomains` directive."),
+		NewIssues().AddError("Header must contain the `includeSubDomains` directive."),
 	)
 }
 

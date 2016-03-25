@@ -1,7 +1,6 @@
 package hstspreload
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -24,7 +23,7 @@ type HSTSHeader struct {
 	maxAgeSeconds uint64
 }
 
-// Mainly useful for ging.
+// Mainly useful for testing.
 func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 	if header1.preload != header2.preload {
 		return false
@@ -56,7 +55,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 
 	hstsParts := strings.Split(headerString, ";")
 	for i, part := range hstsParts {
-		// TODO: Trim tabs? https://crbug.com/596561#c10
+		// TODO: this trims more than spaces and tabs (LWS). https://crbug.com/596561#c10
 		hstsParts[i] = strings.TrimSpace(part)
 	}
 
@@ -64,10 +63,22 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 		part = strings.ToLower(part)
 		switch {
 		case part == "preload":
+			if hstsHeader.preload {
+				issues.AddWarning("Header contains a repeated directive: `preload`")
+			}
 			hstsHeader.preload = true
 
+		case strings.HasPrefix(part, "preload"):
+			issues.AddWarning("Header contains a `preload` directive with extra parts.")
+
 		case part == "includesubdomains":
+			if hstsHeader.includeSubDomains {
+				issues.AddWarning("Header contains a repeated directive: `includeSubDomains`")
+			}
 			hstsHeader.includeSubDomains = true
+
+		case strings.HasPrefix(part, "includesubdomains"):
+			issues.AddWarning("Header contains a `includesubdomains` directive with extra parts.")
 
 		case strings.HasPrefix(part, "max-age="):
 			maxAgeNumericalString := part[8:]
@@ -76,13 +87,20 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 			if err != nil {
 				issues = issues.AddError(fmt.Sprintf("Could not parse max-age value [%s].", maxAgeNumericalString))
 			}
+			if hstsHeader.maxAgePresent {
+				issues.AddWarning(fmt.Sprintf("Header contains a repeated directive: `max-age`"))
+			}
 			hstsHeader.maxAgePresent = true
 			hstsHeader.maxAgeSeconds = maxAge
 
 		case strings.HasPrefix(part, "max-age"):
-			issues = issues.AddError("A max-age directive name is present without a value.")
+			issues = issues.AddError("A max-age directive name is present without an associated value.")
 
-			// TODO: warn on unknown directives/tokens.
+		case part == "":
+			issues.AddWarning("Header includes an empty directive or extra semicolons.")
+
+		default:
+			issues.AddWarning(fmt.Sprintf("Header contains an unknown directive: `%s`", part))
 		}
 	}
 
@@ -95,73 +113,36 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	return hstsHeader, issues
 }
 
-func CheckHeader(hstsHeader HSTSHeader) error {
-	// TODO: display all error, e.g. missing preload as well as includeSubDomains
-	// TODO: Is it idiomatic to return only an error, with nil meaning success? (same goes for other functions in hstspreload)
-
-	missingDirectives := []string{}
-	errorStrings := []string{}
+func CheckHeader(hstsHeader HSTSHeader) Issues {
+	issues := NewIssues()
 
 	if !hstsHeader.includeSubDomains {
-		missingDirectives = append(missingDirectives, "includeSubDomains")
-		// return fmt.Errorf("Must have the `includeSubDomains` directive.")
+		issues = issues.AddError("Header must contain the `includeSubDomains` directive.")
 	}
 
 	if !hstsHeader.preload {
-		missingDirectives = append(missingDirectives, "preload")
-		// return fmt.Errorf("Must have the `includeSubDomains` directive.")
+		issues = issues.AddError("Header must contain the `preload` directive.")
 	}
 
 	if !hstsHeader.maxAgePresent {
-		missingDirectives = append(missingDirectives, "max-age")
-		// return fmt.Errorf("Must have the `includeSubDomains` directive.")
-	}
-
-	if len(missingDirectives) > 0 {
-		pluralizedDirective := "directive"
-		if len(missingDirectives) > 1 {
-			pluralizedDirective += "s"
-		}
-
-		errorStrings = append(errorStrings, fmt.Sprintf(
-			"Missing %s: %s.",
-			pluralizedDirective,
-			strings.Join(missingDirectives, ", "),
-		))
+		issues = issues.AddError("Header must contain a valid `max-age` directive.")
 	}
 
 	if hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds < 10886400 {
-		errorStrings = append(errorStrings, fmt.Sprintf(
-			"The max-age must be at least 10886400 seconds (== 18 weeks), but the header had max-age=%d.",
+		issues = issues.AddError(fmt.Sprintf(
+			"The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=%d.",
 			hstsHeader.maxAgeSeconds,
 		))
 	}
 
-	if len(missingDirectives) > 0 {
-		return errors.New("Must have the `" + missingDirectives[0] + "` directive.")
-	} else if len(errorStrings) > 0 {
-		return errors.New(errorStrings[0])
-	} else {
-		return nil
+	if !hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds != BOGUS_MAX_AGE {
+		issues = issues.AddWarning("Internal issue: encountered an HSTSHeader with maxAgePresent but an unexpected maxAgeSeconds.")
 	}
 
-	// if len(errorStrings) == 0 {
-	// 	return nil
-	// } else if len(errorStrings) == 1 {
-	// 	return errors.New(errorStrings[0])
-	// } else {
-	// 	return fmt.Errorf("Multiple header issues: [%s]", strings.Join(errorStrings, "]["))
-	// }
+	return issues
 }
 
 func CheckHeaderString(headerString string) Issues {
 	hstsHeader, issues := ParseHeaderString(headerString)
-
-	err2 := CheckHeader(hstsHeader)
-
-	if err2 != nil {
-		issues = issues.AddError(err2.Error())
-	}
-
-	return issues
+	return CombineIssues(issues, CheckHeader(hstsHeader))
 }

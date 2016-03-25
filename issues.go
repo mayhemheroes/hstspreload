@@ -49,7 +49,7 @@ func (issues Issues) addUniqueWarning(uniqueWarning string) Issues {
 	return issues.addWarning(uniqueWarning)
 }
 
-func CombineIssues(issues1 Issues, issues2 Issues) Issues {
+func combineIssues(issues1 Issues, issues2 Issues) Issues {
 	return Issues{
 		Errors:   append(issues1.Errors, issues2.Errors...),
 		Warnings: append(issues1.Warnings, issues2.Warnings...),

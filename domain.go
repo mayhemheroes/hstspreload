@@ -16,5 +16,5 @@ func CheckDomain(host string) Issues {
 
 	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.
 
-	return CombineIssues(issues, CheckResponse(response))
+	return combineIssues(issues, CheckResponse(response))
 }

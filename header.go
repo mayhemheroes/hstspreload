@@ -177,5 +177,5 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 
 func CheckHeaderString(headerString string) Issues {
 	hstsHeader, issues := ParseHeaderString(headerString)
-	return CombineIssues(issues, CheckHeader(hstsHeader))
+	return combineIssues(issues, CheckHeader(hstsHeader))
 }

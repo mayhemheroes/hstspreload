@@ -20,5 +20,5 @@ func CheckResponse(response *http.Response) Issues {
 		return issues.addError(fmt.Sprintf("Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders)))
 	}
 
-	return CombineIssues(issues, CheckHeaderString(hstsHeaders[0]))
+	return combineIssues(issues, CheckHeaderString(hstsHeaders[0]))
 }

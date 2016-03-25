@@ -7,14 +7,14 @@ import (
 func TestHeadersEqual(t *testing.T) {
 	if !headersEqual(
 		HSTSHeader{
-			preload:           false,
-			includeSubDomains: true,
-			maxAge:            12345,
+			Preload:           false,
+			IncludeSubDomains: true,
+			MaxAge:            12345,
 		},
 		HSTSHeader{
-			preload:           false,
-			includeSubDomains: true,
-			maxAge:            12345,
+			Preload:           false,
+			IncludeSubDomains: true,
+			MaxAge:            12345,
 		},
 	) {
 		t.Errorf("HSTSHeader structs should be considered equal if all values match.")
@@ -22,14 +22,14 @@ func TestHeadersEqual(t *testing.T) {
 
 	if headersEqual(
 		HSTSHeader{
-			preload:           false,
-			includeSubDomains: true,
-			maxAge:            12345,
+			Preload:           false,
+			IncludeSubDomains: true,
+			MaxAge:            12345,
 		},
 		HSTSHeader{
-			preload:           true,
-			includeSubDomains: true,
-			maxAge:            12345,
+			Preload:           true,
+			IncludeSubDomains: true,
+			MaxAge:            12345,
 		},
 	) {
 		t.Errorf("HSTSHeader structs should be considered non-equal if preload values don't match.")
@@ -50,9 +50,9 @@ func TestParseHeaderStringWithoutPreload(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age=1337")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: true,
-		maxAge:            1337,
+		Preload:           false,
+		IncludeSubDomains: true,
+		MaxAge:            1337,
 	})
 }
 
@@ -60,9 +60,9 @@ func TestParseHeaderStringWithoutIncludeSubDomains(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("preload; max-age=1337")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: false,
-		maxAge:            1337,
+		Preload:           true,
+		IncludeSubDomains: false,
+		MaxAge:            1337,
 	})
 }
 
@@ -70,9 +70,9 @@ func TestParseHeaderStringWithoutMaxAge(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("preload; includeSubDomains")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            MAX_AGE_NOT_PRESENT,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            MAX_AGE_NOT_PRESENT,
 	})
 }
 
@@ -80,9 +80,9 @@ func TestParseHeaderStringFull(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains; preload")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -90,9 +90,9 @@ func TestParseHeaderStringAnyOrder(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("includeSubDomains; preload; max-age=4321")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            4321,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            4321,
 	})
 }
 
@@ -100,9 +100,9 @@ func TestParseHeaderStringExtraWhitespace(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("   max-age=10886400  ;     includeSubDomains    ;     preload      ")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -110,9 +110,9 @@ func TestParseHeaderStringLargerMaxAge(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("includeSubDomains; preload; max-age=12345678")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            12345678,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            12345678,
 	})
 }
 
@@ -120,9 +120,9 @@ func TestParseHeaderStringReordered(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("max-age=10886400; preload; includeSubDomains")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -130,9 +130,9 @@ func TestParseHeaderStringReorderedWithoutPreload(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains")
 	expectIssuesEmpty(t, issues)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           false,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -143,9 +143,9 @@ func TestParseHeaderStringEmpty(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header is empty."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: false,
-		maxAge:            MAX_AGE_NOT_PRESENT,
+		Preload:           false,
+		IncludeSubDomains: false,
+		MaxAge:            MAX_AGE_NOT_PRESENT,
 	})
 }
 
@@ -154,9 +154,9 @@ func TestParseHeaderStringCaseInsensitive(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: true,
-		maxAge:            12345678,
+		Preload:           false,
+		IncludeSubDomains: true,
+		MaxAge:            12345678,
 	})
 }
 
@@ -165,9 +165,9 @@ func TestParseHeaderStringRepeatedPreload(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header contains a repeated directive: `preload`"))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            12345678,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            12345678,
 	})
 }
 
@@ -176,9 +176,9 @@ func TestParseHeaderStringSingleExtraDirective(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header contains an unknown directive: `extraDirective`"))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            12345678,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            12345678,
 	})
 }
 
@@ -193,9 +193,9 @@ func TestParseHeaderStringMultipleExtraDirectives(t *testing.T) {
 			},
 		})
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            12345678,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            12345678,
 	})
 }
 
@@ -204,9 +204,9 @@ func TestParseHeaderStringSemicolonOnly(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: false,
-		maxAge:            MAX_AGE_NOT_PRESENT,
+		Preload:           false,
+		IncludeSubDomains: false,
+		MaxAge:            MAX_AGE_NOT_PRESENT,
 	})
 }
 
@@ -215,9 +215,9 @@ func TestParseHeaderStringTrailingSemicolon(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -226,9 +226,9 @@ func TestParseHeaderStringPrefixedBySemicolon(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           true,
-		includeSubDomains: true,
-		maxAge:            10886400,
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            10886400,
 	})
 }
 
@@ -271,9 +271,9 @@ func TestParseHeaderStringMaxAgeWithoutValueAndTrailingSemicolon(t *testing.T) {
 		},
 	)
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		preload:           false,
-		includeSubDomains: true,
-		maxAge:            MAX_AGE_NOT_PRESENT,
+		Preload:           false,
+		IncludeSubDomains: true,
+		MaxAge:            MAX_AGE_NOT_PRESENT,
 	})
 }
 
@@ -285,9 +285,9 @@ func TestParseHeaderStringMaxAgeWithoutValueAndTrailingSemicolon(t *testing.T) {
 func TestCheckHeaderMissingPreloadAndMoreThanOneYear(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeader(HSTSHeader{
-			preload:           false,
-			includeSubDomains: true,
-			maxAge:            31536001,
+			Preload:           false,
+			IncludeSubDomains: true,
+			MaxAge:            31536001,
 		}),
 		Issues{
 			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
@@ -299,9 +299,9 @@ func TestCheckHeaderMissingPreloadAndMoreThanOneYear(t *testing.T) {
 func TestCheckHeaderMaxAgeNotPresent(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeader(HSTSHeader{
-			preload:           true,
-			includeSubDomains: true,
-			maxAge:            -2,
+			Preload:           true,
+			IncludeSubDomains: true,
+			MaxAge:            -2,
 		}),
 		NewIssues().addError("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MAX_AGE_NOT_PRESENT: -2"),
 	)

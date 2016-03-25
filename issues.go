@@ -31,6 +31,24 @@ func (issues Issues) AddWarning(warning string) Issues {
 	}
 }
 
+func (issues Issues) AddUniqueError(uniqueErr string) Issues {
+	for _, err := range issues.errors {
+		if err == uniqueErr {
+			return issues
+		}
+	}
+	return issues.AddError(uniqueErr)
+}
+
+func (issues Issues) AddUniqueWarning(uniqueWarning string) Issues {
+	for _, warning := range issues.warnings {
+		if warning == uniqueWarning {
+			return issues
+		}
+	}
+	return issues.AddWarning(uniqueWarning)
+}
+
 func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 	return Issues{
 		errors:   append(issues1.errors, issues2.errors...),

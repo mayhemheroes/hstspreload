@@ -5,15 +5,20 @@ import (
 	"net/http"
 )
 
-func CheckResponse(response *http.Response) error {
+func CheckResponse(response *http.Response) Issues {
+	issues := NewIssues()
+
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	hstsHeaders := response.Header[key]
 
-	if len(hstsHeaders) == 0 {
-		return fmt.Errorf("No HSTS headers are present on the response.")
-	} else if len(hstsHeaders) > 1 {
-		return fmt.Errorf("Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders))
+	switch {
+	case len(hstsHeaders) == 0:
+		return issues.AddError("Response error: No HSTS headers are present on the response.")
+
+	case len(hstsHeaders) > 1:
+		// TODO: Give feedback on the first(last?) HSTS header?
+		return issues.AddError(fmt.Sprintf("Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders)))
 	}
 
-	return CheckHeaderString(hstsHeaders[0])
+	return CombineIssues(issues, CheckHeaderString(hstsHeaders[0]))
 }

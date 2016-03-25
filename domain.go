@@ -5,13 +5,16 @@ import (
 	"net/http"
 )
 
-func CheckDomain(host string) error {
+func CheckDomain(host string) Issues {
+	issues := NewIssues()
+
 	response, err := http.Get("https://" + host)
 	if err != nil {
-		return fmt.Errorf("Cannot connect to host (%s). Error: [%s]", host, err)
+		// cannot continue => return early
+		return issues.AddError(fmt.Sprintf("Domain error: Cannot connect to host (%s). Error: [%s]", host, err))
 	}
 
 	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.
 
-	return CheckResponse(response)
+	return CombineIssues(issues, CheckResponse(response))
 }

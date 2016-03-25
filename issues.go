@@ -2,7 +2,6 @@ package hstspreload
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 )
 
@@ -41,11 +40,29 @@ func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 
 // Includes ordering of errors and warnings.
 func AreIssuesEqual(issues1 Issues, issues2 Issues) bool {
-	return reflect.DeepEqual(issues1, issues2)
-}
+	// reflect.DeepEqual seems to have false negatives, so we don't use it.
 
-func (issues Issues) HasError() bool {
-	return len(issues.errors) > 0
+	if len(issues1.errors) != len(issues2.errors) {
+		return false
+	}
+
+	if len(issues1.warnings) != len(issues2.warnings) {
+		return false
+	}
+
+	for e := range issues1.errors {
+		if issues1.errors[e] != issues2.errors[e] {
+			return false
+		}
+	}
+
+	for w := range issues1.warnings {
+		if issues1.warnings[w] != issues2.warnings[w] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (issues Issues) String() string {
@@ -67,29 +84,3 @@ func (issues Issues) String() string {
 		warningsString,
 	)
 }
-
-// func (issues Issues) String() string {
-//   sections := []string{}
-
-//   if len(issues.errors) > 0  {
-//     if len(issues.errors) == 1 {
-//       sections = append(sections, fmt.Sprintf("Error: %s", strings.Join(issues.errors, "][")))
-//     } else {
-//       sections = append(sections, fmt.Sprintf("Errors: [%s]", strings.Join(issues.errors, "][")))
-//     }
-//   }
-
-//   if len(issues.warnings) > 0  {
-//     if len(issues.warnings) == 1 {
-//       sections = append(sections, fmt.Sprintf("Warning: %s", strings.Join(issues.warnings, "][")))
-//     } else {
-//       sections = append(sections, fmt.Sprintf("Warnings: [%s]", strings.Join(issues.warnings, "][")))
-//     }
-//   }
-
-//   if len(sections) == 0 {
-//     return "No issues."
-//   } else {
-//     return strings.Join(sections, ", ")
-//   }
-// }

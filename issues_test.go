@@ -2,13 +2,9 @@ package hstspreload
 
 import (
 	"runtime"
-	"testing"
 	"strings"
+	"testing"
 )
-
-func TestNewIssues(t *testing.T) {
-	NewIssues()
-}
 
 // Based on https://golang.org/src/testing/testing.go
 func getCaller(levelsUp int) (file string, line int) {
@@ -27,13 +23,10 @@ func getCaller(levelsUp int) (file string, line int) {
 	return file, line
 }
 
-func expectIssuesEqualImpl(t *testing.T, testCase string, actual Issues, expected Issues, levelsUp int) {
+func expectIssuesEqualImpl(t *testing.T, actual Issues, expected Issues, levelsUp int) {
 	file, line := getCaller(levelsUp + 1)
 	if !AreIssuesEqual(expected, actual) {
-		t.Errorf(`%s
-
-Issues should be equal.
-(%s:%d)
+		t.Errorf(`Issues should be equal. (%s:%d)
 
 ## Expected
 
@@ -43,96 +36,95 @@ Issues should be equal.
 
 %v
 
-`, testCase, file, line, expected, actual)
+`, file, line, expected, actual)
 	}
 }
 
-func expectIssuesEqual(t *testing.T, testCase string, actual Issues, expected Issues) {
-	expectIssuesEqualImpl(t, testCase, actual, expected, 1)
+func expectIssuesNotEqual(t *testing.T, actual Issues, expected Issues) {
+	file, line := getCaller(1)
+	if AreIssuesEqual(expected, actual) {
+		t.Errorf(`Issues should not be equal. (%s:%d)
+
+## (Not) Expected
+
+%v
+
+## Actual
+
+%v
+
+`, file, line, expected, actual)
+	}
+}
+
+func expectIssuesEqual(t *testing.T, actual Issues, expected Issues) {
+	expectIssuesEqualImpl(t, actual, expected, 1)
 }
 
 // This function name is more clear than comparing whether we're "equal" to empty.
-func expectIssuesEmpty(t *testing.T, testCase string, actual Issues) {
-	expectIssuesEqualImpl(t, testCase, actual, NewIssues(), 1)
+func expectIssuesEmpty(t *testing.T, actual Issues) {
+	expectIssuesEqualImpl(t, actual, NewIssues(), 1)
 }
 
-func expectIssuesNotEqual(t *testing.T, testCase string, actual Issues, expected Issues) {
-	file, line := getCaller(1)
-	if AreIssuesEqual(expected, actual) {
-		t.Errorf(`%s
-
-Issues should not be equal.
-(%s:%d)
-
-## Expected
-
-%v
-
-## Actual
-
-%v
-
-`, testCase, file, line, expected, actual)
-	}
+func TestNewIssues(t *testing.T) {
+	NewIssues()
 }
 
 func TestIssuesEqual(t *testing.T) {
-	expectIssuesEqual(t, "Issues: blank", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{},
 		warnings: []string{},
 	}, NewIssues())
 
-	expectIssuesEmpty(t, "Issues: blank", Issues{
+	expectIssuesEmpty(t, Issues{
 		errors:   []string{},
 		warnings: []string{},
 	})
 
-	expectIssuesEqual(t, "Issues: single error", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{"Single Error"},
 		warnings: []string{},
 	}, NewIssues().AddError("Single Error"))
 
-	expectIssuesEqual(t, "Issues: multiple errors", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{"First Error", "Second Error"},
 		warnings: []string{},
 	}, NewIssues().AddError("First Error").AddError("Second Error"))
 
-	expectIssuesEqual(t, "Issues: single warning", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{},
 		warnings: []string{"Single Warning"},
 	}, NewIssues().AddWarning("Single Warning"))
 
-	expectIssuesEqual(t, "Issues: multiple warnings", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{},
 		warnings: []string{"First Warning", "Second Warning"},
 	}, NewIssues().AddWarning("First Warning").AddWarning("Second Warning"))
 
-	expectIssuesEqual(t, "Issues: single error, single warning", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{"Single Error"},
 		warnings: []string{"Single Warning"},
 	}, NewIssues().AddError("Single Error").AddWarning("Single Warning"))
 
-	expectIssuesEqual(t, "Issues: multiple errors and warnings", Issues{
+	expectIssuesEqual(t, Issues{
 		errors:   []string{"First Error", "Second Error"},
 		warnings: []string{"First Warning", "Second Warning"},
 	}, NewIssues().AddWarning("First Warning").AddError("First Error").AddWarning("Second Warning").AddError("Second Error"))
 }
 
 func TestIssuesNotEqual(t *testing.T) {
-	expectIssuesNotEqual(t, "Issues: warning vs. error",
+	expectIssuesNotEqual(t,
 		NewIssues().AddWarning("test"),
 		NewIssues().AddError("test"),
 	)
 
-	expectIssuesNotEqual(t, "Issues: extra error",
+	expectIssuesNotEqual(t,
 		NewIssues().AddError("first").AddError("second"),
 		NewIssues().AddError("first"),
 	)
 
-	expectIssuesNotEqual(t, "Issues: ordering",
+	expectIssuesNotEqual(t,
 		NewIssues().AddError("pie").AddError("cake").AddError("anything you bake"),
 		NewIssues().AddError("cake").AddError("pie").AddError("anything you bake"),
 	)
-
-	// TODO: add more cases
 }

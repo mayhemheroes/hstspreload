@@ -45,7 +45,7 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 	return true
 }
 
-func ParseHeaderString(headerString string) (HSTSHeader, error) {
+func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	var hstsHeader HSTSHeader
 	var issues Issues
 
@@ -74,13 +74,13 @@ func ParseHeaderString(headerString string) (HSTSHeader, error) {
 			// TODO the numerical string contains only digits, no symbols (no "+")
 			maxAge, err := strconv.ParseUint(maxAgeNumericalString, 10, 63)
 			if err != nil {
-				return hstsHeader, fmt.Errorf("Could not parse max-age value [%s].", maxAgeNumericalString)
+				issues = issues.AddError(fmt.Sprintf("Could not parse max-age value [%s].", maxAgeNumericalString))
 			}
 			hstsHeader.maxAgePresent = true
 			hstsHeader.maxAgeSeconds = maxAge
 
 		case strings.HasPrefix(part, "max-age"):
-			return hstsHeader, errors.New("A max-age directive name is present without a value.")
+			issues = issues.AddError("A max-age directive name is present without a value.")
 
 			// TODO: warn on unknown directives/tokens.
 		}
@@ -92,11 +92,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, error) {
 	// TODO: Allow testing whether the header is valid according to the spec (vs. having all preload requirements)
 	// TODO: warn on empty directives / extra semicolons
 
-	if len(issues.errors) > 0 {
-		return hstsHeader, errors.New(issues.errors[0])
-	} else {
-		return hstsHeader, nil
-	}
+	return hstsHeader, issues
 }
 
 func CheckHeader(hstsHeader HSTSHeader) error {
@@ -159,13 +155,7 @@ func CheckHeader(hstsHeader HSTSHeader) error {
 }
 
 func CheckHeaderString(headerString string) Issues {
-	issues := NewIssues()
-
-	hstsHeader, err := ParseHeaderString(headerString)
-
-	if err != nil {
-		issues = issues.AddError(err.Error())
-	}
+	hstsHeader, issues := ParseHeaderString(headerString)
 
 	err2 := CheckHeader(hstsHeader)
 

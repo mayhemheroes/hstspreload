@@ -12,7 +12,7 @@ func TestCheckResponseGoodHeader(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "max-age=10886400; includeSubDomains; preload")
 
-	expectIssuesEmpty(t, "Response: good HSTS header", CheckResponse(&response))
+	expectIssuesEmpty(t, CheckResponse(&response))
 }
 
 func TestCheckResponseMissingPreload(t *testing.T) {
@@ -22,7 +22,7 @@ func TestCheckResponseMissingPreload(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "includeSubdomains; max-age=100")
 
-	expectIssuesEqual(t, "Response: no HSTS header", CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(&response),
 		NewIssues().AddError("Must have the `preload` directive."),
 	)
 }
@@ -34,7 +34,7 @@ func TestCheckResponseMissingIncludeSubDomains(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "preload; max-age=100")
 
-	expectIssuesEqual(t, "Response: no HSTS header", CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(&response),
 		NewIssues().AddError("Must have the `includeSubDomains` directive."),
 	)
 }
@@ -43,7 +43,7 @@ func TestCheckResponseWithoutHSTSHeaders(t *testing.T) {
 	var response http.Response
 	response.Header = http.Header{}
 
-	expectIssuesEqual(t, "Response: no HSTS header", CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(&response),
 		NewIssues().AddError("No HSTS headers are present on the response."),
 	)
 }
@@ -56,7 +56,7 @@ func TestCheckResponseMultipleHSTSHeaders(t *testing.T) {
 	response.Header.Add(key, "max-age=10")
 	response.Header.Add(key, "max-age=20")
 
-	expectIssuesEqual(t, "Response: no HSTS header", CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(&response),
 		NewIssues().AddError("Multiple HSTS headers (number of HSTS headers: 2)."),
 	)
 }

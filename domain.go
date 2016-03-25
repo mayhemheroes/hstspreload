@@ -4,10 +4,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"golang.org/x/net/publicsuffix"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -31,7 +33,9 @@ import (
 func CheckDomain(domain string) Issues {
 	issues := NewIssues()
 
-	// TODO: Use TLS.dial
+	issues = combineIssues(issues, checkDomainName(domain))
+
+	// TODO: Use TLS.dial and/or avoid redirecting
 	response, err := http.Get("https://" + domain)
 	if err != nil {
 		// cannot continue => return early
@@ -39,10 +43,45 @@ func CheckDomain(domain string) Issues {
 	}
 
 	issues = combineIssues(issues, checkTLS(domain))
+	issues = combineIssues(issues, CheckResponse(response))
 
-	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.
+	return issues
+}
 
-	return combineIssues(issues, CheckResponse(response))
+func checkDomainName(domain string) Issues {
+	issues := NewIssues()
+
+	if strings.HasPrefix(domain, ".") {
+		return issues.addError("Domain name error: begins with `.`")
+	}
+	if strings.HasSuffix(domain, ".") {
+		return issues.addError("Domain name error: ends with `.`")
+	}
+	if strings.Index(domain, "..") != -1 {
+		return issues.addError("Domain name error: contains `..`")
+	}
+	if strings.Count(domain, ".") < 1 {
+		return issues.addError("Domain name error: must have at least two labels.")
+	}
+
+	domain = strings.ToLower(domain)
+	for _, r := range domain {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '.' {
+			continue
+		}
+
+		return issues.addError("Domain name error: contains invalid characters.")
+	}
+
+	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	if err != nil {
+		return issues.addError("Internal error: could not compute eTLD+1.")
+	}
+	if canon != domain {
+		return issues.addError("Domain error: not eTLD+1.")
+	}
+
+	return issues
 }
 
 // func certificateSubjectSummary(cert *x509.Certificate) string {

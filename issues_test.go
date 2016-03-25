@@ -72,43 +72,43 @@ func TestNewIssues(t *testing.T) {
 
 func TestIssuesEqual(t *testing.T) {
 	expectIssuesEqual(t, Issues{
-		errors:   []string{},
-		warnings: []string{},
+		Errors:   []string{},
+		Warnings: []string{},
 	}, NewIssues())
 
 	expectIssuesEmpty(t, Issues{
-		errors:   []string{},
-		warnings: []string{},
+		Errors:   []string{},
+		Warnings: []string{},
 	})
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{"Single Error"},
-		warnings: []string{},
+		Errors:   []string{"Single Error"},
+		Warnings: []string{},
 	}, NewIssues().AddError("Single Error"))
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{"First Error", "Second Error"},
-		warnings: []string{},
+		Errors:   []string{"First Error", "Second Error"},
+		Warnings: []string{},
 	}, NewIssues().AddError("First Error").AddError("Second Error"))
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{},
-		warnings: []string{"Single Warning"},
+		Errors:   []string{},
+		Warnings: []string{"Single Warning"},
 	}, NewIssues().AddWarning("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{},
-		warnings: []string{"First Warning", "Second Warning"},
+		Errors:   []string{},
+		Warnings: []string{"First Warning", "Second Warning"},
 	}, NewIssues().AddWarning("First Warning").AddWarning("Second Warning"))
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{"Single Error"},
-		warnings: []string{"Single Warning"},
+		Errors:   []string{"Single Error"},
+		Warnings: []string{"Single Warning"},
 	}, NewIssues().AddError("Single Error").AddWarning("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
-		errors:   []string{"First Error", "Second Error"},
-		warnings: []string{"First Warning", "Second Warning"},
+		Errors:   []string{"First Error", "Second Error"},
+		Warnings: []string{"First Warning", "Second Warning"},
 	}, NewIssues().AddWarning("First Warning").AddError("First Error").AddWarning("Second Warning").AddError("Second Error"))
 }
 

@@ -24,12 +24,12 @@ func TestCheckResponseEmpty(t *testing.T) {
 
 	expectIssuesEqual(t, CheckResponse(&response),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			warnings: []string{"Syntax warning: Header is empty."},
+			Warnings: []string{"Syntax warning: Header is empty."},
 		},
 	)
 }
@@ -43,11 +43,11 @@ func TestCheckResponseMultipleErrors(t *testing.T) {
 
 	expectIssuesEqual(t, CheckResponse(&response),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
 				"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100.",
 			},
-			warnings: []string{},
+			Warnings: []string{},
 		},
 	)
 }

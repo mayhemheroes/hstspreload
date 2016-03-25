@@ -6,33 +6,33 @@ import (
 )
 
 type Issues struct {
-	errors   []string
-	warnings []string
+	Errors   []string
+	Warnings []string
 }
 
 func NewIssues() Issues {
 	return Issues{
-		errors:   []string{},
-		warnings: []string{},
+		Errors:   []string{},
+		Warnings: []string{},
 	}
 }
 
 func (issues Issues) AddError(err string) Issues {
 	return Issues{
-		errors:   append(issues.errors, err),
-		warnings: issues.warnings,
+		Errors:   append(issues.Errors, err),
+		Warnings: issues.Warnings,
 	}
 }
 
 func (issues Issues) AddWarning(warning string) Issues {
 	return Issues{
-		errors:   issues.errors,
-		warnings: append(issues.warnings, warning),
+		Errors:   issues.Errors,
+		Warnings: append(issues.Warnings, warning),
 	}
 }
 
 func (issues Issues) AddUniqueError(uniqueErr string) Issues {
-	for _, err := range issues.errors {
+	for _, err := range issues.Errors {
 		if err == uniqueErr {
 			return issues
 		}
@@ -41,7 +41,7 @@ func (issues Issues) AddUniqueError(uniqueErr string) Issues {
 }
 
 func (issues Issues) AddUniqueWarning(uniqueWarning string) Issues {
-	for _, warning := range issues.warnings {
+	for _, warning := range issues.Warnings {
 		if warning == uniqueWarning {
 			return issues
 		}
@@ -51,8 +51,8 @@ func (issues Issues) AddUniqueWarning(uniqueWarning string) Issues {
 
 func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 	return Issues{
-		errors:   append(issues1.errors, issues2.errors...),
-		warnings: append(issues1.warnings, issues2.warnings...),
+		Errors:   append(issues1.Errors, issues2.Errors...),
+		Warnings: append(issues1.Warnings, issues2.Warnings...),
 	}
 }
 
@@ -60,22 +60,22 @@ func CombineIssues(issues1 Issues, issues2 Issues) Issues {
 func issuesEqual(issues1 Issues, issues2 Issues) bool {
 	// reflect.DeepEqual seems to have false negatives, so we don't use it.
 
-	if len(issues1.errors) != len(issues2.errors) {
+	if len(issues1.Errors) != len(issues2.Errors) {
 		return false
 	}
 
-	if len(issues1.warnings) != len(issues2.warnings) {
+	if len(issues1.Warnings) != len(issues2.Warnings) {
 		return false
 	}
 
-	for e := range issues1.errors {
-		if issues1.errors[e] != issues2.errors[e] {
+	for e := range issues1.Errors {
+		if issues1.Errors[e] != issues2.Errors[e] {
 			return false
 		}
 	}
 
-	for w := range issues1.warnings {
-		if issues1.warnings[w] != issues2.warnings[w] {
+	for w := range issues1.Warnings {
+		if issues1.Warnings[w] != issues2.Warnings[w] {
 			return false
 		}
 	}
@@ -102,7 +102,7 @@ func (issues Issues) String() string {
 	errors: []string{%s},
 	warnings: []string{%s},
 }`,
-		formatIssueListForString(issues.errors),
-		formatIssueListForString(issues.warnings),
+		formatIssueListForString(issues.Errors),
+		formatIssueListForString(issues.Warnings),
 	)
 }

@@ -220,8 +220,8 @@ func TestParseHeaderStringMultipleExtraDirectives(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("max-age=12345678; extra; includeSubDomains; directives; preload")
 	expectIssuesEqual(t, issues,
 		Issues{
-			errors: []string{},
-			warnings: []string{
+			Errors: []string{},
+			Warnings: []string{
 				"Syntax warning: Header contains an unknown directive: `extra`",
 				"Syntax warning: Header contains an unknown directive: `directives`",
 			},
@@ -313,12 +313,12 @@ func TestCheckHeaderStringEmpty(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString(""),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			warnings: []string{"Syntax warning: Header is empty."},
+			Warnings: []string{"Syntax warning: Header is empty."},
 		},
 	)
 }
@@ -348,11 +348,11 @@ func TestCheckHeaderStringOnlyPreload(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("preload"),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			warnings: []string{},
+			Warnings: []string{},
 		},
 	)
 }
@@ -361,11 +361,11 @@ func TestCheckHeaderStringOnlyIncludeSubdomains(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains"),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			warnings: []string{},
+			Warnings: []string{},
 		},
 	)
 }
@@ -374,11 +374,11 @@ func TestCheckHeaderStringOnlyMaxAge(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("max-age=12345678"),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain the `preload` directive.",
 			},
-			warnings: []string{},
+			Warnings: []string{},
 		},
 	)
 }
@@ -387,11 +387,11 @@ func TestCheckHeaderStringMaxAgeWithoutValue(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age"),
 		Issues{
-			errors: []string{
+			Errors: []string{
 				"Syntax error: A max-age directive name is present without an associated value.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			warnings: []string{},
+			Warnings: []string{},
 		},
 	)
 }

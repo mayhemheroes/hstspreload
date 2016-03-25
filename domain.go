@@ -11,7 +11,7 @@ func CheckDomain(host string) Issues {
 	response, err := http.Get("https://" + host)
 	if err != nil {
 		// cannot continue => return early
-		return issues.AddError(fmt.Sprintf("Domain error: Cannot connect to host (%s). Error: [%s]", host, err))
+		return issues.addError(fmt.Sprintf("Domain error: Cannot connect to host (%s). Error: [%s]", host, err))
 	}
 
 	// TODO: Verify chain conditions, check subdomains, handle redirects, etc.

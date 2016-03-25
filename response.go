@@ -13,11 +13,11 @@ func CheckResponse(response *http.Response) Issues {
 
 	switch {
 	case len(hstsHeaders) == 0:
-		return issues.AddError("Response error: No HSTS headers are present on the response.")
+		return issues.addError("Response error: No HSTS headers are present on the response.")
 
 	case len(hstsHeaders) > 1:
 		// TODO: Give feedback on the first(last?) HSTS header?
-		return issues.AddError(fmt.Sprintf("Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders)))
+		return issues.addError(fmt.Sprintf("Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders)))
 	}
 
 	return CombineIssues(issues, CheckHeaderString(hstsHeaders[0]))

@@ -72,7 +72,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	// So we handle this case separately.
 	if len(hstsParts) == 1 && hstsParts[0] == "" {
 		// Return immediately, because all the extra information is redundant.
-		return hstsHeader, issues.AddWarning("Syntax warning: Header is empty.")
+		return hstsHeader, issues.addWarning("Syntax warning: Header is empty.")
 	}
 
 	for _, part := range hstsParts {
@@ -87,21 +87,21 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 		switch {
 		case partEqualsIgnoringCase("preload"):
 			if hstsHeader.preload {
-				issues = issues.AddUniqueWarning("Syntax warning: Header contains a repeated directive: `preload`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `preload`")
 			} else {
 				hstsHeader.preload = true
 			}
 
 		case partHasPrefixIgnoringCase("preload"):
-			issues = issues.AddUniqueWarning("Syntax warning: Header contains a `preload` directive with extra parts.")
+			issues = issues.addUniqueWarning("Syntax warning: Header contains a `preload` directive with extra parts.")
 
 		case partEqualsIgnoringCase("includeSubDomains"):
 			if hstsHeader.includeSubDomains {
-				issues = issues.AddUniqueWarning("Syntax warning: Header contains a repeated directive: `includeSubDomains`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `includeSubDomains`")
 			} else {
 				hstsHeader.includeSubDomains = true
 				if part != "includeSubDomains" {
-					issues = issues.AddUniqueWarning(fmt.Sprintf(
+					issues = issues.addUniqueWarning(fmt.Sprintf(
 						"Syntax warning: Header contains the token `%s`. The recommended capitalization is `includeSubDomains`.",
 						part,
 					))
@@ -109,30 +109,30 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 			}
 
 		case partHasPrefixIgnoringCase("includeSubDomains"):
-			issues = issues.AddUniqueWarning("Syntax warning: Header contains an `includeSubDomains` directive with extra parts.")
+			issues = issues.addUniqueWarning("Syntax warning: Header contains an `includeSubDomains` directive with extra parts.")
 
 		case partHasPrefixIgnoringCase("max-age="):
 			maxAgeNumericalString := part[8:]
 			// TODO the numerical string contains only digits, no symbols (no "+")
 			maxAge, err := strconv.ParseUint(maxAgeNumericalString, 10, 63)
 			if err != nil {
-				issues = issues.AddError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
+				issues = issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
 			} else {
 				if hstsHeader.maxAgePresent {
-					issues = issues.AddUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
+					issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
 				}
 				hstsHeader.maxAgePresent = true
 				hstsHeader.maxAgeSeconds = maxAge
 			}
 
 		case partHasPrefixIgnoringCase("max-age"):
-			issues = issues.AddUniqueError("Syntax error: A max-age directive name is present without an associated value.")
+			issues = issues.addUniqueError("Syntax error: A max-age directive name is present without an associated value.")
 
 		case partEqualsIgnoringCase(""):
-			issues = issues.AddUniqueWarning("Syntax warning: Header includes an empty directive or extra semicolon.")
+			issues = issues.addUniqueWarning("Syntax warning: Header includes an empty directive or extra semicolon.")
 
 		default:
-			issues = issues.AddWarning(fmt.Sprintf("Syntax warning: Header contains an unknown directive: `%s`", part))
+			issues = issues.addWarning(fmt.Sprintf("Syntax warning: Header contains an unknown directive: `%s`", part))
 		}
 	}
 	return hstsHeader, issues
@@ -142,26 +142,26 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 	issues := NewIssues()
 
 	if !hstsHeader.includeSubDomains {
-		issues = issues.AddError("Header requirement error: Header must contain the `includeSubDomains` directive.")
+		issues = issues.addError("Header requirement error: Header must contain the `includeSubDomains` directive.")
 	}
 
 	if !hstsHeader.preload {
-		issues = issues.AddError("Header requirement error: Header must contain the `preload` directive.")
+		issues = issues.addError("Header requirement error: Header must contain the `preload` directive.")
 	}
 
 	if !hstsHeader.maxAgePresent {
-		issues = issues.AddError("Header requirement error: Header must contain a valid `max-age` directive.")
+		issues = issues.addError("Header requirement error: Header must contain a valid `max-age` directive.")
 	}
 
 	if hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds < HSTS_MINIMUM_MAX_AGE {
-		issues = issues.AddError(fmt.Sprintf(
+		issues = issues.addError(fmt.Sprintf(
 			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=%d.",
 			hstsHeader.maxAgeSeconds,
 		))
 	}
 
 	if hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds > HSTS_CHROME_MAX_AGE_CAP_ONE_YEAR {
-		issues = issues.AddWarning(fmt.Sprintf(
+		issues = issues.addWarning(fmt.Sprintf(
 			"Header FYI: The max-age (%d seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (%d seconds).",
 			hstsHeader.maxAgeSeconds,
 			HSTS_CHROME_MAX_AGE_CAP_ONE_YEAR,
@@ -169,7 +169,7 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 	}
 
 	if !hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds != BOGUS_MAX_AGE {
-		issues = issues.AddWarning("Internal issue: encountered an HSTSHeader with maxAgePresent but an unexpected maxAgeSeconds.")
+		issues = issues.addWarning("Internal issue: encountered an HSTSHeader with maxAgePresent but an unexpected maxAgeSeconds.")
 	}
 
 	return issues

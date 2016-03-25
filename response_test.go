@@ -60,7 +60,7 @@ func TestCheckResponseMissingIncludeSubDomains(t *testing.T) {
 	response.Header.Add(key, "preload; max-age=10886400")
 
 	expectIssuesEqual(t, CheckResponse(&response),
-		NewIssues().AddError("Header requirement error: Header must contain the `includeSubDomains` directive."),
+		NewIssues().addError("Header requirement error: Header must contain the `includeSubDomains` directive."),
 	)
 }
 
@@ -69,7 +69,7 @@ func TestCheckResponseWithoutHSTSHeaders(t *testing.T) {
 	response.Header = http.Header{}
 
 	expectIssuesEqual(t, CheckResponse(&response),
-		NewIssues().AddError("Response error: No HSTS headers are present on the response."),
+		NewIssues().addError("Response error: No HSTS headers are present on the response."),
 	)
 }
 
@@ -82,6 +82,6 @@ func TestCheckResponseMultipleHSTSHeaders(t *testing.T) {
 	response.Header.Add(key, "max-age=20")
 
 	expectIssuesEqual(t, CheckResponse(&response),
-		NewIssues().AddError("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),
+		NewIssues().addError("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),
 	)
 }

@@ -17,36 +17,36 @@ func NewIssues() Issues {
 	}
 }
 
-func (issues Issues) AddError(err string) Issues {
+func (issues Issues) addError(err string) Issues {
 	return Issues{
 		Errors:   append(issues.Errors, err),
 		Warnings: issues.Warnings,
 	}
 }
 
-func (issues Issues) AddWarning(warning string) Issues {
+func (issues Issues) addWarning(warning string) Issues {
 	return Issues{
 		Errors:   issues.Errors,
 		Warnings: append(issues.Warnings, warning),
 	}
 }
 
-func (issues Issues) AddUniqueError(uniqueErr string) Issues {
+func (issues Issues) addUniqueError(uniqueErr string) Issues {
 	for _, err := range issues.Errors {
 		if err == uniqueErr {
 			return issues
 		}
 	}
-	return issues.AddError(uniqueErr)
+	return issues.addError(uniqueErr)
 }
 
-func (issues Issues) AddUniqueWarning(uniqueWarning string) Issues {
+func (issues Issues) addUniqueWarning(uniqueWarning string) Issues {
 	for _, warning := range issues.Warnings {
 		if warning == uniqueWarning {
 			return issues
 		}
 	}
-	return issues.AddWarning(uniqueWarning)
+	return issues.addWarning(uniqueWarning)
 }
 
 func CombineIssues(issues1 Issues, issues2 Issues) Issues {

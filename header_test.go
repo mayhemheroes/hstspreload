@@ -171,7 +171,7 @@ func TestParseHeaderStringReorderedWithoutPreload(t *testing.T) {
 func TestParseHeaderStringEmpty(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header is empty."))
+		NewIssues().addWarning("Syntax warning: Header is empty."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           false,
 		includeSubDomains: false,
@@ -183,7 +183,7 @@ func TestParseHeaderStringEmpty(t *testing.T) {
 func TestParseHeaderStringCaseInsensitive(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("inCLUDESUBDomaINs; max-AGe=12345678")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."))
+		NewIssues().addWarning("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           false,
 		includeSubDomains: true,
@@ -195,7 +195,7 @@ func TestParseHeaderStringCaseInsensitive(t *testing.T) {
 func TestParseHeaderStringRepeatedPreload(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("preload; includeSubDomains; preload; max-age=12345678; preload")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header contains a repeated directive: `preload`"))
+		NewIssues().addWarning("Syntax warning: Header contains a repeated directive: `preload`"))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           true,
 		includeSubDomains: true,
@@ -207,7 +207,7 @@ func TestParseHeaderStringRepeatedPreload(t *testing.T) {
 func TestParseHeaderStringSingleExtraDirective(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age=12345678; preload; extraDirective")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header contains an unknown directive: `extraDirective`"))
+		NewIssues().addWarning("Syntax warning: Header contains an unknown directive: `extraDirective`"))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           true,
 		includeSubDomains: true,
@@ -237,7 +237,7 @@ func TestParseHeaderStringMultipleExtraDirectives(t *testing.T) {
 func TestParseHeaderStringSemicolonOnly(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString(";")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
+		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           false,
 		includeSubDomains: false,
@@ -249,7 +249,7 @@ func TestParseHeaderStringSemicolonOnly(t *testing.T) {
 func TestParseHeaderStringTrailingSemicolon(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains; preload;")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
+		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           true,
 		includeSubDomains: true,
@@ -261,7 +261,7 @@ func TestParseHeaderStringTrailingSemicolon(t *testing.T) {
 func TestParseHeaderStringPrefixedBySemicolon(t *testing.T) {
 	hstsHeader, issues := ParseHeaderString("; max-age=10886400; includeSubDomains; preload")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
+		NewIssues().addWarning("Syntax warning: Header includes an empty directive or extra semicolon."))
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		preload:           true,
 		includeSubDomains: true,
@@ -275,21 +275,21 @@ func TestParseHeaderStringPrefixedBySemicolon(t *testing.T) {
 func TestParseHeaderStringBadMaxAgeNoValue(t *testing.T) {
 	_, issues := ParseHeaderString("max-age")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddError("Syntax error: A max-age directive name is present without an associated value."))
+		NewIssues().addError("Syntax error: A max-age directive name is present without an associated value."))
 }
 
 // Motivated by https://crbug.com/596561
 func TestParseHeaderStringBadMaxAgeMinus(t *testing.T) {
 	_, issues := ParseHeaderString("max-age=-101")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddError("Syntax error: Could not parse max-age value [-101]."))
+		NewIssues().addError("Syntax error: Could not parse max-age value [-101]."))
 }
 
 // Motivated by https://crbug.com/596561
 func TestParseHeaderStringBadMaxAgePlus(t *testing.T) {
 	_, issues := ParseHeaderString("max-age=+101")
 	expectIssuesEqual(t, issues,
-		NewIssues().AddError("Syntax error: Could not parse max-age value [+101]."))
+		NewIssues().addError("Syntax error: Could not parse max-age value [+101]."))
 }
 
 /******** CheckHeaderString() without issues. ********/
@@ -303,7 +303,7 @@ func TestCheckHeaderStringFull(t *testing.T) {
 func TestParseHeaderStringMoreThanOneYear(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("max-age=31536001; preload; includeSubDomains"),
-		NewIssues().AddWarning("Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."),
+		NewIssues().addWarning("Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."),
 	)
 }
 
@@ -326,21 +326,21 @@ func TestCheckHeaderStringEmpty(t *testing.T) {
 func TestCheckHeaderStringMissingPreload(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; max-age=10886400"),
-		NewIssues().AddError("Header requirement error: Header must contain the `preload` directive."),
+		NewIssues().addError("Header requirement error: Header must contain the `preload` directive."),
 	)
 }
 
 func TestCheckHeaderStringMissingIncludeSubdomains(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("preload; max-age=10886400"),
-		NewIssues().AddError("Header requirement error: Header must contain the `includeSubDomains` directive."),
+		NewIssues().addError("Header requirement error: Header must contain the `includeSubDomains` directive."),
 	)
 }
 
 func TestCheckHeaderStringMissingMaxAge(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload"),
-		NewIssues().AddError("Header requirement error: Header must contain a valid `max-age` directive."),
+		NewIssues().addError("Header requirement error: Header must contain a valid `max-age` directive."),
 	)
 }
 
@@ -400,20 +400,20 @@ func TestCheckHeaderStringMaxAge0(t *testing.T) {
 	// Give information about what to do if you want to remove HSTS.
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age=0"),
-		NewIssues().AddError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=0."),
+		NewIssues().addError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=0."),
 	)
 }
 
 func TestCheckHeaderStringMaxAge100(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age=100"),
-		NewIssues().AddError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100."),
+		NewIssues().addError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100."),
 	)
 }
 
 func TestCheckHeaderStringMaxAge10886399(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("max-age=10886399; preload; includeSubDomains"),
-		NewIssues().AddError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=10886399."),
+		NewIssues().addError("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=10886399."),
 	)
 }

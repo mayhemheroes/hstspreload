@@ -84,47 +84,47 @@ func TestIssuesEqual(t *testing.T) {
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{},
-	}, NewIssues().AddError("Single Error"))
+	}, NewIssues().addError("Single Error"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{},
-	}, NewIssues().AddError("First Error").AddError("Second Error"))
+	}, NewIssues().addError("First Error").addError("Second Error"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().AddWarning("Single Warning"))
+	}, NewIssues().addWarning("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().AddWarning("First Warning").AddWarning("Second Warning"))
+	}, NewIssues().addWarning("First Warning").addWarning("Second Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().AddError("Single Error").AddWarning("Single Warning"))
+	}, NewIssues().addError("Single Error").addWarning("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().AddWarning("First Warning").AddError("First Error").AddWarning("Second Warning").AddError("Second Error"))
+	}, NewIssues().addWarning("First Warning").addError("First Error").addWarning("Second Warning").addError("Second Error"))
 }
 
 func TestIssuesNotEqual(t *testing.T) {
 	expectIssuesNotEqual(t,
-		NewIssues().AddWarning("test"),
-		NewIssues().AddError("test"),
+		NewIssues().addWarning("test"),
+		NewIssues().addError("test"),
 	)
 
 	expectIssuesNotEqual(t,
-		NewIssues().AddError("first").AddError("second"),
-		NewIssues().AddError("first"),
+		NewIssues().addError("first").addError("second"),
+		NewIssues().addError("first"),
 	)
 
 	expectIssuesNotEqual(t,
-		NewIssues().AddError("pie").AddError("cake").AddError("anything you bake"),
-		NewIssues().AddError("cake").AddError("pie").AddError("anything you bake"),
+		NewIssues().addError("pie").addError("cake").addError("anything you bake"),
+		NewIssues().addError("cake").addError("pie").addError("anything you bake"),
 	)
 }

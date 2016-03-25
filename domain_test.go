@@ -20,11 +20,11 @@ func TestCheckDomainWithValidHSTS(t *testing.T) {
 func TestCheckDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.com"),
-		NewIssues().AddError("Response error: No HSTS headers are present on the response."))
+		NewIssues().addError("Response error: No HSTS headers are present on the response."))
 }
 
 func TestCheckDomainBogusDomain(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.notadomain"),
-		NewIssues().AddError("Domain error: Cannot connect to host (example.notadomain). Error: [Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host]"))
+		NewIssues().addError("Domain error: Cannot connect to host (example.notadomain). Error: [Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host]"))
 }

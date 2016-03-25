@@ -73,11 +73,11 @@ func parseMaxAge(directive string) (int64, Issues) {
 	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
 
 	if err != nil {
-		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
+		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value `%s`.", maxAgeNumericalString))
 	}
 
 	if maxAge < 0 {
-		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%s`"))
+		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%d`", maxAge))
 	}
 
 	return maxAge, issues

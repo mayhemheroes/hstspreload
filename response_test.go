@@ -20,7 +20,7 @@ func TestCheckResponseMultipleErrors(t *testing.T) {
 	response.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	response.Header.Add(key, "includeSubdomains; max-age=100")
+	response.Header.Add(key, "includeSubDomains; max-age=100")
 
 	expectIssuesEqual(t, CheckResponse(&response),
 		Issues{

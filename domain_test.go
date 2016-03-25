@@ -12,6 +12,11 @@ func skipIfShort(t *testing.T) {
 	}
 }
 
+func TestCheckDomainWithSHA1(t *testing.T) {
+	skipIfShort(t)
+	t.Errorf("%s", CheckDomain("sha1.badssl.com"))
+}
+
 func TestCheckDomainWithValidHSTS(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEmpty(t, CheckDomain("wikipedia.org"))

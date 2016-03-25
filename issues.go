@@ -99,8 +99,8 @@ func formatIssueListForString(list []string) string {
 
 func (issues Issues) String() string {
 	return fmt.Sprintf(`Issues {
-	errors: []string{%s},
-	warnings: []string{%s},
+	Errors: []string{%s},
+	Warnings: []string{%s},
 }`,
 		formatIssueListForString(issues.Errors),
 		formatIssueListForString(issues.Warnings),

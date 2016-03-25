@@ -7,26 +7,34 @@ import (
 )
 
 const (
-	// Value to use for maxAgeSeconds when invalid.
-	// Note that the struct will still be inialized with a value of
-	// maxAgeSeconds == 0, so this value is only used as a best effort to
-	// catch bugs.
-	BOGUS_MAX_AGE = (-1)
+	// Value that indictes when HSTSHeader.maxAge is invalid.
+	MAX_AGE_NOT_PRESENT = (-1)
 
 	// 18 weeks
-	HSTS_MINIMUM_MAX_AGE = 10886400 // seconds
+	hstsMinimumMaxAge = 10886400 // seconds
 
 	// 1 year: https://code.google.com/p/chromium/codesearch#chromium/src/net/http/http_security_headers.h&q=kMaxHSTSAgeSecs
-	HSTS_CHROME_MAX_AGE_CAP_ONE_YEAR = 86400 * 365 // seconds
+	hstsChromeMaxAgeCapOneYear = 86400 * 365 // seconds
 )
 
+// Unless all values are known at initialization time, use
+// NewHSTSHeader() instead of constructing an `HSTSHeader` directly.
+// This makes sure that `maxAge` is initialized to
+// `MAX_AGE_NOT_PRESENT`.
 type HSTSHeader struct {
-	preload           bool
+	// maxAge == MAX_AGE_NOT_PRESENT indicates that this value is invalid.
+	// A valid `maxAge` value is a non-negative integer.
+	maxAge            int64
 	includeSubDomains bool
-	maxAgePresent     bool
-	// maxAgeSeconds is valid iff maxAgePreset == true
-	// It is recommended to set this to BOGUS_MAX_AGE when invalid.
-	maxAgeSeconds int64
+	preload           bool
+}
+
+func NewHSTSHeader() HSTSHeader {
+	return HSTSHeader{
+		preload:           false,
+		includeSubDomains: false,
+		maxAge:            MAX_AGE_NOT_PRESENT,
+	}
 }
 
 // Mainly useful for testing.
@@ -39,11 +47,7 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 		return false
 	}
 
-	if header1.maxAgePresent != header2.maxAgePresent {
-		return false
-	}
-
-	if header1.maxAgePresent && (header1.maxAgeSeconds != header2.maxAgeSeconds) {
+	if header1.maxAge != header2.maxAge {
 		return false
 	}
 
@@ -62,18 +66,18 @@ func parseMaxAge(directive string) (int64, Issues) {
 			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", directive))
 		}
 		if c < '0' || c > '9' {
-			return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", directive))
+			return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", directive))
 		}
 	}
 
 	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
 
 	if err != nil {
-		return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
+		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
 	}
 
 	if maxAge < 0 {
-		return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%s`"))
+		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%s`"))
 	}
 
 	return maxAge, issues
@@ -94,13 +98,8 @@ func parseMaxAge(directive string) (int64, Issues) {
 //     issues.Errors[0] == []string{"Syntax error: A max-age directive name is present without an associated value."}
 //     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
-	var hstsHeader HSTSHeader
+	hstsHeader := NewHSTSHeader()
 	issues := NewIssues()
-
-	hstsHeader.preload = false
-	hstsHeader.includeSubDomains = false
-	hstsHeader.maxAgePresent = false
-	hstsHeader.maxAgeSeconds = BOGUS_MAX_AGE
 
 	directives := strings.Split(headerString, ";")
 	for i, directive := range directives {
@@ -159,11 +158,10 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 				continue
 			}
 
-			if hstsHeader.maxAgePresent {
-				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
+			if hstsHeader.maxAge == MAX_AGE_NOT_PRESENT {
+				hstsHeader.maxAge = maxAge
 			} else {
-				hstsHeader.maxAgePresent = true
-				hstsHeader.maxAgeSeconds = maxAge
+				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
 			}
 
 		case directiveHasPrefixIgnoringCase("max-age"):
@@ -197,27 +195,26 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 		issues = issues.addError("Header requirement error: Header must contain the `preload` directive.")
 	}
 
-	if !hstsHeader.maxAgePresent {
+	switch {
+	case hstsHeader.maxAge == MAX_AGE_NOT_PRESENT:
 		issues = issues.addError("Header requirement error: Header must contain a valid `max-age` directive.")
-	}
 
-	if hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds < HSTS_MINIMUM_MAX_AGE {
+	case hstsHeader.maxAge < 0:
+		issues = issues.addError(fmt.Sprintf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MAX_AGE_NOT_PRESENT: %d", hstsHeader.maxAge))
+
+	case hstsHeader.maxAge < hstsMinimumMaxAge:
 		issues = issues.addError(fmt.Sprintf(
 			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=%d.",
-			hstsHeader.maxAgeSeconds,
+			hstsHeader.maxAge,
 		))
-	}
 
-	if hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds > HSTS_CHROME_MAX_AGE_CAP_ONE_YEAR {
+	case hstsHeader.maxAge > hstsChromeMaxAgeCapOneYear:
 		issues = issues.addWarning(fmt.Sprintf(
 			"Header FYI: The max-age (%d seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (%d seconds).",
-			hstsHeader.maxAgeSeconds,
-			HSTS_CHROME_MAX_AGE_CAP_ONE_YEAR,
+			hstsHeader.maxAge,
+			hstsChromeMaxAgeCapOneYear,
 		))
-	}
 
-	if !hstsHeader.maxAgePresent && hstsHeader.maxAgeSeconds != BOGUS_MAX_AGE {
-		issues = issues.addWarning("Internal issue: encountered an HSTSHeader with maxAgePresent but an unexpected maxAgeSeconds.")
 	}
 
 	return issues

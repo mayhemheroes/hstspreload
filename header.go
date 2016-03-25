@@ -95,7 +95,7 @@ func parseMaxAge(directive string) (int64, Issues) {
 //     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	var hstsHeader HSTSHeader
-	var issues Issues
+	issues := NewIssues()
 
 	hstsHeader.preload = false
 	hstsHeader.includeSubDomains = false

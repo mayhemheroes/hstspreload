@@ -1,5 +1,7 @@
 # HSTS Preload List – Utility Code
 
+[![Build Status](https://travis-ci.org/chromium/hstspreload.svg?branch=master)](https://travis-ci.org/chromium/hstspreload)
+
 HSTS is [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security), which is a policy system for web sites to express a desire only to be contacted over HTTPS.
 
 ## Note

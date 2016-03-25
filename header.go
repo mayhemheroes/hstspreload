@@ -56,6 +56,7 @@ func parseMaxAge(directive string) (int64, Issues) {
 
 	maxAgeNumericalString := directive[8:]
 
+	// TODO: Use more concise validation code to parse a digit string to a signed int.
 	for i, c := range maxAgeNumericalString {
 		if i == 0 && c == '0' && len(maxAgeNumericalString) > 1 {
 			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", directive))

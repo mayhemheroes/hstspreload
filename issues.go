@@ -16,7 +16,7 @@ import (
 //     - Preload requirement checking
 //     - HTTP response checking
 //     - Domain checking
-//   - If `Issues` is returned from a Check* function without any errors
+//   - If `Issues` is returned from a Check____() function without any errors
 //     or warnings, it means that the function passed all checks.
 //   - The list of errors is not guaranteed to be exhaustive. In
 //     particular, fixing a given error (e.g. "could not connect to

@@ -11,7 +11,7 @@ const (
 	// Note that the struct will still be inialized with a value of
 	// maxAgeSeconds == 0, so this value is only used as a best effort to
 	// catch bugs.
-	BOGUS_MAX_AGE = (1<<64 - 1)
+	BOGUS_MAX_AGE = (-1)
 
 	// 18 weeks
 	HSTS_MINIMUM_MAX_AGE = 10886400 // seconds
@@ -26,7 +26,7 @@ type HSTSHeader struct {
 	maxAgePresent     bool
 	// maxAgeSeconds is valid iff maxAgePreset == true
 	// It is recommended to set this to BOGUS_MAX_AGE when invalid.
-	maxAgeSeconds uint64
+	maxAgeSeconds int64
 }
 
 // Mainly useful for testing.
@@ -50,6 +50,34 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 	return true
 }
 
+// Iff Issues has no errors, the output integer is the max-age in seconds.
+func parseMaxAge(part string) (int64, Issues) {
+	issues := NewIssues()
+
+	maxAgeNumericalString := part[8:]
+
+	for i, c := range maxAgeNumericalString {
+		if i == 0 && c == '0' && len(maxAgeNumericalString) > 1 {
+			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", part))
+		}
+		if c < '0' || c > '9' {
+			return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", part))
+		}
+	}
+
+	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
+
+	if err != nil {
+		return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
+	}
+
+	if maxAge < 0 {
+		return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%s`"))
+	}
+
+	return maxAge, issues
+}
+
 // This function parses an HSTS header.
 //
 // It will report syntax errors and warnings, but does NOT calculate
@@ -63,7 +91,7 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 //     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
 //
 //     issues.Errors[0] == []string{"Syntax error: A max-age directive name is present without an associated value."}
-//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
+//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty part or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	var hstsHeader HSTSHeader
 	var issues Issues
@@ -98,17 +126,17 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 		switch {
 		case partEqualsIgnoringCase("preload"):
 			if hstsHeader.preload {
-				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `preload`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated part: `preload`")
 			} else {
 				hstsHeader.preload = true
 			}
 
 		case partHasPrefixIgnoringCase("preload"):
-			issues = issues.addUniqueWarning("Syntax warning: Header contains a `preload` directive with extra parts.")
+			issues = issues.addUniqueWarning("Syntax warning: Header contains a `preload` part with extra hstsParts.")
 
 		case partEqualsIgnoringCase("includeSubDomains"):
 			if hstsHeader.includeSubDomains {
-				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `includeSubDomains`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated part: `includeSubDomains`")
 			} else {
 				hstsHeader.includeSubDomains = true
 				if part != "includeSubDomains" {
@@ -120,18 +148,19 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 			}
 
 		case partHasPrefixIgnoringCase("includeSubDomains"):
-			issues = issues.addUniqueWarning("Syntax warning: Header contains an `includeSubDomains` directive with extra parts.")
+			issues = issues.addUniqueWarning("Syntax warning: Header contains an `includeSubDomains` part with extra hstsParts.")
 
 		case partHasPrefixIgnoringCase("max-age="):
-			maxAgeNumericalString := part[8:]
-			// TODO the numerical string contains only digits, no symbols (no "+")
-			maxAge, err := strconv.ParseUint(maxAgeNumericalString, 10, 63)
-			if err != nil {
-				issues = issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value [%s].", maxAgeNumericalString))
+			maxAge, maxAgeIssues := parseMaxAge(part)
+			issues = combineIssues(issues, maxAgeIssues)
+
+			if len(maxAgeIssues.Errors) > 0 {
+				continue
+			}
+
+			if hstsHeader.maxAgePresent {
+				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated part: `max-age`"))
 			} else {
-				if hstsHeader.maxAgePresent {
-					issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
-				}
 				hstsHeader.maxAgePresent = true
 				hstsHeader.maxAgeSeconds = maxAge
 			}

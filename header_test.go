@@ -270,6 +270,12 @@ func TestParseHeaderStringPrefixedBySemicolon(t *testing.T) {
 	})
 }
 
+func TestParseHeaderStringBadMaxAgeLeadingZero(t *testing.T) {
+	_, issues := ParseHeaderString("max-age=01234")
+	expectIssuesEqual(t, issues,
+		NewIssues().addWarning("Syntax warning: max-age value contains a leading 0: `max-age=01234`"))
+}
+
 /******** ParseHeaderString() with only errors. ********/
 
 func TestParseHeaderStringBadMaxAgeNoValue(t *testing.T) {
@@ -282,14 +288,14 @@ func TestParseHeaderStringBadMaxAgeNoValue(t *testing.T) {
 func TestParseHeaderStringBadMaxAgeMinus(t *testing.T) {
 	_, issues := ParseHeaderString("max-age=-101")
 	expectIssuesEqual(t, issues,
-		NewIssues().addError("Syntax error: Could not parse max-age value [-101]."))
+		NewIssues().addError("Syntax error: max-age value contains characters that are not digits: `max-age=-101`"))
 }
 
 // Motivated by https://crbug.com/596561
 func TestParseHeaderStringBadMaxAgePlus(t *testing.T) {
 	_, issues := ParseHeaderString("max-age=+101")
 	expectIssuesEqual(t, issues,
-		NewIssues().addError("Syntax error: Could not parse max-age value [+101]."))
+		NewIssues().addError("Syntax error: max-age value contains characters that are not digits: `max-age=+101`"))
 }
 
 /******** ParseHeaderString() with warnings and errors. ********/

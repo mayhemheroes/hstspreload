@@ -51,8 +51,19 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 }
 
 // This function parses an HSTS header.
-// It will report syntax errors and warnings,
-// but does not calculate whether the header value is semantically valid.
+//
+// It will report syntax errors and warnings, but does NOT calculate
+// whether the header value is semantically valid.
+//
+// To interpret the issues, see the list of conventions in the
+// documentation for `Issues`.
+//
+// Example Usage:
+//
+//     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
+//
+//     issues.Errors[0] == []string{"Syntax error: A max-age directive name is present without an associated value."}
+//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	var hstsHeader HSTSHeader
 	var issues Issues
@@ -138,6 +149,13 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	return hstsHeader, issues
 }
 
+// This function checks whether the `HSTSHeader` matches all
+// requirements for preloading in Chromium.
+//
+// To interpret the result, see the list of conventions in the
+// documentation for `Issues`.
+//
+// Most of the time, you'll probably want to use `CheckHeaderString()` instead.
 func CheckHeader(hstsHeader HSTSHeader) Issues {
 	issues := NewIssues()
 
@@ -175,6 +193,18 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 	return issues
 }
 
+// This convenience function calls ParseHeaderString() and then calls on
+// the parsed headerCheckHeader(). It returns all issues from both calls, combined.
+//
+// To interpret the result, see the list of conventions in the
+// documentation for `Issues`.
+//
+// Example Usage:
+//
+//     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
+//
+//     hstsHeader.Errors[0] == "Header requirement error: Header must contain the `preload` directive."
+//     hstsHeader.Warnings[0] == "Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."
 func CheckHeaderString(headerString string) Issues {
 	hstsHeader, issues := ParseHeaderString(headerString)
 	return combineIssues(issues, CheckHeader(hstsHeader))

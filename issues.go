@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+// The `Issues` struct encapsulates a set of errors and warnings.
+// By convention:
+//
+//   - `Errors` contains a list of errors that will prevent preloading.
+//   - `Warnings` contains a list errors that are a good idea to fix, but are okay for preloading.
+//   - Warning and errors will state at which level the issue occurred:
+//     - Header syntax
+//     - Preload requirement checking
+//     - HTTP response checking
+//     - Domain checking
+//   - If `Issues` is returned from a Check* function without any errors or warnings, it means that the function passed all checks.
 type Issues struct {
 	Errors   []string
 	Warnings []string

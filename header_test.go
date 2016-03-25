@@ -300,7 +300,7 @@ func TestCheckHeaderStringFull(t *testing.T) {
 
 /******** CheckHeaderString() with warnings only. ********/
 
-func TestParseHeaderStringMoreThanOneYear(t *testing.T) {
+func TestCheckHeaderStringMoreThanOneYear(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("max-age=31536001; preload; includeSubDomains"),
 		NewIssues().addWarning("Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."),

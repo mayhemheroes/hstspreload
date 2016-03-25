@@ -51,17 +51,17 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 }
 
 // Iff Issues has no errors, the output integer is the max-age in seconds.
-func parseMaxAge(part string) (int64, Issues) {
+func parseMaxAge(directive string) (int64, Issues) {
 	issues := NewIssues()
 
-	maxAgeNumericalString := part[8:]
+	maxAgeNumericalString := directive[8:]
 
 	for i, c := range maxAgeNumericalString {
 		if i == 0 && c == '0' && len(maxAgeNumericalString) > 1 {
-			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", part))
+			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", directive))
 		}
 		if c < '0' || c > '9' {
-			return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", part))
+			return BOGUS_MAX_AGE, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", directive))
 		}
 	}
 
@@ -91,7 +91,7 @@ func parseMaxAge(part string) (int64, Issues) {
 //     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
 //
 //     issues.Errors[0] == []string{"Syntax error: A max-age directive name is present without an associated value."}
-//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty part or extra semicolon."}
+//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	var hstsHeader HSTSHeader
 	var issues Issues
@@ -101,57 +101,57 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	hstsHeader.maxAgePresent = false
 	hstsHeader.maxAgeSeconds = BOGUS_MAX_AGE
 
-	hstsParts := strings.Split(headerString, ";")
-	for i, part := range hstsParts {
+	directives := strings.Split(headerString, ";")
+	for i, directive := range directives {
 		// TODO: this trims more than spaces and tabs (LWS). https://crbug.com/596561#c10
-		hstsParts[i] = strings.TrimSpace(part)
+		directives[i] = strings.TrimSpace(directive)
 	}
 
-	// If strings.Split() is given whitespace, it still returns an (empty) part.
+	// If strings.Split() is given whitespace, it still returns an (empty) directive.
 	// So we handle this case separately.
-	if len(hstsParts) == 1 && hstsParts[0] == "" {
+	if len(directives) == 1 && directives[0] == "" {
 		// Return immediately, because all the extra information is redundant.
 		return hstsHeader, issues.addWarning("Syntax warning: Header is empty.")
 	}
 
-	for _, part := range hstsParts {
-		partEqualsIgnoringCase := func(s string) bool {
-			return strings.ToLower(part) == strings.ToLower(s)
+	for _, directive := range directives {
+		directiveEqualsIgnoringCase := func(s string) bool {
+			return strings.ToLower(directive) == strings.ToLower(s)
 		}
 
-		partHasPrefixIgnoringCase := func(prefix string) bool {
-			return strings.HasPrefix(strings.ToLower(part), strings.ToLower(prefix))
+		directiveHasPrefixIgnoringCase := func(prefix string) bool {
+			return strings.HasPrefix(strings.ToLower(directive), strings.ToLower(prefix))
 		}
 
 		switch {
-		case partEqualsIgnoringCase("preload"):
+		case directiveEqualsIgnoringCase("preload"):
 			if hstsHeader.preload {
-				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated part: `preload`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `preload`")
 			} else {
 				hstsHeader.preload = true
 			}
 
-		case partHasPrefixIgnoringCase("preload"):
-			issues = issues.addUniqueWarning("Syntax warning: Header contains a `preload` part with extra hstsParts.")
+		case directiveHasPrefixIgnoringCase("preload"):
+			issues = issues.addUniqueWarning("Syntax warning: Header contains a `preload` directive with extra directives.")
 
-		case partEqualsIgnoringCase("includeSubDomains"):
+		case directiveEqualsIgnoringCase("includeSubDomains"):
 			if hstsHeader.includeSubDomains {
-				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated part: `includeSubDomains`")
+				issues = issues.addUniqueWarning("Syntax warning: Header contains a repeated directive: `includeSubDomains`")
 			} else {
 				hstsHeader.includeSubDomains = true
-				if part != "includeSubDomains" {
+				if directive != "includeSubDomains" {
 					issues = issues.addUniqueWarning(fmt.Sprintf(
 						"Syntax warning: Header contains the token `%s`. The recommended capitalization is `includeSubDomains`.",
-						part,
+						directive,
 					))
 				}
 			}
 
-		case partHasPrefixIgnoringCase("includeSubDomains"):
-			issues = issues.addUniqueWarning("Syntax warning: Header contains an `includeSubDomains` part with extra hstsParts.")
+		case directiveHasPrefixIgnoringCase("includeSubDomains"):
+			issues = issues.addUniqueWarning("Syntax warning: Header contains an `includeSubDomains` directive with extra directives.")
 
-		case partHasPrefixIgnoringCase("max-age="):
-			maxAge, maxAgeIssues := parseMaxAge(part)
+		case directiveHasPrefixIgnoringCase("max-age="):
+			maxAge, maxAgeIssues := parseMaxAge(directive)
 			issues = combineIssues(issues, maxAgeIssues)
 
 			if len(maxAgeIssues.Errors) > 0 {
@@ -159,20 +159,20 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 			}
 
 			if hstsHeader.maxAgePresent {
-				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated part: `max-age`"))
+				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
 			} else {
 				hstsHeader.maxAgePresent = true
 				hstsHeader.maxAgeSeconds = maxAge
 			}
 
-		case partHasPrefixIgnoringCase("max-age"):
+		case directiveHasPrefixIgnoringCase("max-age"):
 			issues = issues.addUniqueError("Syntax error: A max-age directive name is present without an associated value.")
 
-		case partEqualsIgnoringCase(""):
+		case directiveEqualsIgnoringCase(""):
 			issues = issues.addUniqueWarning("Syntax warning: Header includes an empty directive or extra semicolon.")
 
 		default:
-			issues = issues.addWarning(fmt.Sprintf("Syntax warning: Header contains an unknown directive: `%s`", part))
+			issues = issues.addWarning(fmt.Sprintf("Syntax warning: Header contains an unknown directive: `%s`", directive))
 		}
 	}
 	return hstsHeader, issues

@@ -20,12 +20,12 @@ const (
 // An HSTSHeader stores the semantics of an HSTS header.
 //
 // Note: Unless all values are known at initialization time, use
-// NewHSTSHeader() instead of constructing an `HSTSHeader` directly.
-// This makes sure that `MaxAge` is initialized to
-// `MaxAgeNotPresent`.
+// NewHSTSHeader() instead of constructing an HSTSHeader directly.
+// This ensures that the MaxAge field is initialized to
+// MaxAgeNotPresent.
 type HSTSHeader struct {
 	// MaxAge == MaxAgeNotPresent indicates that this value is invalid.
-	// A valid `MaxAge` value is a non-negative integer.
+	// A valid MaxAge value is a non-negative integer.
 	MaxAge            int64
 	IncludeSubDomains bool
 	Preload           bool
@@ -77,12 +77,13 @@ func parseMaxAge(directive string) (int64, Issues) {
 	return maxAge, issues
 }
 
-// ParseHeaderString parses an HSTS header.
+// ParseHeaderString parses an HSTS header. ParseHeaderString will
+// report syntax errors and warnings, but does NOT calculate whether the
+// header value is semantically valid. (See CheckHeaderString() for
+// that.)
 //
-// It will report syntax errors and warnings, but does NOT calculate
-// whether the header value is semantically valid. To interpret the
-// returned issues, see the list of conventions in the documentation for
-// `Issues`.
+// To interpret the Issues that are returned, see the list of
+// conventions in the documentation for Issues.
 //
 // Example Usage:
 //
@@ -170,13 +171,13 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	return hstsHeader, issues
 }
 
-// CheckHeader checks whether `hstsHeader` satisfies all requirements
+// CheckHeader checks whether hstsHeader satisfies all requirements
 // for preloading in Chromium.
 //
 // To interpret the result, see the list of conventions in the
-// documentation for `Issues`.
+// documentation for Issues.
 //
-// Most of the time, you'll probably want to use `CheckHeaderString()` instead.
+// Most of the time, you'll probably want to use CheckHeaderString() instead.
 func CheckHeader(hstsHeader HSTSHeader) Issues {
 	issues := NewIssues()
 
@@ -218,7 +219,7 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 // headerCheckHeader(). It returns all issues from both calls, combined.
 //
 // To interpret the result, see the list of conventions in the
-// documentation for `Issues`.
+// documentation for Issues.
 //
 // Example Usage:
 //

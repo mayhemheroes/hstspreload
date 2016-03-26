@@ -9,7 +9,7 @@ import (
 // header that passes the preload requirements.
 //
 // To interpret the result, see the list of conventions in the
-// documentation for `Issues`.
+// documentation for Issues.
 //
 // Example Usage:
 //

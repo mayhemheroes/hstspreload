@@ -8,20 +8,20 @@ import (
 // The Issues struct encapsulates a set of errors and warnings.
 // By convention:
 //
-//   - `Errors` contains a list of errors that will prevent preloading.
-//   - `Warnings` contains a list errors that are a good idea to fix,
-//     but are okay for preloading.
-//   - Warning and errors will state at which level the issue occurred:
-//     - Header syntax
-//     - Preload requirement checking
-//     - HTTP response checking
-//     - Domain checking
-//   - If `Issues` is returned from a Check____() function without any errors
-//     or warnings, it means that the function passed all checks.
-//   - The list of errors is not guaranteed to be exhaustive. In
-//     particular, fixing a given error (e.g. "could not connect to
-//     server") may bring another error to light (e.g. "HSTS header was
-//     not found").
+// - Errors contains a list of errors that will prevent preloading.
+//
+// - Warnings contains a list errors that are a good idea to fix,
+// but are okay for preloading.
+//
+// - Warning and errors will state at which level the issue occurred (e.g. header syntax, preload requirement checking, HTTP response checking, domain checking).
+//
+// - If Issues is returned from a Check____() function without any errors
+// or warnings, it means that the function passed all checks.
+//
+// - The list of errors is not guaranteed to be exhaustive. In
+// particular, fixing a given error (e.g. "could not connect to
+// server") may bring another error to light (e.g. "HSTS header was
+// not found").
 type Issues struct {
 	Errors   []string
 	Warnings []string

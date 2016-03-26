@@ -17,15 +17,15 @@ import (
 // CheckDomain checks whether the domain passes HSTS preload
 // requirements for Chromium. This includes:
 //
-//   - Serving a single HSTS header that passes header requirements.
-//   - Using TLS settings that will not cause new problems for
-//     Chromium/Chrome users.
-//     - Example of a new problem: a missing intermediate certificate
-//       will turn an error page from overrideable to non-overridable on
-//       some mobile devices.
+// - Serving a single HSTS header that passes header requirements.
+//
+// - Using TLS settings that will not cause new problems for
+// Chromium/Chrome users. (Example of a new problem: a missing intermediate certificate
+// will turn an error page from overrideable to non-overridable on
+// some mobile devices.)
 //
 // To interpret the result, see the list of conventions in the
-// documentation for `Issues`.
+// documentation for Issues.
 //
 // Example usage:
 //

@@ -48,9 +48,7 @@ func NewHSTSHeader() HSTSHeader {
 }
 
 // Iff Issues has no errors, the output integer is the max-age in seconds.
-func parseMaxAge(directive string) (int64, Issues) {
-	issues := NewIssues()
-
+func parseMaxAge(directive string) (maxAge int64, issues Issues) {
 	maxAgeNumericalString := directive[8:]
 
 	// TODO: Use more concise validation code to parse a digit string to a signed int.
@@ -83,9 +81,8 @@ func parseMaxAge(directive string) (int64, Issues) {
 //
 // To interpret the Issues that are returned, see the list of
 // conventions in the documentation for Issues.
-func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
-	hstsHeader := NewHSTSHeader()
-	issues := NewIssues()
+func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issues) {
+	hstsHeader = NewHSTSHeader()
 
 	directives := strings.Split(headerString, ";")
 	for i, directive := range directives {
@@ -170,9 +167,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 // documentation for Issues.
 //
 // Most of the time, you'll probably want to use CheckHeaderString() instead.
-func CheckHeader(hstsHeader HSTSHeader) Issues {
-	issues := NewIssues()
-
+func CheckHeader(hstsHeader HSTSHeader) (issues Issues) {
 	if !hstsHeader.IncludeSubDomains {
 		issues = issues.addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive.")
 	}

@@ -39,9 +39,7 @@ var dialer = net.Dialer{
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-func CheckDomain(domain string) Issues {
-	issues := NewIssues()
-
+func CheckDomain(domain string) (issues Issues) {
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
 	issues = combineIssues(issues, checkDomainFormat(domain))
@@ -67,9 +65,7 @@ func CheckDomain(domain string) Issues {
 	return issues
 }
 
-func getResponse(domain string) (*http.Response, Issues) {
-	issues := NewIssues()
-
+func getResponse(domain string) (resp *http.Response, issues Issues) {
 	redirectPrevented := errors.New("REDIRECT_PREVENTED")
 
 	client := &http.Client{
@@ -93,9 +89,7 @@ func getResponse(domain string) (*http.Response, Issues) {
 	return resp, issues
 }
 
-func checkDomainFormat(domain string) Issues {
-	issues := NewIssues()
-
+func checkDomainFormat(domain string) (issues Issues) {
 	if strings.HasPrefix(domain, ".") {
 		return issues.addErrorf("Domain name error: begins with `.`")
 	}
@@ -121,9 +115,7 @@ func checkDomainFormat(domain string) Issues {
 	return issues
 }
 
-func checkEffectiveTLDPlusOne(domain string) Issues {
-	issues := NewIssues()
-
+func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
 		return issues.addErrorf("Internal error: could not compute eTLD+1.")
@@ -141,18 +133,14 @@ func checkEffectiveTLDPlusOne(domain string) Issues {
 
 // Takes the domain as argument because we may need to make more network
 // connections to see if an ECDSA cert is permissible.
-func checkChain(chain []*x509.Certificate, domain string) Issues {
-	issues := NewIssues()
-
+func checkChain(chain []*x509.Certificate, domain string) (issues Issues) {
 	issues = combineIssues(issues, checkSHA1(chain))
 	issues = combineIssues(issues, checkECDSA(chain, domain))
 
 	return issues
 }
 
-func checkSHA1(chain []*x509.Certificate) Issues {
-	issues := NewIssues()
-
+func checkSHA1(chain []*x509.Certificate) (issues Issues) {
 	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
 		issues = issues.addErrorf(
 			"One or more of the certificates in your certificate chain is signed with SHA-1. "+
@@ -166,9 +154,7 @@ func checkSHA1(chain []*x509.Certificate) Issues {
 	return issues
 }
 
-func checkECDSA(chain []*x509.Certificate, domain string) Issues {
-	issues := NewIssues()
-
+func checkECDSA(chain []*x509.Certificate, domain string) (issues Issues) {
 	if firstECDSA, found := findPropertyInChain(isECDSA, chain); found {
 		// There's an ECDSA certificate. Allow it if HTTP redirects to
 		// HTTPS with ECDSA or if port 80 is closed.
@@ -217,9 +203,7 @@ func checkECDSA(chain []*x509.Certificate, domain string) Issues {
 	return issues
 }
 
-func checkWWW(host string) Issues {
-	issues := NewIssues()
-
+func checkWWW(host string) (issues Issues) {
 	hasWWW := false
 	if conn, err := net.DialTimeout("tcp", "www."+host+":443", dialTimeout); err == nil {
 		hasWWW = true

@@ -1,4 +1,4 @@
-// The hstspreload package has 4 parts:
+// Package hstspreload has 4 parts:
 //
 // - A Go package with functions to check HSTS preload requirements.
 //

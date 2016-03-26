@@ -23,7 +23,7 @@ const (
 // `MAX_AGE_NOT_PRESENT`.
 type HSTSHeader struct {
 	// MaxAge == MAX_AGE_NOT_PRESENT indicates that this value is invalid.
-	// A valid `maxAge` value is a non-negative integer.
+	// A valid `MaxAge` value is a non-negative integer.
 	MaxAge            int64
 	IncludeSubDomains bool
 	Preload           bool

@@ -9,7 +9,7 @@ import (
 func ExampleCheckResponse() {
 	response, err := http.Get("localhost:8080")
 	if err != nil {
-		issues := CheckResponse(response)
+		issues := CheckResponse(*response)
 		fmt.Printf("%v", issues)
 	}
 }
@@ -21,7 +21,7 @@ func TestCheckResponseGoodHeader(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "max-age=10886400; includeSubDomains; preload")
 
-	expectIssuesEmpty(t, CheckResponse(&response))
+	expectIssuesEmpty(t, CheckResponse(response))
 }
 
 func TestCheckResponseEmpty(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCheckResponseEmpty(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "")
 
-	expectIssuesEqual(t, CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(response),
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
@@ -50,7 +50,7 @@ func TestCheckResponseMultipleErrors(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "includeSubDomains; max-age=100")
 
-	expectIssuesEqual(t, CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(response),
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
@@ -68,7 +68,7 @@ func TestCheckResponseMissingIncludeSubDomains(t *testing.T) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	response.Header.Add(key, "preload; max-age=10886400")
 
-	expectIssuesEqual(t, CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(response),
 		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
 	)
 }
@@ -77,7 +77,7 @@ func TestCheckResponseWithoutHSTSHeaders(t *testing.T) {
 	var response http.Response
 	response.Header = http.Header{}
 
-	expectIssuesEqual(t, CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(response),
 		NewIssues().addErrorf("Response error: No HSTS headers are present on the response."),
 	)
 }
@@ -90,7 +90,7 @@ func TestCheckResponseMultipleHSTSHeaders(t *testing.T) {
 	response.Header.Add(key, "max-age=10")
 	response.Header.Add(key, "max-age=20")
 
-	expectIssuesEqual(t, CheckResponse(&response),
+	expectIssuesEqual(t, CheckResponse(response),
 		NewIssues().addErrorf("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),
 	)
 }

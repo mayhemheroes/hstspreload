@@ -3,6 +3,7 @@ package hstspreload
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"golang.org/x/net/publicsuffix"
 	"net"
@@ -13,6 +14,18 @@ import (
 	"syscall"
 	"time"
 )
+
+const (
+	// dialTimeout specifies the amount of time that TCP or TLS connections
+	// can take to complete.
+	dialTimeout = 10 * time.Second
+)
+
+// dialer is a global net.Dialer that's used whenever making TLS connections in
+// order to enforce dialTimeout.
+var dialer = net.Dialer{
+	Timeout: dialTimeout,
+}
 
 // CheckDomain checks whether the domain passes HSTS preload
 // requirements for Chromium. This includes:
@@ -29,22 +42,58 @@ import (
 func CheckDomain(domain string) Issues {
 	issues := NewIssues()
 
-	issues = combineIssues(issues, checkDomainName(domain))
+	// Check domain format issues first, since we can report something
+	// useful even if the other checks fail.
+	issues = combineIssues(issues, checkDomainFormat(domain))
 
-	// TODO: Use TLS.dial and/or avoid redirecting
-	response, err := http.Get("https://" + domain)
-	if err != nil {
-		// cannot continue => return early
-		return issues.addErrorf("Domain error: Cannot connect to domain (%s). Error: [%s]", domain, err)
+	// We don't currently allow automatic submissions of subdomains.
+	eTLD1Issues := checkEffectiveTLDPlusOne(domain)
+	issues = combineIssues(issues, eTLD1Issues)
+
+	// Start with an initial probe, and don't do the follow-up checks if
+	// we can't connect.
+	response, responseIssues := getResponse(domain)
+	issues = combineIssues(issues, responseIssues)
+	if len(responseIssues.Errors) == 0 {
+		issues = combineIssues(issues, checkChain(certChain(*response.TLS), domain))
+		issues = combineIssues(issues, CheckResponse(*response))
+
+		// Skip the WWW check if the domain is not eTLD+1.
+		if len(eTLD1Issues.Errors) == 0 {
+			issues = combineIssues(issues, checkWWW(domain))
+		}
 	}
-
-	issues = combineIssues(issues, checkTLS(domain))
-	issues = combineIssues(issues, CheckResponse(response))
 
 	return issues
 }
 
-func checkDomainName(domain string) Issues {
+func getResponse(domain string) (*http.Response, Issues) {
+	issues := NewIssues()
+
+	redirectPrevented := errors.New("REDIRECT_PREVENTED")
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return redirectPrevented
+		},
+	}
+
+	response, err := client.Get("https://" + domain)
+	if err != nil {
+		if urlError, ok := err.(*url.Error); !ok || urlError.Err != redirectPrevented {
+			return response, issues.addErrorf(
+				"Cannot connect using TLS (%q). This might be caused by an incomplete "+
+					"certificate chain, which causes issues on mobile devices. "+
+					"Check out your site at https://www.ssllabs.com/ssltest/",
+				err,
+			)
+		}
+	}
+
+	return response, issues
+}
+
+func checkDomainFormat(domain string) Issues {
 	issues := NewIssues()
 
 	if strings.HasPrefix(domain, ".") {
@@ -69,100 +118,61 @@ func checkDomainName(domain string) Issues {
 		return issues.addErrorf("Domain name error: contains invalid characters.")
 	}
 
+	return issues
+}
+
+func checkEffectiveTLDPlusOne(domain string) Issues {
+	issues := NewIssues()
+
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
 		return issues.addErrorf("Internal error: could not compute eTLD+1.")
 	}
 	if canon != domain {
-		return issues.addErrorf("Domain error: not eTLD+1.")
+		return issues.addErrorf(
+			"Domain error: `%s` is not eTLD+1. Please preload `%s` instead.",
+			domain,
+			canon,
+		)
 	}
 
 	return issues
 }
 
-// func certificateSubjectSummary(cert *x509.Certificate) string {
-// 	switch {
-// 	case len(cert.DNSNames) > 2:
-// 		return fmt.Sprintf("[%s, %s, ...]", cert.DNSNames[0], cert.DNSNames[1])
-// 	case len(cert.DNSNames) == 2:
-// 		// It's common to have a certificate for example.com and www.example.com
-// 		return fmt.Sprintf("[%s, %s]", cert.DNSNames[0], cert.DNSNames[1])
-// 	case len(cert.DNSNames) == 1:
-// 		return fmt.Sprintf("[%s]", cert.DNSNames[0])
-// 	default:
-// 		return fmt.Sprintf("%v", cert.Subject.Organization)
-// 	}
-// }
-
-// func checkTLS(connectionState *tls.ConnectionState) Issues {
-// 	issues := NewIssues()
-// 	// chain := connectionState.PeerCertificates
-
-// 	// We only check the chain sent by the certificate, not the verified chain.
-// 	// Since a missing certificate is a fatal error, this means the domain ultimately
-// 	// needs to present a full chain without SHA-1 in order to check out.
-
-// 	if firstSHA1, foundSHA1 := findPropertyInChain(isSHA1, connectionState.PeerCertificates); foundSHA1 {
-// 		issues = issues.addErrorf(fmt.Sprintf(
-// 			"Certificate error: The server sent a SHA-1 certificate (issued to %s by %s).",
-// 			certificateSubjectSummary(firstSHA1),
-// 			firstSHA1.Issuer.Organization,
-// 		))
-// 	}
-
-// 	if firstECDSA, foundECDSA := findPropertyInChain(isECDSA, connectionState.PeerCertificates); foundECDSA {
-// 		// TODO: allow if redirecting to HTTP.
-// 		issues = issues.addErrorf(fmt.Sprintf(
-// 			"Certificate error: The server sent an ECDSA certificate (issued to %s by %s).",
-// 			certificateSubjectSummary(firstECDSA),
-// 			firstECDSA.Issuer.Organization,
-// 		))
-// 	}
-
-// 	return issues
-// }
-
-const (
-	// dialTimeout specifies the amount of time that TCP or TLS connections
-	// can take to complete.
-	dialTimeout = 10 * time.Second
-)
-
-// dialer is a global net.Dialer that's used whenever making TLS connections in
-// order to enforce dialTimeout.
-var dialer = net.Dialer{
-	Timeout: dialTimeout,
-}
-
-func checkTLS(host string) Issues {
+// Takes the domain as argument because we may need to make more network
+// connections to see if an ECDSA cert is permissible.
+func checkChain(chain []*x509.Certificate, domain string) Issues {
 	issues := NewIssues()
 
-	conn, err := tls.DialWithDialer(&dialer, "tcp", host+":443", nil)
-	if err != nil {
-		return issues.addErrorf(
-			"Cannot connect using TLS (%q). This might be caused by an incomplete"+
-				"certificate chain, which causes issues on mobile devices."+
-				"Check out your site at https://www.ssllabs.com/ssltest/",
-			err,
-		)
-	}
-	chain := certChain(conn.ConnectionState())
-	conn.Close()
+	issues = combineIssues(issues, checkSHA1(chain))
+	issues = combineIssues(issues, checkECDSA(chain, domain))
+
+	return issues
+}
+
+func checkSHA1(chain []*x509.Certificate) Issues {
+	issues := NewIssues()
 
 	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
 		issues = issues.addErrorf(
-			"One or more of the certificates in your certificate chain is signed with SHA-1."+
-				"This needs to be replaced."+
-				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html."+
+			"One or more of the certificates in your certificate chain is signed with SHA-1. "+
+				"This needs to be replaced. "+
+				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. "+
 				"(The first SHA-1 certificate found has a common-name of %q.)",
 			firstSHA1.Subject.CommonName,
 		)
 	}
 
+	return issues
+}
+
+func checkECDSA(chain []*x509.Certificate, domain string) Issues {
+	issues := NewIssues()
+
 	if firstECDSA, found := findPropertyInChain(isECDSA, chain); found {
 		// There's an ECDSA certificate. Allow it if HTTP redirects to
 		// HTTPS with ECDSA or if port 80 is closed.
-		resp, err := http.Get("http://" + host)
+		resp, err := http.Get("http://" + domain)
 
 		var ecdsaOk bool
 		var redirectMsg string
@@ -194,15 +204,21 @@ func checkTLS(host string) Issues {
 		if !ecdsaOk {
 			issues = issues.addErrorf(
 				"One or more of the certificates in your certificate chain use ECDSA. "+
-					"However, ECDSA can't be handled on Windows XP so adding your site"+
-					"would break it on that platform. If you don't care about Windows XP,"+
-					"you can have a blanket redirect from HTTP to HTTPS."+
+					"However, ECDSA can't be handled on Windows XP so adding your site "+
+					"would break it on that platform. If you don't care about Windows XP, "+
+					"you can have a blanket redirect from HTTP to HTTPS. "+
 					"(The first ECDSA certificate found has a common-name of %q. %s)",
 				firstECDSA.Subject.CommonName,
 				redirectMsg,
 			)
 		}
 	}
+
+	return issues
+}
+
+func checkWWW(host string) Issues {
+	issues := NewIssues()
 
 	hasWWW := false
 	if conn, err := net.DialTimeout("tcp", "www."+host+":443", dialTimeout); err == nil {
@@ -213,7 +229,12 @@ func checkTLS(host string) Issues {
 	if hasWWW {
 		wwwConn, err := tls.DialWithDialer(&dialer, "tcp", "www."+host+":443", nil)
 		if err != nil {
-			return issues.addErrorf("The www subdomain exists, but we couldn't connect to it (%q). Since many people type this by habit, HSTS preloading would likely cause issues for your site.", err)
+			return issues.addErrorf(
+				"The www subdomain exists, but we couldn't connect to it (%q). "+
+					"Since many people type this by habit, HSTS preloading would likely"+
+					"cause issues for your site.",
+				err,
+			)
 		}
 		wwwConn.Close()
 	}

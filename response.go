@@ -9,7 +9,7 @@ import (
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-func CheckResponse(response *http.Response) Issues {
+func CheckResponse(response http.Response) Issues {
 	issues := NewIssues()
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")

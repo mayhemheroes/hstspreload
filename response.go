@@ -4,16 +4,16 @@ import (
 	"net/http"
 )
 
-// CheckResponse checks whether an HTTP response serves a single HSTS
-// header that passes the preload requirements.
+// CheckResponse checks whether an resp has a single HSTS header that
+// passes the preload requirements.
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-func CheckResponse(response http.Response) Issues {
+func CheckResponse(resp http.Response) Issues {
 	issues := NewIssues()
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	hstsHeaders := response.Header[key]
+	hstsHeaders := resp.Header[key]
 
 	switch {
 	case len(hstsHeaders) == 0:

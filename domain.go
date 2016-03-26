@@ -52,11 +52,11 @@ func CheckDomain(domain string) Issues {
 
 	// Start with an initial probe, and don't do the follow-up checks if
 	// we can't connect.
-	response, responseIssues := getResponse(domain)
-	issues = combineIssues(issues, responseIssues)
-	if len(responseIssues.Errors) == 0 {
-		issues = combineIssues(issues, checkChain(certChain(*response.TLS), domain))
-		issues = combineIssues(issues, CheckResponse(*response))
+	resp, respIssues := getResponse(domain)
+	issues = combineIssues(issues, respIssues)
+	if len(respIssues.Errors) == 0 {
+		issues = combineIssues(issues, checkChain(certChain(*resp.TLS), domain))
+		issues = combineIssues(issues, CheckResponse(*resp))
 
 		// Skip the WWW check if the domain is not eTLD+1.
 		if len(eTLD1Issues.Errors) == 0 {
@@ -78,10 +78,10 @@ func getResponse(domain string) (*http.Response, Issues) {
 		},
 	}
 
-	response, err := client.Get("https://" + domain)
+	resp, err := client.Get("https://" + domain)
 	if err != nil {
 		if urlError, ok := err.(*url.Error); !ok || urlError.Err != redirectPrevented {
-			return response, issues.addErrorf(
+			return resp, issues.addErrorf(
 				"Cannot connect using TLS (%q). This might be caused by an incomplete "+
 					"certificate chain, which causes issues on mobile devices. "+
 					"Check out your site at https://www.ssllabs.com/ssltest/",
@@ -90,7 +90,7 @@ func getResponse(domain string) (*http.Response, Issues) {
 		}
 	}
 
-	return response, issues
+	return resp, issues
 }
 
 func checkDomainFormat(domain string) Issues {

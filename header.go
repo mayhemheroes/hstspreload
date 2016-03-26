@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// Value that indictes when HSTSHeader.MaxAge is invalid.
+	// MAX_AGE_NOT_PRESENT  indicates that a HSTSHeader.MaxAge value is invalid.
 	MAX_AGE_NOT_PRESENT = (-1)
 
 	// 18 weeks
@@ -17,7 +17,9 @@ const (
 	hstsChromeMaxAgeCapOneYear = 86400 * 365 // seconds
 )
 
-// Unless all values are known at initialization time, use
+// An HSTSHeader stores the semantics of an HSTS header.
+//
+// Note: Unless all values are known at initialization time, use
 // NewHSTSHeader() instead of constructing an `HSTSHeader` directly.
 // This makes sure that `MaxAge` is initialized to
 // `MAX_AGE_NOT_PRESENT`.
@@ -29,6 +31,15 @@ type HSTSHeader struct {
 	Preload           bool
 }
 
+// NewHSTSHeader constructs a new header with all directive values un-set.
+//
+// It is requivalent to:
+//
+//     HSTSHeader{
+//       Preload:           false,
+//       IncludeSubDomains: false,
+//       MaxAge:            MAX_AGE_NOT_PRESENT,
+//     }
 func NewHSTSHeader() HSTSHeader {
 	return HSTSHeader{
 		Preload:           false,
@@ -83,13 +94,12 @@ func parseMaxAge(directive string) (int64, Issues) {
 	return maxAge, issues
 }
 
-// This function parses an HSTS header.
+// ParseHeaderString parses an HSTS header.
 //
 // It will report syntax errors and warnings, but does NOT calculate
-// whether the header value is semantically valid.
-//
-// To interpret the issues, see the list of conventions in the
-// documentation for `Issues`.
+// whether the header value is semantically valid. To interpret the
+// returned issues, see the list of conventions in the documentation for
+// `Issues`.
 //
 // Example Usage:
 //
@@ -177,8 +187,8 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	return hstsHeader, issues
 }
 
-// This function checks whether the `HSTSHeader` matches all
-// requirements for preloading in Chromium.
+// CheckHeader checks whether `hstsHeader` satisfies all requirements
+// for preloading in Chromium.
 //
 // To interpret the result, see the list of conventions in the
 // documentation for `Issues`.
@@ -220,8 +230,9 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 	return issues
 }
 
-// This convenience function calls ParseHeaderString() and then calls on
-// the parsed headerCheckHeader(). It returns all issues from both calls, combined.
+// CheckHeaderString is a convenience function that calls
+// ParseHeaderString() and then calls on CheckHeader() the parsed
+// headerCheckHeader(). It returns all issues from both calls, combined.
 //
 // To interpret the result, see the list of conventions in the
 // documentation for `Issues`.

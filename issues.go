@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// The `Issues` struct encapsulates a set of errors and warnings.
+// The Issues struct encapsulates a set of errors and warnings.
 // By convention:
 //
 //   - `Errors` contains a list of errors that will prevent preloading.
@@ -27,6 +27,7 @@ type Issues struct {
 	Warnings []string
 }
 
+// NewIssues constructs a new, empty Issues struct.
 func NewIssues() Issues {
 	return Issues{
 		Errors:   []string{},

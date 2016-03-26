@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// Checks whether the domain passes HSTS preload requirements for Chromium.
-// This includes:
+// CheckDomain checks whether the domain passes HSTS preload
+// requirements for Chromium. This includes:
 //
 //   - Serving a single HSTS header that passes header requirements.
 //   - Using TLS settings that will not cause new problems for

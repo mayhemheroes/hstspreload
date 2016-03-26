@@ -10,13 +10,6 @@ import (
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-//
-// Example Usage:
-//
-//     response, err := http.Get("localhost:8080")
-//     if err != nil {
-//       CheckResponse(response)
-//     }
 func CheckResponse(response *http.Response) Issues {
 	issues := NewIssues()
 

@@ -1,8 +1,14 @@
 package hstspreload
 
 import (
+	"fmt"
 	"testing"
 )
+
+func ExampleCheckDomain() {
+	issues := CheckDomain("wikipedia.org")
+	fmt.Printf("%v", issues)
+}
 
 // Avoid hitting the network for short tests.
 // This gives us performant, deterministic, and offline testing.

@@ -1,9 +1,18 @@
 package hstspreload
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
+
+func ExampleCheckResponse() {
+	response, err := http.Get("localhost:8080")
+	if err != nil {
+		issues := CheckResponse(response)
+		fmt.Printf("%v", issues)
+	}
+}
 
 func TestCheckResponseGoodHeader(t *testing.T) {
 	var response http.Response

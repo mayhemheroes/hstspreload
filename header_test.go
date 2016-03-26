@@ -1,8 +1,14 @@
 package hstspreload
 
 import (
+	"fmt"
 	"testing"
 )
+
+func ExampleParseHeaderString() {
+	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
+	fmt.Printf("%v\n%v", hstsHeader, issues)
+}
 
 /******** HSTSHeader Comparison *********/
 

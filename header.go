@@ -84,13 +84,6 @@ func parseMaxAge(directive string) (int64, Issues) {
 //
 // To interpret the Issues that are returned, see the list of
 // conventions in the documentation for Issues.
-//
-// Example Usage:
-//
-//     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
-//
-//     issues.Errors[0] == []string{"Syntax error: A max-age directive name is present without an associated value."}
-//     issues.Warnings[0] == []string{"Syntax warning: Header includes an empty directive or extra semicolon."}
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 	hstsHeader := NewHSTSHeader()
 	issues := NewIssues()
@@ -220,13 +213,6 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-//
-// Example Usage:
-//
-//     hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
-//
-//     hstsHeader.Errors[0] == "Header requirement error: Header must contain the `preload` directive."
-//     hstsHeader.Warnings[0] == "Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."
 func CheckHeaderString(headerString string) Issues {
 	hstsHeader, issues := ParseHeaderString(headerString)
 	return combineIssues(issues, CheckHeader(hstsHeader))

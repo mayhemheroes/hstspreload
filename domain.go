@@ -26,10 +26,6 @@ import (
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-//
-// Example usage:
-//
-//     issues := CheckDomain("wikipedia.org")
 func CheckDomain(domain string) Issues {
 	issues := NewIssues()
 

@@ -53,35 +53,35 @@ func TestCheckDomainWithValidHSTS(t *testing.T) {
 func TestCheckDomainSubdomain(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("en.wikipedia.org"),
-		NewIssues().addError("Domain error: not eTLD+1."),
+		NewIssues().addErrorf("Domain error: not eTLD+1."),
 	)
 }
 
 func TestCheckDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.com"),
-		NewIssues().addError("Response error: No HSTS headers are present on the response."))
+		NewIssues().addErrorf("Response error: No HSTS headers are present on the response."))
 }
 
 func TestCheckDomainBogusDomain(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.notadomain"),
-		NewIssues().addError("Domain error: Cannot connect to domain (example.notadomain). Error: [Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host]"))
+		NewIssues().addErrorf("Domain error: Cannot connect to domain (example.notadomain). Error: [Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host]"))
 }
 
 /******** Utility functions tests. ********/
 
 func TestCheckDomainName(t *testing.T) {
 	expectIssuesEqual(t, checkDomainName(".example.com"),
-		NewIssues().addError("Domain name error: begins with `.`"))
+		NewIssues().addErrorf("Domain name error: begins with `.`"))
 	expectIssuesEqual(t, checkDomainName("example.com."),
-		NewIssues().addError("Domain name error: ends with `.`"))
+		NewIssues().addErrorf("Domain name error: ends with `.`"))
 	expectIssuesEqual(t, checkDomainName("example..com"),
-		NewIssues().addError("Domain name error: contains `..`"))
+		NewIssues().addErrorf("Domain name error: contains `..`"))
 	expectIssuesEqual(t, checkDomainName("example"),
-		NewIssues().addError("Domain name error: must have at least two labels."))
+		NewIssues().addErrorf("Domain name error: must have at least two labels."))
 	expectIssuesEqual(t, checkDomainName("example&co.com"),
-		NewIssues().addError("Domain name error: contains invalid characters."))
+		NewIssues().addErrorf("Domain name error: contains invalid characters."))
 	expectIssuesEqual(t, checkDomainName("subdomain.example.com"),
-		NewIssues().addError("Domain error: not eTLD+1."))
+		NewIssues().addErrorf("Domain error: not eTLD+1."))
 }

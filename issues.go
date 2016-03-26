@@ -35,36 +35,46 @@ func NewIssues() Issues {
 	}
 }
 
-func (issues Issues) addError(err string) Issues {
+func (issues Issues) addErrorf(format string, args ...interface{}) Issues {
+	formattedError := fmt.Sprintf(format, args...)
 	return Issues{
-		Errors:   append(issues.Errors, err),
+		Errors:   append(issues.Errors, formattedError),
 		Warnings: issues.Warnings,
 	}
 }
 
-func (issues Issues) addWarning(warning string) Issues {
+func (issues Issues) addWarningf(format string, args ...interface{}) Issues {
+	formattedWarning := fmt.Sprintf(format, args...)
 	return Issues{
 		Errors:   issues.Errors,
-		Warnings: append(issues.Warnings, warning),
+		Warnings: append(issues.Warnings, formattedWarning),
 	}
 }
 
-func (issues Issues) addUniqueError(uniqueErr string) Issues {
+func (issues Issues) addUniqueErrorf(format string, args ...interface{}) Issues {
+	formattedError := fmt.Sprintf(format, args...)
 	for _, err := range issues.Errors {
-		if err == uniqueErr {
+		if err == formattedError {
 			return issues
 		}
 	}
-	return issues.addError(uniqueErr)
+	return Issues{
+		Errors:   append(issues.Errors, formattedError),
+		Warnings: issues.Warnings,
+	}
 }
 
-func (issues Issues) addUniqueWarning(uniqueWarning string) Issues {
+func (issues Issues) addUniqueWarningf(format string, args ...interface{}) Issues {
+	formattedWarning := fmt.Sprintf(format, args...)
 	for _, warning := range issues.Warnings {
-		if warning == uniqueWarning {
+		if warning == formattedWarning {
 			return issues
 		}
 	}
-	return issues.addWarning(uniqueWarning)
+	return Issues{
+		Errors:   issues.Errors,
+		Warnings: append(issues.Warnings, formattedWarning),
+	}
 }
 
 func combineIssues(issues1 Issues, issues2 Issues) Issues {

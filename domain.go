@@ -35,7 +35,7 @@ func CheckDomain(domain string) Issues {
 	response, err := http.Get("https://" + domain)
 	if err != nil {
 		// cannot continue => return early
-		return issues.addError(fmt.Sprintf("Domain error: Cannot connect to domain (%s). Error: [%s]", domain, err))
+		return issues.addErrorf("Domain error: Cannot connect to domain (%s). Error: [%s]", domain, err)
 	}
 
 	issues = combineIssues(issues, checkTLS(domain))
@@ -48,16 +48,16 @@ func checkDomainName(domain string) Issues {
 	issues := NewIssues()
 
 	if strings.HasPrefix(domain, ".") {
-		return issues.addError("Domain name error: begins with `.`")
+		return issues.addErrorf("Domain name error: begins with `.`")
 	}
 	if strings.HasSuffix(domain, ".") {
-		return issues.addError("Domain name error: ends with `.`")
+		return issues.addErrorf("Domain name error: ends with `.`")
 	}
 	if strings.Index(domain, "..") != -1 {
-		return issues.addError("Domain name error: contains `..`")
+		return issues.addErrorf("Domain name error: contains `..`")
 	}
 	if strings.Count(domain, ".") < 1 {
-		return issues.addError("Domain name error: must have at least two labels.")
+		return issues.addErrorf("Domain name error: must have at least two labels.")
 	}
 
 	domain = strings.ToLower(domain)
@@ -66,15 +66,15 @@ func checkDomainName(domain string) Issues {
 			continue
 		}
 
-		return issues.addError("Domain name error: contains invalid characters.")
+		return issues.addErrorf("Domain name error: contains invalid characters.")
 	}
 
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
-		return issues.addError("Internal error: could not compute eTLD+1.")
+		return issues.addErrorf("Internal error: could not compute eTLD+1.")
 	}
 	if canon != domain {
-		return issues.addError("Domain error: not eTLD+1.")
+		return issues.addErrorf("Domain error: not eTLD+1.")
 	}
 
 	return issues
@@ -103,7 +103,7 @@ func checkDomainName(domain string) Issues {
 // 	// needs to present a full chain without SHA-1 in order to check out.
 
 // 	if firstSHA1, foundSHA1 := findPropertyInChain(isSHA1, connectionState.PeerCertificates); foundSHA1 {
-// 		issues = issues.addError(fmt.Sprintf(
+// 		issues = issues.addErrorf(fmt.Sprintf(
 // 			"Certificate error: The server sent a SHA-1 certificate (issued to %s by %s).",
 // 			certificateSubjectSummary(firstSHA1),
 // 			firstSHA1.Issuer.Organization,
@@ -112,7 +112,7 @@ func checkDomainName(domain string) Issues {
 
 // 	if firstECDSA, foundECDSA := findPropertyInChain(isECDSA, connectionState.PeerCertificates); foundECDSA {
 // 		// TODO: allow if redirecting to HTTP.
-// 		issues = issues.addError(fmt.Sprintf(
+// 		issues = issues.addErrorf(fmt.Sprintf(
 // 			"Certificate error: The server sent an ECDSA certificate (issued to %s by %s).",
 // 			certificateSubjectSummary(firstECDSA),
 // 			firstECDSA.Issuer.Organization,
@@ -139,13 +139,13 @@ func checkTLS(host string) Issues {
 
 	conn, err := tls.DialWithDialer(&dialer, "tcp", host+":443", nil)
 	if err != nil {
-		return issues.addError(fmt.Sprintf("Cannot connect using TLS (%q). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://ssllabs.com.", err))
+		return issues.addErrorf("Cannot connect using TLS (%q). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://ssllabs.com.", err)
 	}
 	chain := certChain(conn.ConnectionState())
 	conn.Close()
 
 	if firstSHA1, ok := findPropertyInChain(isSHA1, chain); ok && chain[0].NotAfter.Year() >= 2016 {
-		return issues.addError(fmt.Sprintf("One or more of the certificates in your certificate chain is signed with SHA-1, but the leaf certificate extends into 2016. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of %q.)", firstSHA1.Subject.CommonName))
+		return issues.addErrorf("One or more of the certificates in your certificate chain is signed with SHA-1, but the leaf certificate extends into 2016. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of %q.)", firstSHA1.Subject.CommonName)
 	}
 
 	if firstECDSA, ok := findPropertyInChain(isECDSA, chain); ok {
@@ -173,7 +173,7 @@ func checkTLS(host string) Issues {
 		}
 
 		if !ecdsaOk {
-			return issues.addError(fmt.Sprintf("One or more of the certificates in your certificate chain use ECDSA. However, ECDSA can't be handled on Windows XP so adding your site would break it on that platform. If you don't care about Windows XP, you can have a blanket redirect from HTTP to HTTPS. (The first ECDSA certificate found has a common-name of %q. %s)", firstECDSA.Subject.CommonName, redirectMsg))
+			return issues.addErrorf("One or more of the certificates in your certificate chain use ECDSA. However, ECDSA can't be handled on Windows XP so adding your site would break it on that platform. If you don't care about Windows XP, you can have a blanket redirect from HTTP to HTTPS. (The first ECDSA certificate found has a common-name of %q. %s)", firstECDSA.Subject.CommonName, redirectMsg)
 		}
 	}
 
@@ -186,7 +186,7 @@ func checkTLS(host string) Issues {
 	if hasWWW {
 		wwwConn, err := tls.DialWithDialer(&dialer, "tcp", "www."+host+":443", nil)
 		if err != nil {
-			return issues.addError(fmt.Sprintf("The www subdomain exists, but we couldn't connect to it (%q). Since many people type this by habit, HSTS preloading would likely cause issues for your site.", err))
+			return issues.addErrorf("The www subdomain exists, but we couldn't connect to it (%q). Since many people type this by habit, HSTS preloading would likely cause issues for your site.", err)
 		}
 		wwwConn.Close()
 	}

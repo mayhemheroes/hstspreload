@@ -111,47 +111,47 @@ func TestIssuesEqual(t *testing.T) {
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{},
-	}, NewIssues().addError("Single Error"))
+	}, NewIssues().addErrorf("Single Error"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{},
-	}, NewIssues().addError("First Error").addError("Second Error"))
+	}, NewIssues().addErrorf("First Error").addErrorf("Second Error"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().addWarning("Single Warning"))
+	}, NewIssues().addWarningf("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarning("First Warning").addWarning("Second Warning"))
+	}, NewIssues().addWarningf("First Warning").addWarningf("Second Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().addError("Single Error").addWarning("Single Warning"))
+	}, NewIssues().addErrorf("Single Error").addWarningf("Single Warning"))
 
 	expectIssuesEqual(t, Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarning("First Warning").addError("First Error").addWarning("Second Warning").addError("Second Error"))
+	}, NewIssues().addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error"))
 }
 
 func TestIssuesNotEqual(t *testing.T) {
 	expectIssuesNotEqual(t,
-		NewIssues().addWarning("test"),
-		NewIssues().addError("test"),
+		NewIssues().addWarningf("test"),
+		NewIssues().addErrorf("test"),
 	)
 
 	expectIssuesNotEqual(t,
-		NewIssues().addError("first").addError("second"),
-		NewIssues().addError("first"),
+		NewIssues().addErrorf("first").addErrorf("second"),
+		NewIssues().addErrorf("first"),
 	)
 
 	expectIssuesNotEqual(t,
-		NewIssues().addError("pie").addError("cake").addError("anything you bake"),
-		NewIssues().addError("cake").addError("pie").addError("anything you bake"),
+		NewIssues().addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
+		NewIssues().addErrorf("cake").addErrorf("pie").addErrorf("anything you bake"),
 	)
 }

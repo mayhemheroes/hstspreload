@@ -46,7 +46,7 @@ func TestCheckDomainIncompleteChain(t *testing.T) {
 		Issues{
 			Errors: []string{
 				"Domain error: `incomplete-chain.badssl.com` is not eTLD+1. Please preload `badssl.com` instead.",
-				`Cannot connect using TLS ("x509: certificate signed by unknown authority"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/`,
+				`Cannot connect using TLS ("Get https://incomplete-chain.badssl.com: x509: certificate signed by unknown authority"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/`,
 			},
 			Warnings: []string{},
 		},
@@ -88,5 +88,5 @@ func TestCheckDomainWithoutHSTS(t *testing.T) {
 func TestCheckDomainBogusDomain(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.notadomain"),
-		NewIssues().addErrorf(`Cannot connect using TLS ("dial tcp: lookup example.notadomain: no such host"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/`))
+		NewIssues().addErrorf(`Cannot connect using TLS ("Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/`))
 }

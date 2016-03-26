@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	// MAX_AGE_NOT_PRESENT  indicates that a HSTSHeader.MaxAge value is invalid.
-	MAX_AGE_NOT_PRESENT = (-1)
+	// MaxAgeNotPresent indicates that a HSTSHeader.MaxAge value is invalid.
+	MaxAgeNotPresent = (-1)
 
 	// 18 weeks
 	hstsMinimumMaxAge = 10886400 // seconds
@@ -22,9 +22,9 @@ const (
 // Note: Unless all values are known at initialization time, use
 // NewHSTSHeader() instead of constructing an `HSTSHeader` directly.
 // This makes sure that `MaxAge` is initialized to
-// `MAX_AGE_NOT_PRESENT`.
+// `MaxAgeNotPresent`.
 type HSTSHeader struct {
-	// MaxAge == MAX_AGE_NOT_PRESENT indicates that this value is invalid.
+	// MaxAge == MaxAgeNotPresent indicates that this value is invalid.
 	// A valid `MaxAge` value is a non-negative integer.
 	MaxAge            int64
 	IncludeSubDomains bool
@@ -38,13 +38,13 @@ type HSTSHeader struct {
 //     HSTSHeader{
 //       Preload:           false,
 //       IncludeSubDomains: false,
-//       MaxAge:            MAX_AGE_NOT_PRESENT,
+//       MaxAge:            MaxAgeNotPresent,
 //     }
 func NewHSTSHeader() HSTSHeader {
 	return HSTSHeader{
 		Preload:           false,
 		IncludeSubDomains: false,
-		MaxAge:            MAX_AGE_NOT_PRESENT,
+		MaxAge:            MaxAgeNotPresent,
 	}
 }
 
@@ -77,18 +77,18 @@ func parseMaxAge(directive string) (int64, Issues) {
 			issues = issues.addWarning(fmt.Sprintf("Syntax warning: max-age value contains a leading 0: `%s`", directive))
 		}
 		if c < '0' || c > '9' {
-			return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", directive))
+			return MaxAgeNotPresent, issues.addError(fmt.Sprintf("Syntax error: max-age value contains characters that are not digits: `%s`", directive))
 		}
 	}
 
 	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
 
 	if err != nil {
-		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value `%s`.", maxAgeNumericalString))
+		return MaxAgeNotPresent, issues.addError(fmt.Sprintf("Syntax error: Could not parse max-age value `%s`.", maxAgeNumericalString))
 	}
 
 	if maxAge < 0 {
-		return MAX_AGE_NOT_PRESENT, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%d`", maxAge))
+		return MaxAgeNotPresent, issues.addError(fmt.Sprintf("Internal error: unexpected negative integer: `%d`", maxAge))
 	}
 
 	return maxAge, issues
@@ -168,7 +168,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 				continue
 			}
 
-			if hstsHeader.MaxAge == MAX_AGE_NOT_PRESENT {
+			if hstsHeader.MaxAge == MaxAgeNotPresent {
 				hstsHeader.MaxAge = maxAge
 			} else {
 				issues = issues.addUniqueWarning(fmt.Sprintf("Syntax warning: Header contains a repeated directive: `max-age`"))
@@ -206,11 +206,11 @@ func CheckHeader(hstsHeader HSTSHeader) Issues {
 	}
 
 	switch {
-	case hstsHeader.MaxAge == MAX_AGE_NOT_PRESENT:
+	case hstsHeader.MaxAge == MaxAgeNotPresent:
 		issues = issues.addError("Header requirement error: Header must contain a valid `max-age` directive.")
 
 	case hstsHeader.MaxAge < 0:
-		issues = issues.addError(fmt.Sprintf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MAX_AGE_NOT_PRESENT: %d", hstsHeader.MaxAge))
+		issues = issues.addError(fmt.Sprintf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge))
 
 	case hstsHeader.MaxAge < hstsMinimumMaxAge:
 		issues = issues.addError(fmt.Sprintf(

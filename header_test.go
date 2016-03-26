@@ -72,7 +72,7 @@ func TestParseHeaderStringWithoutMaxAge(t *testing.T) {
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		Preload:           true,
 		IncludeSubDomains: true,
-		MaxAge:            MAX_AGE_NOT_PRESENT,
+		MaxAge:            MaxAgeNotPresent,
 	})
 }
 
@@ -145,7 +145,7 @@ func TestParseHeaderStringEmpty(t *testing.T) {
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		Preload:           false,
 		IncludeSubDomains: false,
-		MaxAge:            MAX_AGE_NOT_PRESENT,
+		MaxAge:            MaxAgeNotPresent,
 	})
 }
 
@@ -206,7 +206,7 @@ func TestParseHeaderStringSemicolonOnly(t *testing.T) {
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		Preload:           false,
 		IncludeSubDomains: false,
-		MaxAge:            MAX_AGE_NOT_PRESENT,
+		MaxAge:            MaxAgeNotPresent,
 	})
 }
 
@@ -273,7 +273,7 @@ func TestParseHeaderStringMaxAgeWithoutValueAndTrailingSemicolon(t *testing.T) {
 	expectHeadersEqual(t, hstsHeader, HSTSHeader{
 		Preload:           false,
 		IncludeSubDomains: true,
-		MaxAge:            MAX_AGE_NOT_PRESENT,
+		MaxAge:            MaxAgeNotPresent,
 	})
 }
 
@@ -303,7 +303,7 @@ func TestCheckHeaderMaxAgeNotPresent(t *testing.T) {
 			IncludeSubDomains: true,
 			MaxAge:            -2,
 		}),
-		NewIssues().addError("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MAX_AGE_NOT_PRESENT: -2"),
+		NewIssues().addError("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2"),
 	)
 }
 

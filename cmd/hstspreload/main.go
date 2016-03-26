@@ -68,7 +68,7 @@ Return code:
 			fmt.Fprintf(os.Stderr, "Could not connect to URL: %s\n", args[1])
 			os.Exit(3)
 		}
-		issues = hstspreload.CheckResponse(response)
+		issues = hstspreload.CheckResponse(*response)
 
 	case "domain":
 		if strings.HasPrefix(args[1], "http") {

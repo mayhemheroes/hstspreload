@@ -74,33 +74,6 @@ func combineIssues(issues1 Issues, issues2 Issues) Issues {
 	}
 }
 
-// Includes ordering of errors and warnings.
-func issuesEqual(issues1 Issues, issues2 Issues) bool {
-	// reflect.DeepEqual seems to have false negatives, so we don't use it.
-
-	if len(issues1.Errors) != len(issues2.Errors) {
-		return false
-	}
-
-	if len(issues1.Warnings) != len(issues2.Warnings) {
-		return false
-	}
-
-	for e := range issues1.Errors {
-		if issues1.Errors[e] != issues2.Errors[e] {
-			return false
-		}
-	}
-
-	for w := range issues1.Warnings {
-		if issues1.Warnings[w] != issues2.Warnings[w] {
-			return false
-		}
-	}
-
-	return true
-}
-
 func formatIssueListForString(list []string) string {
 	output := ""
 	if len(list) > 1 {

@@ -4,6 +4,24 @@ import (
 	"testing"
 )
 
+/******** HSTSHeader Comparison *********/
+
+func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
+	if header1.Preload != header2.Preload {
+		return false
+	}
+
+	if header1.IncludeSubDomains != header2.IncludeSubDomains {
+		return false
+	}
+
+	if header1.MaxAge != header2.MaxAge {
+		return false
+	}
+
+	return true
+}
+
 func TestHeadersEqual(t *testing.T) {
 	if !headersEqual(
 		HSTSHeader{

@@ -8,5 +8,5 @@ install:
   - go get golang.org/x/net/publicsuffix
 
 script:
-  - go test -v
+  - go test -v --short
   - make test-build-travis

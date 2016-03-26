@@ -139,16 +139,27 @@ func checkTLS(host string) Issues {
 
 	conn, err := tls.DialWithDialer(&dialer, "tcp", host+":443", nil)
 	if err != nil {
-		return issues.addErrorf("Cannot connect using TLS (%q). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://ssllabs.com.", err)
+		return issues.addErrorf(
+			"Cannot connect using TLS (%q). This might be caused by an incomplete"+
+				"certificate chain, which causes issues on mobile devices."+
+				"Check out your site at https://www.ssllabs.com/ssltest/",
+			err,
+		)
 	}
 	chain := certChain(conn.ConnectionState())
 	conn.Close()
 
-	if firstSHA1, ok := findPropertyInChain(isSHA1, chain); ok && chain[0].NotAfter.Year() >= 2016 {
-		return issues.addErrorf("One or more of the certificates in your certificate chain is signed with SHA-1, but the leaf certificate extends into 2016. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of %q.)", firstSHA1.Subject.CommonName)
+	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
+		issues = issues.addErrorf(
+			"One or more of the certificates in your certificate chain is signed with SHA-1."+
+				"This needs to be replaced."+
+				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html."+
+				"(The first SHA-1 certificate found has a common-name of %q.)",
+			firstSHA1.Subject.CommonName,
+		)
 	}
 
-	if firstECDSA, ok := findPropertyInChain(isECDSA, chain); ok {
+	if firstECDSA, found := findPropertyInChain(isECDSA, chain); found {
 		// There's an ECDSA certificate. Allow it if HTTP redirects to
 		// HTTPS with ECDSA or if port 80 is closed.
 		resp, err := http.Get("http://" + host)
@@ -160,20 +171,36 @@ func checkTLS(host string) Issues {
 			if resp.TLS != nil {
 				_, ecdsaOk = findPropertyInChain(isECDSA, certChain(*resp.TLS))
 				if !ecdsaOk {
-					redirectMsg = fmt.Sprintf("HTTP redirected to %q, but that site doesn't have an ECDSA certificate", resp.Request.URL)
+					redirectMsg = fmt.Sprintf(
+						"HTTP redirected to %q, but that site doesn't have an ECDSA certificate",
+						resp.Request.URL,
+					)
 				}
 			} else {
-				redirectMsg = fmt.Sprintf("HTTP didn't redirect to an HTTPS URL")
+				redirectMsg = fmt.Sprintf(
+					"HTTP didn't redirect to an HTTPS URL",
+				)
 			}
 			resp.Body.Close()
 		} else if isConnectionRefused(err) {
 			ecdsaOk = true
 		} else {
-			redirectMsg = fmt.Sprintf("Looking for a redirect from HTTP resulted in an error: %q", err)
+			issues = issues.addErrorf(
+				"Looking for a redirect from HTTP resulted in an error: %q",
+				err,
+			)
 		}
 
 		if !ecdsaOk {
-			return issues.addErrorf("One or more of the certificates in your certificate chain use ECDSA. However, ECDSA can't be handled on Windows XP so adding your site would break it on that platform. If you don't care about Windows XP, you can have a blanket redirect from HTTP to HTTPS. (The first ECDSA certificate found has a common-name of %q. %s)", firstECDSA.Subject.CommonName, redirectMsg)
+			issues = issues.addErrorf(
+				"One or more of the certificates in your certificate chain use ECDSA. "+
+					"However, ECDSA can't be handled on Windows XP so adding your site"+
+					"would break it on that platform. If you don't care about Windows XP,"+
+					"you can have a blanket redirect from HTTP to HTTPS."+
+					"(The first ECDSA certificate found has a common-name of %q. %s)",
+				firstECDSA.Subject.CommonName,
+				redirectMsg,
+			)
 		}
 	}
 

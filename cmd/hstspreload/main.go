@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 
@@ -24,18 +23,14 @@ Usage:
 
 The commands are:
 
-  header    Check an HSTS header for preload requirements
-  url       Check the headers of a URL for preload requirements.
-            Both http:// and https:// URLs can be checked, so the
-            scheme must be specified.
-  domain    Check the TLS configuration and headers of a domain for
-            preload requirements.
+  checkheader    Check an HSTS header for preload requirements
+  checkdomain    Check the TLS configuration and headers of a domain for
+                 preload requirements.
 
 Examples:
 
-  hstspreload header "max-age=10886400; includeSubDomains; preload"
-  hstspreload url http://localhost:8080
-  hstspreload domain wikipedia.org
+  hstspreload checkheader "max-age=10886400; includeSubDomains; preload"
+  hstspreload checkdomain wikipedia.org
 
 Return code:
 
@@ -53,30 +48,19 @@ Return code:
 	var issues hstspreload.Issues
 
 	switch args[0] {
-	case "header":
+	case "checkheader":
 		issues = hstspreload.CheckHeaderString(args[1])
 
-	case "url":
-		if !strings.HasPrefix(args[1], "http") {
-			fmt.Fprintf(os.Stderr,
-				"Invalid argument: Please supply a scheme (http:// or https://) for the URL.\n")
-			os.Exit(3)
-		}
-
-		response, err := http.Get(args[1])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not connect to URL: %s\n", args[1])
-			os.Exit(3)
-		}
-		issues = hstspreload.CheckResponse(*response)
-
-	case "domain":
+	case "checkdomain":
 		if strings.HasPrefix(args[1], "http") {
 			fmt.Fprintf(os.Stderr,
 				"Invalid argument: Please do not supply a scheme (http:// or https://) before the domain.\n")
 			os.Exit(3)
 		}
 		issues = hstspreload.CheckDomain(args[1])
+
+	default:
+		os.Exit(4)
 	}
 
 	// TODO: Show the HSTS header sent by the domain.

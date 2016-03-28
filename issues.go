@@ -2,7 +2,6 @@ package hstspreload
 
 import (
 	"fmt"
-	"strings"
 )
 
 // The Issues struct encapsulates a set of errors and warnings.
@@ -87,19 +86,25 @@ func combineIssues(issues1 Issues, issues2 Issues) Issues {
 func formatIssueListForString(list []string) string {
 	output := ""
 	if len(list) > 1 {
-		output = fmt.Sprintf(`
-		"%s", 
-	`, strings.Join(list, `",
-		"`))
+		for _, s := range list {
+			output += fmt.Sprintf(
+				"\n		%#v,",
+				s,
+			)
+		}
+		output += "\n	"
 	} else if len(list) == 1 {
-		output = fmt.Sprintf(`"%s"`, list[0])
+		output = fmt.Sprintf(`%#v`, list[0])
 	}
 
 	return output
 }
 
-func (issues Issues) String() string {
-	return fmt.Sprintf(`Issues {
+// Multi-line Go source formatting for Issues.
+// This is mainly used to provide output for unit tests in this project
+// that can be pasted back into the relevant unit tess.
+func (issues Issues) GoString() string {
+	return fmt.Sprintf(`Issues{
 	Errors: []string{%s},
 	Warnings: []string{%s},
 }`,

@@ -46,7 +46,7 @@ func TestCheckDomainIncompleteChain(t *testing.T) {
 		Issues{
 			Errors: []string{
 				"Domain error: `incomplete-chain.badssl.com` is not eTLD+1. Please preload `badssl.com` instead.",
-				`Cannot connect using TLS ("Get https://incomplete-chain.badssl.com: x509: certificate signed by unknown authority"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/`,
+				"Cannot connect using TLS (\"Get https://incomplete-chain.badssl.com: x509: certificate signed by unknown authority\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/",
 			},
 			Warnings: []string{},
 		},
@@ -59,7 +59,7 @@ func TestCheckDomainSHA1(t *testing.T) {
 		Issues{
 			Errors: []string{
 				"Domain error: `sha1.badssl.com` is not eTLD+1. Please preload `badssl.com` instead.",
-				`One or more of the certificates in your certificate chain is signed with SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of "*.badssl.com".)`,
+				"One or more of the certificates in your certificate chain is signed with SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of \"*.badssl.com\".)",
 				"Response error: No HSTS headers are present on the response.",
 			},
 			Warnings: []string{},

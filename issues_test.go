@@ -57,11 +57,11 @@ func expectIssuesEqualImpl(t *testing.T, actual Issues, expected Issues, levelsU
 
 ## Actual
 
-%v
+%#v
 
 ## Expected
 
-%v
+%#v
 
 `, file, line, actual, expected)
 	}
@@ -74,11 +74,11 @@ func expectIssuesNotEqual(t *testing.T, actual Issues, expected Issues) {
 
 ## Actual
 
-%v
+%#v
 
 ## (Not) Expected
 
-%v
+%#v
 
 `, file, line, actual, expected)
 	}

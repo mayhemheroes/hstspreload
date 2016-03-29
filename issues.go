@@ -22,8 +22,8 @@ import (
 // server") may bring another error to light (e.g. "HSTS header was
 // not found").
 type Issues struct {
-	Errors   []string
-	Warnings []string
+	Errors   []string `json:"errors"`
+	Warnings []string `json:"warnings"`
 }
 
 // NewIssues constructs a new, empty Issues struct.
@@ -111,4 +111,19 @@ func (issues Issues) GoString() string {
 		formatIssueListForString(issues.Errors),
 		formatIssueListForString(issues.Warnings),
 	)
+}
+
+// MakeSlices() replaces empty Errors or Warnings with make([]string, 0)
+//
+// When converting Issues to JSON, it may be desirable for empty errors
+// to be marshalled as `[]` instead of `null`. To ensure this, call
+// MakeSlices() on the Issues first.
+func MakeSlices(issues Issues) Issues {
+	if len(issues.Errors) == 0 {
+		issues.Errors = make([]string, 0)
+	}
+	if len(issues.Warnings) == 0 {
+		issues.Warnings = make([]string, 0)
+	}
+	return issues
 }

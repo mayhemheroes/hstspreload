@@ -1,10 +1,29 @@
 package hstspreload
 
 import (
+	"encoding/json"
+	"fmt"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+func ExampleMakeSlices() {
+	// Default output
+	issues := Issues{}
+	if b, err := json.Marshal(issues); err == nil {
+		fmt.Printf("%s\n", b)
+	}
+
+	// Make slices
+	issues = MakeSlices(Issues{})
+	if b, err := json.Marshal(issues); err == nil {
+		fmt.Printf("%s\n", b)
+	}
+	// Output:
+	// {"errors":null,"warnings":null}
+	// {"errors":[],"warnings":[]}
+}
 
 // Includes ordering of errors and warnings.
 func issuesEqual(issues1 Issues, issues2 Issues) bool {

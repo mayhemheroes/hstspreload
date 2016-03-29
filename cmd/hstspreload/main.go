@@ -69,11 +69,9 @@ Return code:
 	showResult := func() int {
 		switch {
 		case len(issues.Errors) > 0:
-			fmt.Printf("There were was at least one error.\n\n%v\n", issues)
 			return 1
 
 		case len(issues.Warnings) > 0:
-			fmt.Printf("There were no errors, but at least one warning.\n\n%v\n", issues)
 			return 2
 
 		default:
@@ -81,6 +79,26 @@ Return code:
 			return 0
 		}
 	}
+	exitCode := showResult()
+	printList(issues.Errors, "Error")
+	printList(issues.Warnings, "Warning")
+	os.Exit(exitCode)
+}
 
-	os.Exit(showResult())
+func printList(list []string, title string) {
+	if len(list) == 0 {
+		return
+	}
+
+	titlePluralized := title
+	if len(list) != 1 {
+		titlePluralized += "s"
+	}
+	fmt.Printf("%s:\n", titlePluralized)
+
+	for i, s := range list {
+		fmt.Printf("\n%d. %s\n", i+1, s)
+	}
+
+	fmt.Printf("\n")
 }

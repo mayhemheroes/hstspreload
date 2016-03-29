@@ -100,7 +100,7 @@ func formatIssueListForString(list []string) string {
 	return output
 }
 
-// Multi-line Go source formatting for Issues.
+// GoString formats issues with multiple lines and indentation.
 // This is mainly used to provide output for unit tests in this project
 // that can be pasted back into the relevant unit tess.
 func (issues Issues) GoString() string {
@@ -113,7 +113,7 @@ func (issues Issues) GoString() string {
 	)
 }
 
-// MakeSlices() replaces empty Errors or Warnings with make([]string, 0)
+// MakeSlices replaces empty Errors or Warnings with make([]string, 0)
 //
 // When converting Issues to JSON, it may be desirable for empty errors
 // to be marshalled as `[]` instead of `null`. To ensure this, call

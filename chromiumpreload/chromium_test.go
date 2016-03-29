@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func GetLatest(t *testing.T) {
+func TestGetLatest(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping test to avoid preload list download.")
 	}

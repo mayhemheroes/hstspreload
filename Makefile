@@ -1,19 +1,20 @@
 .PHONY: test
 test: lint
-	go test
+	go test github.com/chromium/hstspreload
+	go test github.com/chromium/hstspreload/chromiumpreload
 
 .PHONY: test-build
 test-build:
-	go build -o /dev/null ./cmd/hstspreload/
-	go build -o /dev/null ./cmd/transport_security_state_static_generate/
-	go build -o /dev/null ./hstspreload.appspot.com/
+	go build -o /dev/null github.com/chromium/hstspreload/cmd/hstspreload/
+	go build -o /dev/null github.com/chromium/hstspreload/cmd/transport_security_state_static_generate/
+	go build -o /dev/null github.com/chromium/hstspreload/hstspreload.appspot.com/
 
 # Travis CI can't pipe to /dev/null
 .PHONY: test-build-travis
 test-build-travis:
-	go build -o temp1 ./cmd/hstspreload/
-	go build -o temp2 ./cmd/transport_security_state_static_generate/
-	go build -o temp3 ./hstspreload.appspot.com/
+	go build -o temp1 github.com/chromium/hstspreload/cmd/hstspreload/
+	go build -o temp2 github.com/chromium/hstspreload/cmd/transport_security_state_static_generate/
+	go build -o temp3 github.com/chromium/hstspreload/hstspreload.appspot.com/
 
 .PHONY: lint
 lint:

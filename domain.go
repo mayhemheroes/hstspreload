@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"golang.org/x/net/publicsuffix"
 	"net"
 	"net/http"
@@ -135,7 +134,6 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 // connections to see if an ECDSA cert is permissible.
 func checkChain(chain []*x509.Certificate, domain string) (issues Issues) {
 	issues = combineIssues(issues, checkSHA1(chain))
-	issues = combineIssues(issues, checkECDSA(chain, domain))
 
 	return issues
 }
@@ -149,55 +147,6 @@ func checkSHA1(chain []*x509.Certificate) (issues Issues) {
 				"(The first SHA-1 certificate found has a common-name of %q.)",
 			firstSHA1.Subject.CommonName,
 		)
-	}
-
-	return issues
-}
-
-func checkECDSA(chain []*x509.Certificate, domain string) (issues Issues) {
-	if firstECDSA, found := findPropertyInChain(isECDSA, chain); found {
-		// There's an ECDSA certificate. Allow it if HTTP redirects to
-		// HTTPS with ECDSA or if port 80 is closed.
-		resp, err := http.Get("http://" + domain)
-
-		var ecdsaOk bool
-		var redirectMsg string
-
-		if err == nil {
-			if resp.TLS != nil {
-				_, ecdsaOk = findPropertyInChain(isECDSA, certChain(*resp.TLS))
-				if !ecdsaOk {
-					redirectMsg = fmt.Sprintf(
-						"HTTP redirected to %q, but that site doesn't have an ECDSA certificate",
-						resp.Request.URL,
-					)
-				}
-			} else {
-				redirectMsg = fmt.Sprintf(
-					"HTTP didn't redirect to an HTTPS URL",
-				)
-			}
-			resp.Body.Close()
-		} else if isConnectionRefused(err) {
-			ecdsaOk = true
-		} else {
-			issues = issues.addErrorf(
-				"Looking for a redirect from HTTP resulted in an error: %q",
-				err,
-			)
-		}
-
-		if !ecdsaOk {
-			issues = issues.addErrorf(
-				"One or more of the certificates in your certificate chain use ECDSA. "+
-					"However, ECDSA can't be handled on Windows XP so adding your site "+
-					"would break it on that platform. If you don't care about Windows XP, "+
-					"you can have a blanket redirect from HTTP to HTTPS. "+
-					"(The first ECDSA certificate found has a common-name of %q. %s)",
-				firstECDSA.Subject.CommonName,
-				redirectMsg,
-			)
-		}
 	}
 
 	return issues

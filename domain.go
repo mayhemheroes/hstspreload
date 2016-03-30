@@ -162,7 +162,7 @@ func checkWWW(host string) (issues Issues) {
 		if err != nil {
 			return issues.addErrorf(
 				"The www subdomain exists, but we couldn't connect to it (%q). "+
-					"Since many people type this by habit, HSTS preloading would likely"+
+					"Since many people type this by habit, HSTS preloading would likely "+
 					"cause issues for your site.",
 				err,
 			)

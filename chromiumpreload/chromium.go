@@ -25,6 +25,8 @@ type PreloadList struct {
 	Entries []PreloadEntry `json:"entries"`
 }
 
+type Domain string
+
 // A PreloadEntry contains the data from an entry in the Chromium
 // Preload list.
 //
@@ -33,7 +35,7 @@ type PreloadList struct {
 // - IncludeSubDomains: If Mode == ForceHTTPS, forces HSTS to apply to
 //   all subdomains.
 type PreloadEntry struct {
-	Name              string `json:"name"`
+	Name              Domain `json:"name"`
 	Mode              string `json:"mode"`
 	IncludeSubDomains bool   `json:"include_subdomains"`
 }

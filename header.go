@@ -1,6 +1,7 @@
 package hstspreload
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -183,10 +184,15 @@ func CheckHeader(hstsHeader HSTSHeader) (issues Issues) {
 		issues = issues.addErrorf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge)
 
 	case hstsHeader.MaxAge < hstsMinimumMaxAge:
-		issues = issues.addErrorf(
+		errorStr := fmt.Sprintf(
 			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
 			hstsHeader.MaxAge,
 		)
+		if hstsHeader.MaxAge == 0 {
+			errorStr += " If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"
+		}
+
+		issues = issues.addErrorf(errorStr)
 
 	case hstsHeader.MaxAge > tenYears:
 		issues = issues.addWarningf(

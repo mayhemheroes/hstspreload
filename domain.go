@@ -50,7 +50,7 @@ func CheckDomain(domain string) (issues Issues) {
 	resp, respIssues := getResponse(domain)
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
-		issues = combineIssues(issues, checkChain(certChain(*resp.TLS), domain))
+		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
 		issues = combineIssues(issues, CheckResponse(*resp))
 
 		// Skip the WWW check if the domain is not eTLD+1.
@@ -129,14 +129,6 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 			canon,
 		)
 	}
-
-	return issues
-}
-
-// Takes the domain as argument because we may need to make more network
-// connections to see if an ECDSA cert is permissible.
-func checkChain(chain []*x509.Certificate, domain string) (issues Issues) {
-	issues = combineIssues(issues, checkSHA1(chain))
 
 	return issues
 }

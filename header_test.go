@@ -439,7 +439,7 @@ func TestCheckHeaderStringMaxAge0(t *testing.T) {
 	// Give information about what to do if you want to remove HSTS.
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age=0"),
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0."),
+		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0. If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"),
 	)
 }
 

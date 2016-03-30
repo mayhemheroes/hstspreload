@@ -8,9 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -175,31 +173,6 @@ func checkWWW(host string) (issues Issues) {
 	return issues
 }
 
-// isConnectionRefused returns true if err is an error from net/http that was
-// caused because the TCP connection was refused.
-func isConnectionRefused(err error) bool {
-	urlErr, ok := err.(*url.Error)
-	if !ok {
-		return false
-	}
-
-	netErr, ok := urlErr.Err.(*net.OpError)
-	if !ok {
-		return false
-	}
-
-	if netErr.Op != "dial" {
-		return false
-	}
-
-	syscallErr, ok := netErr.Err.(*os.SyscallError)
-	if !ok {
-		return false
-	}
-
-	return syscallErr.Err == syscall.ECONNREFUSED
-}
-
 func certChain(connState tls.ConnectionState) []*x509.Certificate {
 	chain := connState.VerifiedChains[0]
 	return chain[:len(chain)-1]
@@ -222,8 +195,4 @@ func isSHA1(cert *x509.Certificate) bool {
 	default:
 		return false
 	}
-}
-
-func isECDSA(cert *x509.Certificate) bool {
-	return cert.PublicKeyAlgorithm == x509.ECDSA
 }

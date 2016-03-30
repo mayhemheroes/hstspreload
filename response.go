@@ -16,7 +16,7 @@ func CheckResponse(resp http.Response) (issues Issues) {
 
 	switch {
 	case len(hstsHeaders) == 0:
-		return issues.addErrorf("Response error: No HSTS headers are present on the response.")
+		return issues.addErrorf("Response error: No HSTS header is present on the response.")
 
 	case len(hstsHeaders) > 1:
 		// TODO: Give feedback on the first(last?) HSTS header?

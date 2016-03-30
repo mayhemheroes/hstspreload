@@ -60,7 +60,7 @@ func TestCheckDomainSHA1(t *testing.T) {
 			Errors: []string{
 				"Domain error: `sha1.badssl.com` is not eTLD+1. Please preload `badssl.com` instead.",
 				"One or more of the certificates in your certificate chain is signed with SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of \"*.badssl.com\".)",
-				"Response error: No HSTS headers are present on the response.",
+				"Response error: No HSTS header is present on the response.",
 			},
 			Warnings: []string{},
 		},
@@ -82,7 +82,7 @@ func TestCheckDomainSubdomain(t *testing.T) {
 func TestCheckDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.com"),
-		NewIssues().addErrorf("Response error: No HSTS headers are present on the response."))
+		NewIssues().addErrorf("Response error: No HSTS header is present on the response."))
 }
 
 func TestCheckDomainBogusDomain(t *testing.T) {

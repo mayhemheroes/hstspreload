@@ -78,7 +78,7 @@ func TestCheckResponseWithoutHSTSHeaders(t *testing.T) {
 	resp.Header = http.Header{}
 
 	expectIssuesEqual(t, CheckResponse(resp),
-		NewIssues().addErrorf("Response error: No HSTS headers are present on the response."),
+		NewIssues().addErrorf("Response error: No HSTS header is present on the response."),
 	)
 }
 

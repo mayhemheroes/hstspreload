@@ -12,8 +12,7 @@ const (
 	// 18 weeks
 	hstsMinimumMaxAge = 10886400 // seconds
 
-	// 1 year: https://code.google.com/p/chromium/codesearch#chromium/src/net/http/http_security_headers.h&q=kMaxHSTSAgeSecs
-	hstsChromeMaxAgeCapOneYear = 86400 * 365 // seconds
+	tenYears = 86400 * 365 * 10 // seconds
 )
 
 // An HSTSHeader stores the semantics of an HSTS header.
@@ -185,15 +184,14 @@ func CheckHeader(hstsHeader HSTSHeader) (issues Issues) {
 
 	case hstsHeader.MaxAge < hstsMinimumMaxAge:
 		issues = issues.addErrorf(
-			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=%d.",
+			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
 			hstsHeader.MaxAge,
 		)
 
-	case hstsHeader.MaxAge > hstsChromeMaxAgeCapOneYear:
+	case hstsHeader.MaxAge > tenYears:
 		issues = issues.addWarningf(
-			"Header FYI: The max-age (%d seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (%d seconds).",
+			"Header FYI: The max-age (%d seconds) is longer than 10 years, which is an unusually long value.",
 			hstsHeader.MaxAge,
-			hstsChromeMaxAgeCapOneYear,
 		)
 
 	}

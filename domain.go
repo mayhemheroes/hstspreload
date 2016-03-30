@@ -75,9 +75,11 @@ func getResponse(domain string) (resp *http.Response, issues Issues) {
 	if err != nil {
 		if urlError, ok := err.(*url.Error); !ok || urlError.Err != redirectPrevented {
 			return resp, issues.addErrorf(
-				"Cannot connect using TLS (%q). This might be caused by an incomplete "+
-					"certificate chain, which causes issues on mobile devices. "+
-					"Check out your site at https://www.ssllabs.com/ssltest/",
+				"TLS Error: We cannot connect to https://%s using TLS (%q). This "+
+					"might be caused by an incomplete certificate chain, which causes "+
+					"issues on mobile devices. Check out your site at "+
+					"https://www.ssllabs.com/ssltest/",
+				domain,
 				err,
 			)
 		}
@@ -119,7 +121,10 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 	}
 	if canon != domain {
 		return issues.addErrorf(
-			"Domain error: `%s` is not eTLD+1. Please preload `%s` instead.",
+			"Domain error: `%s` is a subdomain. Please preload `%s` instead. "+
+				"The interaction of cookies, HSTS and user behaviour is complex; "+
+				"we believe that only accepting whole domains is simple enough to "+
+				"have clear security semantics.",
 			domain,
 			canon,
 		)
@@ -139,8 +144,8 @@ func checkChain(chain []*x509.Certificate, domain string) (issues Issues) {
 func checkSHA1(chain []*x509.Certificate) (issues Issues) {
 	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
 		issues = issues.addErrorf(
-			"One or more of the certificates in your certificate chain is signed with SHA-1. "+
-				"This needs to be replaced. "+
+			"TLS error: One or more of the certificates in your certificate chain "+
+				"is signed using SHA-1. This needs to be replaced. "+
 				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. "+
 				"(The first SHA-1 certificate found has a common-name of %q.)",
 			firstSHA1.Subject.CommonName,
@@ -161,7 +166,7 @@ func checkWWW(host string) (issues Issues) {
 		wwwConn, err := tls.DialWithDialer(&dialer, "tcp", "www."+host+":443", nil)
 		if err != nil {
 			return issues.addErrorf(
-				"The www subdomain exists, but we couldn't connect to it (%q). "+
+				"Domain error: The www subdomain exists, but we couldn't connect to it (%q). "+
 					"Since many people type this by habit, HSTS preloading would likely "+
 					"cause issues for your site.",
 				err,

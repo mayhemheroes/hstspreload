@@ -306,16 +306,16 @@ func TestParseHeaderStringMaxAgeWithoutValueAndTrailingSemicolon(t *testing.T) {
 // Most of the heavy testing takes place in CheckHeaderString().
 // We include a few direct tests here as a sanity check.
 
-func TestCheckHeaderMissingPreloadAndMoreThanOneYear(t *testing.T) {
+func TestCheckHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeader(HSTSHeader{
 			Preload:           false,
 			IncludeSubDomains: true,
-			MaxAge:            31536001,
+			MaxAge:            315360001,
 		}),
 		Issues{
 			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
-			Warnings: []string{"Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."},
+			Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
 		},
 	)
 }
@@ -339,10 +339,10 @@ func TestCheckHeaderStringFull(t *testing.T) {
 
 /******** CheckHeaderString() with warnings only. ********/
 
-func TestCheckHeaderStringMoreThanOneYear(t *testing.T) {
+func TestCheckHeaderStringMoreThanTenYears(t *testing.T) {
 	expectIssuesEqual(t,
-		CheckHeaderString("max-age=31536001; preload; includeSubDomains"),
-		NewIssues().addWarningf("Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."),
+		CheckHeaderString("max-age=315360001; preload; includeSubDomains"),
+		NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."),
 	)
 }
 
@@ -439,32 +439,25 @@ func TestCheckHeaderStringMaxAge0(t *testing.T) {
 	// Give information about what to do if you want to remove HSTS.
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age=0"),
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=0."),
+		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0."),
 	)
 }
 
 func TestCheckHeaderStringMaxAge100(t *testing.T) {
 	expectIssuesEqual(t,
 		CheckHeaderString("includeSubDomains; preload; max-age=100"),
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100."),
-	)
-}
-
-func TestCheckHeaderStringMaxAge10886399(t *testing.T) {
-	expectIssuesEqual(t,
-		CheckHeaderString("max-age=10886399; preload; includeSubDomains"),
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=10886399."),
+		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."),
 	)
 }
 
 /******** CheckHeaderString() with errors and warnings. ********/
 
-func TestCheckHeaderStringMissingPreloadAndMoreThanOneYear(t *testing.T) {
+func TestCheckHeaderStringMissingPreloadAndMoreThanTenYears(t *testing.T) {
 	expectIssuesEqual(t,
-		CheckHeaderString("max-age=31536001; includeSubDomains"),
+		CheckHeaderString("max-age=315360001; includeSubDomains"),
 		Issues{
 			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
-			Warnings: []string{"Header FYI: The max-age (31536001 seconds) is longer than a year. Note that Chrome will round HSTS header max-age values down to 1 year (31536000 seconds)."},
+			Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
 		},
 	)
 }

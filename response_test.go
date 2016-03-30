@@ -54,7 +54,7 @@ func TestCheckResponseMultipleErrors(t *testing.T) {
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
-				"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header only had max-age=100.",
+				"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
 			},
 			Warnings: []string{},
 		},

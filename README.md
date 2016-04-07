@@ -6,7 +6,7 @@ HSTS is [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Stri
 
 ## Note
 
-This repo is currently (late March, 2016) undergoing a full rewrite. See the [v1 tag](https://github.com/chromium/hstspreload/tree/v1) for the current code running at [hstspreload.appspot.com](https://hstspreload.appspot.com/)
+This repo is currently (April 2016) undergoing a full rewrite. See the [`app-engine` branch](https://github.com/chromium/hstspreload/tree/app-engine) for the current code running at [hstspreload.appspot.com](https://hstspreload.appspot.com/)
 
 ## Usage
 

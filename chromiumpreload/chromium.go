@@ -31,7 +31,9 @@ type Domain string
 // Preload list.
 //
 // - Name: The domain name.
+//
 // - Mode: The only valid non-empty value is ForceHTTPS
+//
 // - IncludeSubDomains: If Mode == ForceHTTPS, forces HSTS to apply to
 //   all subdomains.
 type PreloadEntry struct {

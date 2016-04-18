@@ -91,13 +91,18 @@ func TestCheckDomainBogusDomain(t *testing.T) {
 		NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }
 
+func TestAlmostTooManyRedirects(t *testing.T) {
+	skipIfShort(t)
+	expectIssuesEmpty(t, checkRedirects("https://httpbin.org/redirect/3"))
+}
+
 func TestTooManyRedirects(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(
 		t,
 		checkRedirects("https://httpbin.org/redirect/4"),
 		Issues{
-			Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/6`."},
+			Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/4`."},
 		},
 	)
 }

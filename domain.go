@@ -166,9 +166,17 @@ func checkRedirects(url string) (issues Issues) {
 			}
 			return nil
 		},
+		Timeout: dialTimeout,
 	}
 
-	_, _ = client.Get(url)
+	_, err := client.Get(url)
+	if err != nil {
+		if !strings.HasSuffix(err.Error(), insecureRedirect.Error()) &&
+			!strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
+			issues = issues.addErrorf("Redirect error: %s", err.Error())
+		}
+	}
+
 	return issues
 }
 

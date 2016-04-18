@@ -77,6 +77,7 @@ func getResponse(domain string) (resp *http.Response, issues Issues) {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return redirectPrevented
 		},
+		Timeout: dialTimeout,
 	}
 
 	resp, err := client.Get("https://" + domain)

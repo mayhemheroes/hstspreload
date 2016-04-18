@@ -57,14 +57,28 @@ func CheckDomain(domain string) (issues Issues) {
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
 		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
-		issues = combineIssues(issues, CheckResponse(*resp))
-		issues = combineIssues(issues, checkRedirects("http://"+domain))
-		issues = combineIssues(issues, checkRedirects("https://"+domain))
 
-		// Skip the WWW check if the domain is not eTLD+1.
-		if len(eTLD1Issues.Errors) == 0 {
-			issues = combineIssues(issues, checkWWW(domain))
-		}
+		chan1 := make(chan Issues)
+		chan2 := make(chan Issues)
+		chan3 := make(chan Issues)
+		chan4 := make(chan Issues)
+
+		go func() { chan1 <- CheckResponse(*resp) }()
+		go func() { chan2 <- checkRedirects("http://" + domain) }()
+		go func() { chan3 <- checkRedirects("https://" + domain) }()
+		go func() {
+			// Skip the WWW check if the domain is not eTLD+1.
+			if len(eTLD1Issues.Errors) == 0 {
+				chan4 <- checkWWW(domain)
+			}
+			chan4 <- NewIssues()
+		}()
+
+		// Combine the issues in deterministic order.
+		issues = combineIssues(issues, <-chan1)
+		issues = combineIssues(issues, <-chan2)
+		issues = combineIssues(issues, <-chan3)
+		issues = combineIssues(issues, <-chan4)
 	}
 
 	return issues

@@ -4,18 +4,24 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"golang.org/x/net/publicsuffix"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"golang.org/x/net/publicsuffix"
 )
 
 const (
 	// dialTimeout specifies the amount of time that TCP or TLS connections
 	// can take to complete.
 	dialTimeout = 10 * time.Second
+
+	// The maximum number of redirects when you visit the root path of the
+	// domain over HTTP or HTTPS.
+	maxRedirects = 3
+	httpsScheme  = "https"
 )
 
 // dialer is a global net.Dialer that's used whenever making TLS connections in
@@ -52,6 +58,8 @@ func CheckDomain(domain string) (issues Issues) {
 	if len(respIssues.Errors) == 0 {
 		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
 		issues = combineIssues(issues, CheckResponse(*resp))
+		issues = combineIssues(issues, checkRedirects("http://"+domain))
+		issues = combineIssues(issues, checkRedirects("https://"+domain))
 
 		// Skip the WWW check if the domain is not eTLD+1.
 		if len(eTLD1Issues.Errors) == 0 {
@@ -130,6 +138,37 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 		)
 	}
 
+	return issues
+}
+
+func checkRedirects(url string) (issues Issues) {
+	var requestChain []*http.Request
+
+	insecureRedirect := errors.New("INSECURE_REDIRECT")
+	tooManyRedirects := errors.New("TOO_MANY_REDIRECTS")
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			requestChain = append(requestChain, req)
+
+			if req.URL.Scheme != httpsScheme {
+				if len(requestChain) == 1 {
+					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", url, req.URL)
+				} else {
+					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", url, len(requestChain), req.URL)
+				}
+				return insecureRedirect
+			}
+
+			if len(requestChain) > maxRedirects {
+				issues = issues.addErrorf("Redirect error: More than %d redirects from `%s`.", maxRedirects, url)
+				return tooManyRedirects
+			}
+			return nil
+		},
+	}
+
+	_, _ = client.Get(url)
 	return issues
 }
 

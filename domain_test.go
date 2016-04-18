@@ -90,3 +90,38 @@ func TestCheckDomainBogusDomain(t *testing.T) {
 	expectIssuesEqual(t, CheckDomain("example.notadomain"),
 		NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }
+
+func TestTooManyRedirects(t *testing.T) {
+	skipIfShort(t)
+	expectIssuesEqual(
+		t,
+		checkRedirects("https://httpbin.org/redirect/4"),
+		Issues{
+			Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/6`."},
+		},
+	)
+}
+
+func TestInsecureRedirect(t *testing.T) {
+	skipIfShort(t)
+
+	expectIssuesEqual(
+		t,
+		checkRedirects("https://httpbin.org/redirect-to?url=http://httpbin.org"),
+		Issues{
+			Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`"},
+		},
+	)
+}
+
+func TestIndirectInsecureRedirect(t *testing.T) {
+	skipIfShort(t)
+
+	expectIssuesEqual(
+		t,
+		checkRedirects("https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org"),
+		Issues{
+			Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`"},
+		},
+	)
+}

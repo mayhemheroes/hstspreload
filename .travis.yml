@@ -9,5 +9,4 @@ install:
   - go get google.golang.org/cloud/datastore
 
 script:
-  - go test -v --short
-  - make test-build-travis
+  - make test-travis

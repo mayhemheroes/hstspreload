@@ -3,6 +3,11 @@ test: lint
 	go test github.com/chromium/hstspreload
 	go test github.com/chromium/hstspreload/chromiumpreload
 
+.PHONY: test-travis
+test-travis:
+	go test github.com/chromium/hstspreload -v
+	go test github.com/chromium/hstspreload/chromiumpreload -v
+
 .PHONY: test-build
 test-build:
 	go build -o /dev/null github.com/chromium/hstspreload/cmd/hstspreload/

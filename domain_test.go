@@ -2,6 +2,7 @@ package hstspreload
 
 import (
 	"fmt"
+	"net/url"
 	"testing"
 )
 
@@ -82,7 +83,13 @@ func TestCheckDomainSubdomain(t *testing.T) {
 func TestCheckDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
 	expectIssuesEqual(t, CheckDomain("example.com"),
-		NewIssues().addErrorf("Response error: No HSTS header is present on the response."))
+		Issues{
+			Errors: []string{
+				"Response error: No HSTS header is present on the response.",
+				"Redirect error: `http://example.com` does not redirect to `https://example.com`.)",
+			},
+			Warnings: []string{},
+		})
 }
 
 func TestCheckDomainBogusDomain(t *testing.T) {
@@ -91,16 +98,36 @@ func TestCheckDomainBogusDomain(t *testing.T) {
 		NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }
 
+func chainEquals(actual []*url.URL, expected []string) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+	for i, u := range actual {
+		if fmt.Sprintf("%s", u) != expected[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestAlmostTooManyRedirects(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEmpty(t, checkRedirects("https://httpbin.org/redirect/3"))
+	chain, issues := checkRedirects("https://httpbin.org/redirect/3")
+	if !chainEquals(chain, []string{"https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"}) {
+		t.Errorf("Unexpected chain: %v", chain)
+	}
+	expectIssuesEmpty(t, issues)
 }
 
 func TestTooManyRedirects(t *testing.T) {
 	skipIfShort(t)
+	chain, issues := checkRedirects("https://httpbin.org/redirect/4")
+	if !chainEquals(chain, []string{"https://httpbin.org/relative-redirect/3", "https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"}) {
+		t.Errorf("Unexpected chain: %v", chain)
+	}
 	expectIssuesEqual(
 		t,
-		checkRedirects("https://httpbin.org/redirect/4"),
+		issues,
 		Issues{
 			Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/4`."},
 		},
@@ -109,10 +136,13 @@ func TestTooManyRedirects(t *testing.T) {
 
 func TestInsecureRedirect(t *testing.T) {
 	skipIfShort(t)
-
+	chain, issues := checkRedirects("https://httpbin.org/redirect-to?url=http://httpbin.org")
+	if !chainEquals(chain, []string{"http://httpbin.org"}) {
+		t.Errorf("Unexpected chain: %v", chain)
+	}
 	expectIssuesEqual(
 		t,
-		checkRedirects("https://httpbin.org/redirect-to?url=http://httpbin.org"),
+		issues,
 		Issues{
 			Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`"},
 		},
@@ -121,12 +151,56 @@ func TestInsecureRedirect(t *testing.T) {
 
 func TestIndirectInsecureRedirect(t *testing.T) {
 	skipIfShort(t)
-
+	chain, issues := checkRedirects("https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org")
+	if !chainEquals(chain, []string{"https://httpbin.org/redirect-to?url=http://httpbin.org", "http://httpbin.org"}) {
+		t.Errorf("Unexpected chain: %v", chain)
+	}
 	expectIssuesEqual(
 		t,
-		checkRedirects("https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org"),
+		issues,
 		Issues{
 			Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`"},
+		},
+	)
+}
+
+func TestHTTPNoRedirect(t *testing.T) {
+	skipIfShort(t)
+	issues := checkHTTPRedirects("httpbin.org")
+	expectIssuesEqual(
+		t,
+		issues,
+		Issues{
+			Errors:   []string{"Redirect error: `http://httpbin.org` does not redirect to `https://httpbin.org`.)"},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestHTTPWrongHostRedirect(t *testing.T) {
+	skipIfShort(t)
+	// http://bofa.com redirects to https://www.bankofamerica.com
+	issues := checkHTTPRedirects("bofa.com")
+	expectIssuesEqual(
+		t,
+		issues,
+		Issues{
+			Errors:   []string{"Redirect error: the first redirect from `http://bofa.com` is not to a secure page on the same host (`https://bofa.com`). It is to `https://www.bankofamerica.com/vanity/redirect.go?src=/` instead."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestHTTPSameOriginRedirect(t *testing.T) {
+	skipIfShort(t)
+	// http://www.wikia.com redirects to http://www.wikia.com/fandom
+	issues := checkHTTPRedirects("www.wikia.com")
+	expectIssuesEqual(
+		t,
+		issues,
+		Issues{
+			Errors:   []string{"Redirect error: `http://www.wikia.com` redirects to an insecure page: `http://www.wikia.com/fandom`"},
+			Warnings: []string{},
 		},
 	)
 }

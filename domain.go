@@ -64,8 +64,8 @@ func CheckDomain(domain string) (issues Issues) {
 		chan4 := make(chan Issues)
 
 		go func() { chan1 <- CheckResponse(*resp) }()
-		go func() { chan2 <- checkRedirects("http://" + domain) }()
-		go func() { chan3 <- checkRedirects("https://" + domain) }()
+		go func() { chan2 <- checkHTTPRedirects(domain) }()
+		go func() { chan3 <- checkHTTPSRedirects(domain) }()
 		go func() {
 			// Skip the WWW check if the domain is not eTLD+1.
 			if len(eTLD1Issues.Errors) == 0 {
@@ -156,35 +156,63 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 	return issues
 }
 
-func checkRedirects(url string) (issues Issues) {
-	var requestChain []*http.Request
+func checkHTTPRedirects(domain string) Issues {
+	chain, issues := checkRedirects("http://" + domain)
+	if len(chain) == 0 {
+		return issues.addErrorf(
+			"Redirect error: `%s` does not redirect to `%s`.)",
+			"http://"+domain,
+			"https://"+domain,
+		)
+	}
+
+	if chain[0].Host != domain {
+		issues = issues.addErrorf(
+			"Redirect error: the first redirect from `%s` is not to a secure page on the same host (`%s`). "+
+				"It is to `%s` instead.",
+			"http://"+domain,
+			"https://"+domain,
+			chain[0],
+		)
+	}
+	return issues
+}
+
+func checkHTTPSRedirects(domain string) Issues {
+	_, issues := checkRedirects("https://" + domain)
+	return issues
+}
+
+func checkRedirects(initialURL string) (chain []*url.URL, issues Issues) {
+	var redirectChain []*url.URL
 
 	insecureRedirect := errors.New("INSECURE_REDIRECT")
 	tooManyRedirects := errors.New("TOO_MANY_REDIRECTS")
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			requestChain = append(requestChain, req)
+			redirectChain = append(redirectChain, req.URL)
 
 			if req.URL.Scheme != httpsScheme {
-				if len(requestChain) == 1 {
-					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", url, req.URL)
+				if len(redirectChain) == 1 {
+					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", initialURL, req.URL)
 				} else {
-					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", url, len(requestChain), req.URL)
+					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, len(redirectChain), req.URL)
 				}
 				return insecureRedirect
 			}
 
-			if len(requestChain) > maxRedirects {
-				issues = issues.addErrorf("Redirect error: More than %d redirects from `%s`.", maxRedirects, url)
+			if len(redirectChain) > maxRedirects {
+				issues = issues.addErrorf("Redirect error: More than %d redirects from `%s`.", maxRedirects, initialURL)
 				return tooManyRedirects
 			}
+
 			return nil
 		},
 		Timeout: dialTimeout,
 	}
 
-	_, err := client.Get(url)
+	_, err := client.Get(initialURL)
 	if err != nil {
 		if !strings.HasSuffix(err.Error(), insecureRedirect.Error()) &&
 			!strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
@@ -192,7 +220,7 @@ func checkRedirects(url string) (issues Issues) {
 		}
 	}
 
-	return issues
+	return redirectChain, issues
 }
 
 func checkSHA1(chain []*x509.Certificate) (issues Issues) {

@@ -81,6 +81,16 @@ func GetLatest() (PreloadList, error) {
 	return preloadList, nil
 }
 
+// PreloadEntriesToMap creates an indexed map (Domain -> PreloadEntry) of
+// the entries from the given PreloadList.
+func PreloadEntriesToMap(preloadList PreloadList) map[Domain]PreloadEntry {
+	m := make(map[Domain]PreloadEntry)
+	for _, entry := range preloadList.Entries {
+		m[entry.Name] = entry
+	}
+	return m
+}
+
 // commentRegexp matches lines that optionally start with whitespace
 // followed by "//".
 var commentRegexp = regexp.MustCompile("^[ \t]*//")

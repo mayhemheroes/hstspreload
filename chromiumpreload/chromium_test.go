@@ -19,3 +19,28 @@ func TestGetLatest(t *testing.T) {
 		t.Errorf("First entry of preload list does not have the expected name.")
 	}
 }
+
+func TestPreloadEntriesToMap(t *testing.T) {
+	m := PreloadEntriesToMap(PreloadList{
+		Entries: []PreloadEntry{
+			PreloadEntry{
+				Name:              "garron.net",
+				Mode:              "ForceHTTPS",
+				IncludeSubDomains: true,
+			},
+			PreloadEntry{
+				Name:              "example.com",
+				Mode:              "",
+				IncludeSubDomains: false,
+			},
+		},
+	})
+
+	if len(m) != 2 {
+		t.Errorf("Map has the wrong number of entries.")
+	}
+
+	if m["garron.net"].Mode != "ForceHTTPS" {
+		t.Errorf("Map has invalid entries.")
+	}
+}

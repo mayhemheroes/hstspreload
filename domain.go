@@ -160,7 +160,7 @@ func checkHTTPRedirects(domain string) Issues {
 	chain, issues := checkRedirects("http://" + domain)
 	if len(chain) == 0 {
 		return issues.addErrorf(
-			"Redirect error: `%s` does not redirect to `%s`.)",
+			"Redirect error: `%s` does not redirect to `%s`.",
 			"http://"+domain,
 			"https://"+domain,
 		)

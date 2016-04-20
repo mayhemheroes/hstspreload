@@ -87,7 +87,7 @@ func TestCheckDomainWithoutHSTS(t *testing.T) {
 		Issues{
 			Errors: []string{
 				"Response error: No HSTS header is present on the response.",
-				"Redirect error: `http://example.com` does not redirect to `https://example.com`.)",
+				"Redirect error: `http://example.com` does not redirect to `https://example.com`.",
 			},
 			Warnings: []string{},
 		})
@@ -187,7 +187,7 @@ func TestHTTPNoRedirect(t *testing.T) {
 		t,
 		issues,
 		Issues{
-			Errors:   []string{"Redirect error: `http://httpbin.org` does not redirect to `https://httpbin.org`.)"},
+			Errors:   []string{"Redirect error: `http://httpbin.org` does not redirect to `https://httpbin.org`."},
 			Warnings: []string{},
 		},
 	)

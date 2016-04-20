@@ -46,6 +46,9 @@ func CheckDomain(domain string) (issues Issues) {
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
 	issues = combineIssues(issues, checkDomainFormat(domain))
+	if len(issues.Errors) > 0 {
+		return issues
+	}
 
 	// We don't currently allow automatic submissions of subdomains.
 	eTLD1Issues := checkEffectiveTLDPlusOne(domain)

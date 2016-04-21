@@ -48,45 +48,29 @@ Return code:
 		return
 	}
 
-	var hstsHeader *string
+	var header *string
 	var issues hstspreload.Issues
-
-	bolded := color.New(color.Bold).SprintFunc()
 
 	switch args[0] {
 	case "+h":
 		fallthrough
 	case "preloadableheader":
-		fmt.Printf("Checking header \"%s\" for preload requirements...\n", bolded(args[1]))
-		issues = hstspreload.PreloadableHeaderString(args[1])
+		issues = preloadableHeader(args[1])
 
 	case "-h":
 		fallthrough
 	case "removableheader":
-		fmt.Printf("Checking header \"%s\" for removal requirements...\n", bolded(args[1]))
-		issues = hstspreload.RemovableHeaderString(args[1])
+		issues = removableHeader(args[1])
 
 	case "+d":
 		fallthrough
 	case "preloadabledomain":
-		if strings.HasPrefix(args[1], "http") {
-			fmt.Fprintf(os.Stderr,
-				"Invalid argument: Please do not supply a scheme (http:// or https://) before the domain.\n")
-			os.Exit(3)
-		}
-		fmt.Printf("Checking domain %s for preload requirements...\n", bolded(args[1]))
-		hstsHeader, issues = hstspreload.PreloadableDomain(args[1])
+		header, issues = preloadableDomain(args[1])
 
 	case "-d":
 		fallthrough
 	case "removabledomain":
-		if strings.HasPrefix(args[1], "http") {
-			fmt.Fprintf(os.Stderr,
-				"Invalid argument: Please do not supply a scheme (http:// or https://) before the domain.\n")
-			os.Exit(3)
-		}
-		fmt.Printf("Checking domain %s for removal requirements...\n", bolded(args[1]))
-		hstsHeader, issues = hstspreload.RemovableDomain(args[1])
+		header, issues = removableDomain(args[1])
 
 	default:
 		fmt.Printf("Unknown command: %s\n", args[0])
@@ -96,28 +80,20 @@ Return code:
 	// Wrap this in a function to (statically) enforce a return code.
 	showResult := func() int {
 		bold := color.New(color.Bold)
+		if header != nil {
+			fmt.Printf("Observed header: ")
+			bold.Printf("%s\n", *header)
+		}
 
 		fmt.Printf("\n")
 		switch {
 		case len(issues.Errors) > 0:
-			if hstsHeader != nil {
-				fmt.Printf("Observed header: ")
-				bold.Printf("%s\n\n", *hstsHeader)
-			}
 			return 1
 
 		case len(issues.Warnings) > 0:
-			if hstsHeader != nil {
-				fmt.Printf("Observed header: ")
-				bold.Printf("%s\n\n", *hstsHeader)
-			}
 			return 2
 
 		default:
-			if hstsHeader != nil {
-				fmt.Printf("Observed header: ")
-				bold.Printf("%s\n\n", *hstsHeader)
-			}
 			boldGreen := color.New(color.Bold, color.FgGreen)
 			boldGreen.Printf("Satisfies requirements.\n\n")
 			return 0
@@ -127,6 +103,71 @@ Return code:
 	printList(issues.Errors, "Error", color.New(color.FgRed))
 	printList(issues.Warnings, "Warning", color.New(color.FgYellow))
 	os.Exit(exitCode)
+}
+
+func preloadableHeader(header string) (issues hstspreload.Issues) {
+	expectHeaderOrWarn(header)
+	bolded := color.New(color.Bold).SprintFunc()
+	fmt.Printf("Checking header \"%s\" for preload requirements...\n", bolded(header))
+	return hstspreload.PreloadableHeaderString(header)
+}
+
+func removableHeader(header string) (issues hstspreload.Issues) {
+	expectHeaderOrWarn(header)
+	bolded := color.New(color.Bold).SprintFunc()
+	fmt.Printf("Checking header \"%s\" for removal requirements...\n", bolded(header))
+	return hstspreload.RemovableHeaderString(header)
+}
+
+func preloadableDomain(domain string) (header *string, issues hstspreload.Issues) {
+	expectDomainOrExit(domain)
+	bolded := color.New(color.Bold).SprintFunc()
+	fmt.Printf("Checking domain %s for preload requirements...\n", bolded(domain))
+	return hstspreload.PreloadableDomain(domain)
+}
+
+func removableDomain(domain string) (header *string, issues hstspreload.Issues) {
+	expectDomainOrExit(domain)
+	bolded := color.New(color.Bold).SprintFunc()
+	fmt.Printf("Checking domain %s for removal requirements...\n", bolded(domain))
+	return hstspreload.RemovableDomain(domain)
+}
+
+func expectHeaderOrWarn(str string) {
+	if probablyURL(str) {
+		fmt.Fprintf(os.Stderr,
+			"Warning: please supply an HSTS header string (it appears you supplied a URL).\n")
+	}
+	if probablyDomain(str) {
+		fmt.Fprintf(os.Stderr,
+			"Warning: please supply an HSTS header string (it appears you supplied a domain).\n")
+	}
+}
+
+func expectDomainOrExit(str string) {
+	if probablyHeader(str) {
+		fmt.Fprintf(os.Stderr,
+			"Invalid argument: please supply a domain (example.com), not a header string.\n")
+		os.Exit(3)
+	}
+
+	if probablyURL(str) {
+		fmt.Fprintf(os.Stderr,
+			"Invalid argument: please supply a domain (example.com) rather than a URL (https://example.com/index.html).\n")
+		os.Exit(3)
+	}
+}
+
+func probablyHeader(str string) bool {
+	return strings.Contains(str, ";") || strings.Contains(str, " ")
+}
+
+func probablyURL(str string) bool {
+	return strings.HasPrefix(str, "http") || strings.Contains(str, ":") || strings.Contains(str, "/")
+}
+
+func probablyDomain(str string) bool {
+	return strings.Contains(str, ".") && !strings.Contains(str, " ")
 }
 
 func printList(list []string, title string, color *color.Color) {

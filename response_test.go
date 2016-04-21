@@ -9,8 +9,9 @@ import (
 func ExamplePreloadableResponse() {
 	resp, err := http.Get("localhost:8080")
 	if err != nil {
-		issues := PreloadableResponse(*resp)
-		fmt.Printf("%v", issues)
+		header, issues := PreloadableResponse(*resp)
+		fmt.Printf("Header: %s", header)
+		fmt.Printf("Issues: %v", issues)
 	}
 }
 
@@ -19,9 +20,14 @@ func TestPreloadableResponseGoodHeader(t *testing.T) {
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	resp.Header.Add(key, "max-age=10886400; includeSubDomains; preload")
+	sentHeader := "max-age=10886400; includeSubDomains; preload"
+	resp.Header.Add(key, sentHeader)
 
-	expectIssuesEmpty(t, PreloadableResponse(resp))
+	header, issues := PreloadableResponse(resp)
+	if header != sentHeader {
+		t.Errorf("Unexpected header response: %s", sentHeader)
+	}
+	expectIssuesEmpty(t, issues)
 }
 
 func TestPreloadableResponseEmpty(t *testing.T) {
@@ -29,9 +35,14 @@ func TestPreloadableResponseEmpty(t *testing.T) {
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	resp.Header.Add(key, "")
+	sentHeader := ""
+	resp.Header.Add(key, sentHeader)
 
-	expectIssuesEqual(t, PreloadableResponse(resp),
+	header, issues := PreloadableResponse(resp)
+	if header != sentHeader {
+		t.Errorf("Unexpected header response: %s", sentHeader)
+	}
+	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
@@ -48,9 +59,15 @@ func TestPreloadableResponseMultipleErrors(t *testing.T) {
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	resp.Header.Add(key, "includeSubDomains; max-age=100")
+	sentHeader := "includeSubDomains; max-age=100"
+	resp.Header.Add(key, sentHeader)
 
-	expectIssuesEqual(t, PreloadableResponse(resp),
+	header, issues := PreloadableResponse(resp)
+
+	if header != sentHeader {
+		t.Errorf("Unexpected header response: %s", sentHeader)
+	}
+	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
@@ -66,9 +83,15 @@ func TestPreloadableResponseMissingIncludeSubDomains(t *testing.T) {
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
-	resp.Header.Add(key, "preload; max-age=10886400")
+	sentHeader := "preload; max-age=10886400"
+	resp.Header.Add(key, sentHeader)
 
-	expectIssuesEqual(t, PreloadableResponse(resp),
+	header, issues := PreloadableResponse(resp)
+
+	if header != sentHeader {
+		t.Errorf("Unexpected header response: %s", sentHeader)
+	}
+	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
 	)
 }
@@ -77,7 +100,9 @@ func TestPreloadableResponseWithoutHSTSHeaders(t *testing.T) {
 	var resp http.Response
 	resp.Header = http.Header{}
 
-	expectIssuesEqual(t, PreloadableResponse(resp),
+	_, issues := PreloadableResponse(resp)
+
+	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Response error: No HSTS header is present on the response."),
 	)
 }
@@ -90,7 +115,9 @@ func TestPreloadableResponseMultipleHSTSHeaders(t *testing.T) {
 	resp.Header.Add(key, "max-age=10")
 	resp.Header.Add(key, "max-age=20")
 
-	expectIssuesEqual(t, PreloadableResponse(resp),
+	_, issues := PreloadableResponse(resp)
+
+	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),
 	)
 }

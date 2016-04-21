@@ -8,8 +8,9 @@ import (
 )
 
 func ExamplePreloadableDomain() {
-	issues := PreloadableDomain("wikipedia.org")
-	fmt.Printf("%v", issues)
+	header, issues := PreloadableDomain("wikipedia.org")
+	fmt.Printf("Header: %s", header)
+	fmt.Printf("Issues %v", issues)
 }
 
 /******** Utility functions tests. ********/
@@ -44,7 +45,11 @@ func skipIfShort(t *testing.T) {
 
 func TestPreloadableDomainIncompleteChain(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, PreloadableDomain("incomplete-chain.badssl.com"),
+	header, issues := PreloadableDomain("incomplete-chain.badssl.com")
+	if header != "" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
+	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
 				"Domain error: `incomplete-chain.badssl.com` is a subdomain. Please preload `badssl.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics.",
@@ -57,7 +62,11 @@ func TestPreloadableDomainIncompleteChain(t *testing.T) {
 
 func TestPreloadableDomainSHA1(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, PreloadableDomain("sha1.badssl.com"),
+	header, issues := PreloadableDomain("sha1.badssl.com")
+	if header != "" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
+	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
 				"Domain error: `sha1.badssl.com` is a subdomain. Please preload `badssl.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics.",
@@ -71,19 +80,31 @@ func TestPreloadableDomainSHA1(t *testing.T) {
 
 func TestPreloadableDomainWithValidHSTS(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEmpty(t, PreloadableDomain("wikipedia.org"))
+	header, issues := PreloadableDomain("wikipedia.org")
+	if header != "max-age=31536000; includeSubDomains; preload" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
+	expectIssuesEmpty(t, issues)
 }
 
 func TestPreloadableDomainSubdomain(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, PreloadableDomain("en.wikipedia.org"),
+	header, issues := PreloadableDomain("en.wikipedia.org")
+	if header != "max-age=31536000; includeSubDomains; preload" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
+	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."),
 	)
 }
 
 func TestPreloadableDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, PreloadableDomain("example.com"),
+	header, issues := PreloadableDomain("example.com")
+	if header != "" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
+	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
 				"Response error: No HSTS header is present on the response.",
@@ -98,7 +119,10 @@ func TestPreloadableDomainBogusDomain(t *testing.T) {
 
 	// The error message contains a local IP in Travis CI. Since this is the only
 	// such test, we work around it with more crude checks.
-	issues := PreloadableDomain("example.notadomain")
+	header, issues := PreloadableDomain("example.notadomain")
+	if header != "" {
+		t.Errorf("Unexpected header response: %s", header)
+	}
 	if len(issues.Errors) != 1 || len(issues.Warnings) != 0 {
 		t.Errorf("Expected one error and no warnings.")
 	}
@@ -110,7 +134,11 @@ func TestPreloadableDomainBogusDomain(t *testing.T) {
 	}
 
 	// Normal test
-	// expectIssuesEqual(t, PreloadableDomain("example.notadomain"),
+	// header, issues := PreloadableDomain("example.notadomain")
+	// if header != "" {
+	// 	t.Errorf("Unexpected header response: %s", header)
+	// }
+	// expectIssuesEqual(t, issues,
 	// 	NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }
 

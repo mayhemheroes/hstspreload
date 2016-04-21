@@ -40,14 +40,16 @@ var dialer = net.Dialer{
 // will turn an error page from overrideable to non-overridable on
 // some mobile devices.)
 //
-// To interpret the result, see the list of conventions in the
+// Iff a single HSTS header was received, `header` contains its value, else
+// `header` is `nil`.
+// To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
-func PreloadableDomain(domain string) (issues Issues) {
+func PreloadableDomain(domain string) (header *string, issues Issues) {
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
 	issues = combineIssues(issues, checkDomainFormat(domain))
 	if len(issues.Errors) > 0 {
-		return issues
+		return header, issues
 	}
 
 	// We don't currently allow automatic submissions of subdomains.
@@ -66,7 +68,11 @@ func PreloadableDomain(domain string) (issues Issues) {
 		chan3 := make(chan Issues)
 		chan4 := make(chan Issues)
 
-		go func() { chan1 <- PreloadableResponse(*resp) }()
+		go func() {
+			var preloadableIssues Issues
+			header, preloadableIssues = PreloadableResponse(*resp)
+			chan1 <- preloadableIssues
+		}()
 		go func() { chan2 <- checkHTTPRedirects(domain) }()
 		go func() { chan3 <- checkHTTPSRedirects(domain) }()
 		go func() {
@@ -84,17 +90,29 @@ func PreloadableDomain(domain string) (issues Issues) {
 		issues = combineIssues(issues, <-chan4)
 	}
 
-	return issues
+	return header, issues
 }
 
-func RemovableDomain(domain string) (issues Issues) {
+// PreloadableDomain checks whether the domain passes HSTS preload
+// requirements for Chromium. This includes:
+//
+// - Serving a single valid HSTS header.
+// - The header must not contain the `preload` directive..
+//
+// Iff a single HSTS header was received, `header` contains its value, else
+// `header` is `nil`.
+// To interpret `issues`, see the list of conventions in the
+// documentation for Issues.
+func RemovableDomain(domain string) (header *string, issues Issues) {
 	resp, respIssues := getResponse(domain)
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
-		issues = combineIssues(issues, RemovableResponse(*resp))
+		var removableIssues Issues
+		header, removableIssues = RemovableResponse(*resp)
+		issues = combineIssues(issues, removableIssues)
 	}
 
-	return issues
+	return header, issues
 }
 
 func getResponse(domain string) (resp *http.Response, issues Issues) {

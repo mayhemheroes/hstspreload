@@ -76,7 +76,7 @@ func parseMaxAge(directive string) (maxAge int64, issues Issues) {
 
 // ParseHeaderString parses an HSTS header. ParseHeaderString will
 // report syntax errors and warnings, but does NOT calculate whether the
-// header value is semantically valid. (See CheckHeaderString() for
+// header value is semantically valid. (See PreloadableHeaderString() for
 // that.)
 //
 // To interpret the Issues that are returned, see the list of
@@ -160,14 +160,14 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 	return hstsHeader, issues
 }
 
-// CheckHeader checks whether hstsHeader satisfies all requirements
+// PreloadableHeader checks whether hstsHeader satisfies all requirements
 // for preloading in Chromium.
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
 //
-// Most of the time, you'll probably want to use CheckHeaderString() instead.
-func CheckHeader(hstsHeader HSTSHeader) (issues Issues) {
+// Most of the time, you'll probably want to use PreloadableHeaderString() instead.
+func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
 	if !hstsHeader.IncludeSubDomains {
 		issues = issues.addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive.")
 	}
@@ -205,13 +205,40 @@ func CheckHeader(hstsHeader HSTSHeader) (issues Issues) {
 	return issues
 }
 
-// CheckHeaderString is a convenience function that calls
-// ParseHeaderString() and then calls on CheckHeader() the parsed
-// headerCheckHeader(). It returns all issues from both calls, combined.
+func RemovableHeader(hstsHeader HSTSHeader) (issues Issues) {
+	if hstsHeader.Preload {
+		issues = issues.addErrorf("Header requirement error: Header must not contain the `preload` directive.")
+	}
+
+	return issues
+}
+
+// PreloadableHeaderString is a convenience function that calls
+// ParseHeaderString() and then calls on PreloadableHeader() the parsed
+// header. It returns all issues from both calls, combined.
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-func CheckHeaderString(headerString string) Issues {
+func PreloadableHeaderString(headerString string) Issues {
 	hstsHeader, issues := ParseHeaderString(headerString)
-	return combineIssues(issues, CheckHeader(hstsHeader))
+	return combineIssues(issues, PreloadableHeader(hstsHeader))
+}
+
+// RemovableHeaderString is a convenience function that calls
+// ParseHeaderString() and then calls on RemovableHeader() the parsed
+// header. It returns all errors from ParseHeaderString() and all
+// issues from RemovableHeader(). Note that *warnings* from
+// ParseHeaderString() are ignored, since domains asking to be removed
+// will often have minor errors that shouldn't affect removal. It's
+// better to have a cleaner verdict in this case.
+//
+// To interpret the result, see the list of conventions in the
+// documentation for Issues.
+func RemovableHeaderString(headerString string) Issues {
+	hstsHeader, issues := ParseHeaderString(headerString)
+	issues = Issues{
+		Errors: issues.Errors,
+		// Ignore parse warnings for removal testing.
+	}
+	return combineIssues(issues, RemovableHeader(hstsHeader))
 }

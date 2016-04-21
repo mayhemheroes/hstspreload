@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func ExampleCheckDomain() {
-	issues := CheckDomain("wikipedia.org")
+func ExamplePreloadableDomain() {
+	issues := PreloadableDomain("wikipedia.org")
 	fmt.Printf("%v", issues)
 }
 
@@ -42,9 +42,9 @@ func skipIfShort(t *testing.T) {
 	}
 }
 
-func TestCheckDomainIncompleteChain(t *testing.T) {
+func TestPreloadableDomainIncompleteChain(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, CheckDomain("incomplete-chain.badssl.com"),
+	expectIssuesEqual(t, PreloadableDomain("incomplete-chain.badssl.com"),
 		Issues{
 			Errors: []string{
 				"Domain error: `incomplete-chain.badssl.com` is a subdomain. Please preload `badssl.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics.",
@@ -55,9 +55,9 @@ func TestCheckDomainIncompleteChain(t *testing.T) {
 	)
 }
 
-func TestCheckDomainSHA1(t *testing.T) {
+func TestPreloadableDomainSHA1(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, CheckDomain("sha1.badssl.com"),
+	expectIssuesEqual(t, PreloadableDomain("sha1.badssl.com"),
 		Issues{
 			Errors: []string{
 				"Domain error: `sha1.badssl.com` is a subdomain. Please preload `badssl.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics.",
@@ -69,21 +69,21 @@ func TestCheckDomainSHA1(t *testing.T) {
 	)
 }
 
-func TestCheckDomainWithValidHSTS(t *testing.T) {
+func TestPreloadableDomainWithValidHSTS(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEmpty(t, CheckDomain("wikipedia.org"))
+	expectIssuesEmpty(t, PreloadableDomain("wikipedia.org"))
 }
 
-func TestCheckDomainSubdomain(t *testing.T) {
+func TestPreloadableDomainSubdomain(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, CheckDomain("en.wikipedia.org"),
+	expectIssuesEqual(t, PreloadableDomain("en.wikipedia.org"),
 		NewIssues().addErrorf("Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."),
 	)
 }
 
-func TestCheckDomainWithoutHSTS(t *testing.T) {
+func TestPreloadableDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
-	expectIssuesEqual(t, CheckDomain("example.com"),
+	expectIssuesEqual(t, PreloadableDomain("example.com"),
 		Issues{
 			Errors: []string{
 				"Response error: No HSTS header is present on the response.",
@@ -93,12 +93,12 @@ func TestCheckDomainWithoutHSTS(t *testing.T) {
 		})
 }
 
-func TestCheckDomainBogusDomain(t *testing.T) {
+func TestPreloadableDomainBogusDomain(t *testing.T) {
 	skipIfShort(t)
 
 	// The error message contains a local IP in Travis CI. Since this is the only
 	// such test, we work around it with more crude checks.
-	issues := CheckDomain("example.notadomain")
+	issues := PreloadableDomain("example.notadomain")
 	if len(issues.Errors) != 1 || len(issues.Warnings) != 0 {
 		t.Errorf("Expected one error and no warnings.")
 	}
@@ -110,7 +110,7 @@ func TestCheckDomainBogusDomain(t *testing.T) {
 	}
 
 	// Normal test
-	// expectIssuesEqual(t, CheckDomain("example.notadomain"),
+	// expectIssuesEqual(t, PreloadableDomain("example.notadomain"),
 	// 	NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }
 

@@ -30,7 +30,7 @@ var dialer = net.Dialer{
 	Timeout: dialTimeout,
 }
 
-// CheckDomain checks whether the domain passes HSTS preload
+// PreloadableDomain checks whether the domain passes HSTS preload
 // requirements for Chromium. This includes:
 //
 // - Serving a single HSTS header that passes header requirements.
@@ -42,7 +42,7 @@ var dialer = net.Dialer{
 //
 // To interpret the result, see the list of conventions in the
 // documentation for Issues.
-func CheckDomain(domain string) (issues Issues) {
+func PreloadableDomain(domain string) (issues Issues) {
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
 	issues = combineIssues(issues, checkDomainFormat(domain))
@@ -66,7 +66,7 @@ func CheckDomain(domain string) (issues Issues) {
 		chan3 := make(chan Issues)
 		chan4 := make(chan Issues)
 
-		go func() { chan1 <- CheckResponse(*resp) }()
+		go func() { chan1 <- PreloadableResponse(*resp) }()
 		go func() { chan2 <- checkHTTPRedirects(domain) }()
 		go func() { chan3 <- checkHTTPSRedirects(domain) }()
 		go func() {
@@ -82,6 +82,16 @@ func CheckDomain(domain string) (issues Issues) {
 		issues = combineIssues(issues, <-chan2)
 		issues = combineIssues(issues, <-chan3)
 		issues = combineIssues(issues, <-chan4)
+	}
+
+	return issues
+}
+
+func RemovableDomain(domain string) (issues Issues) {
+	resp, respIssues := getResponse(domain)
+	issues = combineIssues(issues, respIssues)
+	if len(respIssues.Errors) == 0 {
+		issues = combineIssues(issues, RemovableResponse(*resp))
 	}
 
 	return issues

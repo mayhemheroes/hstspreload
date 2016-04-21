@@ -23,9 +23,11 @@ Usage:
 
 The commands are:
 
-  checkheader    Check an HSTS header for preload requirements
-  checkdomain    Check the TLS configuration and headers of a domain for
-                 preload requirements.
+  preloadableheader Check an HSTS header for preload requirements
+  preloadabledomain Check the TLS configuration and headers of a domain for
+                    preload requirements.
+  removabledomain   Check the TLS configuration and headers of a domain for
+                    removal requirements.
 
 Examples:
 
@@ -48,16 +50,24 @@ Return code:
 	var issues hstspreload.Issues
 
 	switch args[0] {
-	case "checkheader":
-		issues = hstspreload.CheckHeaderString(args[1])
+	case "preloadableheader":
+		issues = hstspreload.PreloadableHeaderString(args[1])
 
-	case "checkdomain":
+	case "preloadabledomain":
 		if strings.HasPrefix(args[1], "http") {
 			fmt.Fprintf(os.Stderr,
 				"Invalid argument: Please do not supply a scheme (http:// or https://) before the domain.\n")
 			os.Exit(3)
 		}
-		issues = hstspreload.CheckDomain(args[1])
+		issues = hstspreload.PreloadableDomain(args[1])
+
+	case "removabledomain":
+		if strings.HasPrefix(args[1], "http") {
+			fmt.Fprintf(os.Stderr,
+				"Invalid argument: Please do not supply a scheme (http:// or https://) before the domain.\n")
+			os.Exit(3)
+		}
+		issues = hstspreload.RemovableDomain(args[1])
 
 	default:
 		os.Exit(4)
@@ -75,7 +85,7 @@ Return code:
 			return 2
 
 		default:
-			fmt.Printf("Satisfies requirements for preloading.\n")
+			fmt.Printf("Satisfies requirements.\n")
 			return 0
 		}
 	}

@@ -105,7 +105,7 @@ func formatIssueListForString(list []string) string {
 // that can be pasted back into the relevant unit tess.
 func (issues Issues) GoString() string {
 	return fmt.Sprintf(`Issues{
-	Errors: []string{%s},
+	Errors:   []string{%s},
 	Warnings: []string{%s},
 }`,
 		formatIssueListForString(issues.Errors),

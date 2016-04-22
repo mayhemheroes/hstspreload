@@ -123,6 +123,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 // requirements for Chromium. This includes:
 //
 // - Serving a single valid HSTS header.
+//
 // - The header must not contain the `preload` directive..
 //
 // Iff a single HSTS header was received, `header` contains its value, else

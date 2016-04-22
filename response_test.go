@@ -172,7 +172,7 @@ func TestRemovableResponsePreload(t *testing.T) {
 
 	expectIssuesEqual(t, issues,
 		Issues{
-			Errors:   []string{"Header requirement error: Header must not contain the `preload` directive."},
+			Errors:   []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."},
 			Warnings: []string{},
 		},
 	)
@@ -192,7 +192,7 @@ func TestRemovableResponsePreloadOnly(t *testing.T) {
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
-				"Header requirement error: Header must not contain the `preload` directive.",
+				"Header requirement error: For preload list removal, the header must not contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
 			Warnings: []string{},

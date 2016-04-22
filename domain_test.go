@@ -236,34 +236,3 @@ func TestHTTPSameOriginRedirect(t *testing.T) {
 		},
 	)
 }
-
-func TestRemovableDomainNoHeader(t *testing.T) {
-	skipIfShort(t)
-	header, issues := RemovableDomain("example.com")
-	expectNil(t, header)
-	expectIssuesEqual(t, issues,
-		Issues{
-			Errors:   []string{"Response error: No HSTS header is present on the response."},
-			Warnings: []string{},
-		},
-	)
-}
-
-func TestRemovableDomainNoPreload(t *testing.T) {
-	skipIfShort(t)
-	header, issues := RemovableDomain("hsts.badssl.com")
-	expectString(t, header, "max-age=15768000; includeSubDomains")
-	expectIssuesEmpty(t, issues)
-}
-
-func TestRemovableDomainPreload(t *testing.T) {
-	skipIfShort(t)
-	header, issues := RemovableDomain("preloaded-hsts.badssl.com")
-	expectString(t, header, "max-age=15768000; includeSubDomains; preload")
-	expectIssuesEqual(t, issues,
-		Issues{
-			Errors:   []string{"Header requirement error: Header must not contain the `preload` directive."},
-			Warnings: []string{},
-		},
-	)
-}

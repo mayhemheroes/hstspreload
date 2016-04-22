@@ -207,7 +207,7 @@ func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
 
 func RemovableHeader(hstsHeader HSTSHeader) (issues Issues) {
 	if hstsHeader.Preload {
-		issues = issues.addErrorf("Header requirement error: Header must not contain the `preload` directive.")
+		issues = issues.addErrorf("Header requirement error: For preload list removal, the header must not contain the `preload` directive.")
 	}
 
 	if hstsHeader.MaxAge == MaxAgeNotPresent {

@@ -6,11 +6,28 @@ import (
 	"testing"
 )
 
+/******** Helper functions tests. ********/
+
+func expectNil(t *testing.T, actual *string) {
+	if actual != nil {
+		t.Errorf("Expected nil.")
+	}
+}
+func expectString(t *testing.T, actual *string, expected string) {
+	if actual == nil {
+		t.Errorf("Expected `%s`, actual was nil.", expected)
+	} else if *actual != expected {
+		t.Errorf("Strings are not equal. Actual: `%s` Expected: `%s`", *actual, expected)
+	}
+}
+
+/******** Response tests. ********/
+
 func ExamplePreloadableResponse() {
 	resp, err := http.Get("localhost:8080")
 	if err != nil {
 		header, issues := PreloadableResponse(*resp)
-		fmt.Printf("Header: %s", header)
+		fmt.Printf("Header: %s", *header)
 		fmt.Printf("Issues: %v", issues)
 	}
 }
@@ -24,9 +41,7 @@ func TestPreloadableResponseGoodHeader(t *testing.T) {
 	resp.Header.Add(key, sentHeader)
 
 	header, issues := PreloadableResponse(resp)
-	if header != sentHeader {
-		t.Errorf("Unexpected header response: %s", sentHeader)
-	}
+	expectString(t, header, sentHeader)
 	expectIssuesEmpty(t, issues)
 }
 
@@ -39,9 +54,7 @@ func TestPreloadableResponseEmpty(t *testing.T) {
 	resp.Header.Add(key, sentHeader)
 
 	header, issues := PreloadableResponse(resp)
-	if header != sentHeader {
-		t.Errorf("Unexpected header response: %s", sentHeader)
-	}
+	expectString(t, header, sentHeader)
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
@@ -64,9 +77,7 @@ func TestPreloadableResponseMultipleErrors(t *testing.T) {
 
 	header, issues := PreloadableResponse(resp)
 
-	if header != sentHeader {
-		t.Errorf("Unexpected header response: %s", sentHeader)
-	}
+	expectString(t, header, sentHeader)
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
@@ -88,9 +99,7 @@ func TestPreloadableResponseMissingIncludeSubDomains(t *testing.T) {
 
 	header, issues := PreloadableResponse(resp)
 
-	if header != sentHeader {
-		t.Errorf("Unexpected header response: %s", sentHeader)
-	}
+	expectString(t, header, sentHeader)
 	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
 	)
@@ -100,7 +109,8 @@ func TestPreloadableResponseWithoutHSTSHeaders(t *testing.T) {
 	var resp http.Response
 	resp.Header = http.Header{}
 
-	_, issues := PreloadableResponse(resp)
+	header, issues := PreloadableResponse(resp)
+	expectNil(t, header)
 
 	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Response error: No HSTS header is present on the response."),
@@ -115,7 +125,8 @@ func TestPreloadableResponseMultipleHSTSHeaders(t *testing.T) {
 	resp.Header.Add(key, "max-age=10")
 	resp.Header.Add(key, "max-age=20")
 
-	_, issues := PreloadableResponse(resp)
+	header, issues := PreloadableResponse(resp)
+	expectNil(t, header)
 
 	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),

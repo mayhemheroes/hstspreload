@@ -23,7 +23,10 @@ test-build-travis:
 
 .PHONY: lint
 lint:
-	go vet
+	go vet github.com/chromium/hstspreload
+	go vet github.com/chromium/hstspreload/chromiumpreload
+	go vet github.com/chromium/hstspreload/cmd/hstspreload
+	go vet github.com/chromium/hstspreload/hstspreload.appspot.com
 
 .PHONY: hooks
 hooks: .git/hooks/pre-commit

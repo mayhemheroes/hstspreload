@@ -9,7 +9,9 @@ import (
 
 func ExamplePreloadableDomain() {
 	header, issues := PreloadableDomain("wikipedia.org")
-	fmt.Printf("Header: %s", header)
+	if header != nil {
+		fmt.Printf("Header: %s", *header)
+	}
 	fmt.Printf("Issues %v", issues)
 }
 
@@ -46,9 +48,7 @@ func skipIfShort(t *testing.T) {
 func TestPreloadableDomainIncompleteChain(t *testing.T) {
 	skipIfShort(t)
 	header, issues := PreloadableDomain("incomplete-chain.badssl.com")
-	if header != "" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectNil(t, header)
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
@@ -63,9 +63,7 @@ func TestPreloadableDomainIncompleteChain(t *testing.T) {
 func TestPreloadableDomainSHA1(t *testing.T) {
 	skipIfShort(t)
 	header, issues := PreloadableDomain("sha1.badssl.com")
-	if header != "" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectNil(t, header)
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
@@ -81,18 +79,14 @@ func TestPreloadableDomainSHA1(t *testing.T) {
 func TestPreloadableDomainWithValidHSTS(t *testing.T) {
 	skipIfShort(t)
 	header, issues := PreloadableDomain("wikipedia.org")
-	if header != "max-age=31536000; includeSubDomains; preload" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectString(t, header, "max-age=31536000; includeSubDomains; preload")
 	expectIssuesEmpty(t, issues)
 }
 
 func TestPreloadableDomainSubdomain(t *testing.T) {
 	skipIfShort(t)
 	header, issues := PreloadableDomain("en.wikipedia.org")
-	if header != "max-age=31536000; includeSubDomains; preload" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectString(t, header, "max-age=31536000; includeSubDomains; preload")
 	expectIssuesEqual(t, issues,
 		NewIssues().addErrorf("Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."),
 	)
@@ -101,9 +95,7 @@ func TestPreloadableDomainSubdomain(t *testing.T) {
 func TestPreloadableDomainWithoutHSTS(t *testing.T) {
 	skipIfShort(t)
 	header, issues := PreloadableDomain("example.com")
-	if header != "" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectNil(t, header)
 	expectIssuesEqual(t, issues,
 		Issues{
 			Errors: []string{
@@ -120,9 +112,7 @@ func TestPreloadableDomainBogusDomain(t *testing.T) {
 	// The error message contains a local IP in Travis CI. Since this is the only
 	// such test, we work around it with more crude checks.
 	header, issues := PreloadableDomain("example.notadomain")
-	if header != "" {
-		t.Errorf("Unexpected header response: %s", header)
-	}
+	expectNil(t, header)
 	if len(issues.Errors) != 1 || len(issues.Warnings) != 0 {
 		t.Errorf("Expected one error and no warnings.")
 	}
@@ -135,9 +125,7 @@ func TestPreloadableDomainBogusDomain(t *testing.T) {
 
 	// Normal test
 	// header, issues := PreloadableDomain("example.notadomain")
-	// if header != "" {
-	// 	t.Errorf("Unexpected header response: %s", header)
-	// }
+	// expectNil(t, header)
 	// expectIssuesEqual(t, issues,
 	// 	NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"))
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chromium/hstspreload"
+	"github.com/chromium/hstspreload/chromiumpreload"
 	"github.com/fatih/color"
 )
 
@@ -27,6 +28,7 @@ The commands are:
   removabledomain   (-d) Check the headers of a domain for removal requirements.
   preloadableheader (+h) Check an HSTS header for preload requirements
   removableheader   (-h) Check an HSTS header for removal requirements
+  status                 Check the preload status of a domain
 
 Examples:
 
@@ -70,6 +72,15 @@ Return code:
 		fallthrough
 	case "removabledomain":
 		header, issues = removableDomain(args[1])
+
+	case "status":
+		l, err := chromiumpreload.GetLatest()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s\n", err)
+		}
+		m := chromiumpreload.PreloadEntriesToMap(l)
+		fmt.Printf("Status: %v", m[chromiumpreload.Domain(args[1])])
+		os.Exit(0)
 
 	default:
 		fmt.Printf("Unknown command: %s\n", args[0])

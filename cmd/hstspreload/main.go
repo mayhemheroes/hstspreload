@@ -24,8 +24,7 @@ The commands are:
 
   preloadabledomain (+d) Check the TLS configuration and headers of a domain for
                          preload requirements.
-  removabledomain   (-d) Check the TLS configuration and headers of a domain for
-                         removal requirements.
+  removabledomain   (-d) Check the headers of a domain for removal requirements.
   preloadableheader (+h) Check an HSTS header for preload requirements
   removableheader   (-h) Check an HSTS header for removal requirements
 

@@ -30,6 +30,10 @@ var dialer = net.Dialer{
 	Timeout: dialTimeout,
 }
 
+var clientWithTimeout = &http.Client{
+	Timeout: dialTimeout,
+}
+
 // PreloadableDomain checks whether the domain passes HSTS preload
 // requirements for Chromium. This includes:
 //
@@ -63,31 +67,52 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	if len(respIssues.Errors) == 0 {
 		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
 
-		chan1 := make(chan Issues)
-		chan2 := make(chan Issues)
-		chan3 := make(chan Issues)
-		chan4 := make(chan Issues)
+		chanPreloadableResponse := make(chan Issues)
+		chanHTTPRedirects := make(chan Issues)
+		chanHTTPFirstRedirectsHSTS := make(chan Issues)
+		chanHTTPSRedirects := make(chan Issues)
+		chanWWW := make(chan Issues)
 
+		// PreloadableResponse
 		go func() {
 			var preloadableIssues Issues
 			header, preloadableIssues = PreloadableResponse(*resp)
-			chan1 <- preloadableIssues
+			chanPreloadableResponse <- preloadableIssues
 		}()
-		go func() { chan2 <- checkHTTPRedirects(domain) }()
-		go func() { chan3 <- checkHTTPSRedirects(domain) }()
+
+		// checkHTTPRedirects
+		go func() {
+			mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects(domain)
+			chanHTTPRedirects <- mainIssues
+			chanHTTPFirstRedirectsHSTS <- firstRedirectHSTSIssues
+		}()
+
+		// checkHTTPSRedirects
+		go func() {
+			chanHTTPSRedirects <- checkHTTPSRedirects(domain)
+		}()
+
+		// checkWWW
 		go func() {
 			// Skip the WWW check if the domain is not eTLD+1.
 			if len(eTLD1Issues.Errors) == 0 {
-				chan4 <- checkWWW(domain)
+				chanWWW <- checkWWW(domain)
 			}
-			chan4 <- NewIssues()
+			chanWWW <- NewIssues()
 		}()
 
 		// Combine the issues in deterministic order.
-		issues = combineIssues(issues, <-chan1)
-		issues = combineIssues(issues, <-chan2)
-		issues = combineIssues(issues, <-chan3)
-		issues = combineIssues(issues, <-chan4)
+		preloadableResponseIssues := <-chanPreloadableResponse
+		issues = combineIssues(issues, preloadableResponseIssues)
+		issues = combineIssues(issues, <-chanHTTPRedirects)
+		// If there are issues with the HSTS header in the main
+		// PreloadableResponse() check, it is redundant to report
+		// them in the response after redirecting from HTTP.
+		if len(preloadableResponseIssues.Errors) == 0 {
+			issues = combineIssues(issues, <-chanHTTPFirstRedirectsHSTS)
+		}
+		issues = combineIssues(issues, <-chanHTTPSRedirects)
+		issues = combineIssues(issues, <-chanWWW)
 	}
 
 	return header, issues
@@ -187,26 +212,48 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 	return issues
 }
 
-func checkHTTPRedirects(domain string) Issues {
+func checkHTTPRedirects(domain string) (mainIssues Issues, firstRedirectHSTSIssues Issues) {
 	chain, issues := checkRedirects("http://" + domain)
 	if len(chain) == 0 {
 		return issues.addErrorf(
 			"Redirect error: `%s` does not redirect to `%s`.",
 			"http://"+domain,
 			"https://"+domain,
-		)
+		), firstRedirectHSTSIssues
 	}
 
 	if chain[0].Host != domain {
-		issues = issues.addErrorf(
+		return issues.addErrorf(
 			"Redirect error: the first redirect from `%s` is not to a secure page on the same host (`%s`). "+
 				"It is to `%s` instead.",
 			"http://"+domain,
 			"https://"+domain,
 			chain[0],
-		)
+		), firstRedirectHSTSIssues
 	}
-	return issues
+
+	if chain[0].Scheme == "https" && chain[0].Host == domain {
+		resp, err := clientWithTimeout.Get(chain[0].String())
+		if err != nil {
+			return mainIssues, firstRedirectHSTSIssues.addErrorf(
+				"Redirect error: `%s` redirects to `%s`, which we could not connect to: %s",
+				"http://"+domain,
+				chain[0],
+				err,
+			)
+		}
+		_, redirectHSTSIssues := PreloadableResponse(*resp)
+		if len(redirectHSTSIssues.Errors) > 0 {
+			return mainIssues, firstRedirectHSTSIssues.addErrorf(
+				"Redirect error: `%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
+				"http://"+domain,
+				chain[0],
+				redirectHSTSIssues.Errors[0],
+			)
+		}
+	}
+
+	return issues, firstRedirectHSTSIssues
 }
 
 func checkHTTPSRedirects(domain string) Issues {

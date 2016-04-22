@@ -198,40 +198,74 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 
 func TestHTTPNoRedirect(t *testing.T) {
 	skipIfShort(t)
-	issues := checkHTTPRedirects("httpbin.org")
+	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("httpbin.org")
 	expectIssuesEqual(
 		t,
-		issues,
+		mainIssues,
 		Issues{
 			Errors:   []string{"Redirect error: `http://httpbin.org` does not redirect to `https://httpbin.org`."},
 			Warnings: []string{},
 		},
 	)
+	expectIssuesEmpty(t, firstRedirectHSTSIssues)
 }
 
 func TestHTTPWrongHostRedirect(t *testing.T) {
 	skipIfShort(t)
 	// http://bofa.com redirects to https://www.bankofamerica.com
-	issues := checkHTTPRedirects("bofa.com")
+	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("bofa.com")
 	expectIssuesEqual(
 		t,
-		issues,
+		mainIssues,
 		Issues{
 			Errors:   []string{"Redirect error: the first redirect from `http://bofa.com` is not to a secure page on the same host (`https://bofa.com`). It is to `https://www.bankofamerica.com/vanity/redirect.go?src=/` instead."},
 			Warnings: []string{},
 		},
 	)
+	expectIssuesEmpty(t, firstRedirectHSTSIssues)
 }
 
 func TestHTTPSameOriginRedirect(t *testing.T) {
 	skipIfShort(t)
 	// http://www.wikia.com redirects to http://www.wikia.com/fandom
-	issues := checkHTTPRedirects("www.wikia.com")
+	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("www.wikia.com")
 	expectIssuesEqual(
 		t,
-		issues,
+		mainIssues,
 		Issues{
 			Errors:   []string{"Redirect error: `http://www.wikia.com` redirects to an insecure page: `http://www.wikia.com/fandom`"},
+			Warnings: []string{},
+		},
+	)
+	expectIssuesEmpty(t, firstRedirectHSTSIssues)
+}
+
+func TestRemovableDomainNoHeader(t *testing.T) {
+	skipIfShort(t)
+	header, issues := RemovableDomain("example.com")
+	expectNil(t, header)
+	expectIssuesEqual(t, issues,
+		Issues{
+			Errors:   []string{"Response error: No HSTS header is present on the response."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestRemovableDomainNoPreload(t *testing.T) {
+	skipIfShort(t)
+	header, issues := RemovableDomain("hsts.badssl.com")
+	expectString(t, header, "max-age=15768000; includeSubDomains")
+	expectIssuesEmpty(t, issues)
+}
+
+func TestRemovableDomainPreload(t *testing.T) {
+	skipIfShort(t)
+	header, issues := RemovableDomain("preloaded-hsts.badssl.com")
+	expectString(t, header, "max-age=15768000; includeSubDomains; preload")
+	expectIssuesEqual(t, issues,
+		Issues{
+			Errors:   []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."},
 			Warnings: []string{},
 		},
 	)

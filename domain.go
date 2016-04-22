@@ -30,7 +30,7 @@ var dialer = net.Dialer{
 	Timeout: dialTimeout,
 }
 
-var clientWithTimeout = &http.Client{
+var clientWithTimeout = http.Client{
 	Timeout: dialTimeout,
 }
 
@@ -143,7 +143,7 @@ func RemovableDomain(domain string) (header *string, issues Issues) {
 func getResponse(domain string) (resp *http.Response, issues Issues) {
 	redirectPrevented := errors.New("REDIRECT_PREVENTED")
 
-	client := &http.Client{
+	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return redirectPrevented
 		},
@@ -293,7 +293,7 @@ func checkRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 	var redirectChain []*url.URL
 	tooManyRedirects := errors.New("TOO_MANY_REDIRECTS")
 
-	client := &http.Client{
+	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			redirectChain = append(redirectChain, req.URL)
 

@@ -1,15 +1,12 @@
-// Package hstspreload has 4 parts:
+// Package hstspreload has 5 parts:
 //
-// - A Go package with functions to check HSTS preload requirements.
+// - The `hstspreload` package with functions to check HSTS preload requirements.
 //
-// - The `hstspreload` command line tool, which can be installed with:
+// - The `chromiumpreload` package, to query Chromium preload list state.
 //
-//     go get github.com/chromium/hstspreload/cmd/hstspreload
+// - The `hstspreload` command line tool.
 //
-// - The `transport_security_state_static_generate.go` script, which can
-// be installed with:
-//
-//     go get github.com/chromium/hstspreload/cmd/transport_security_state_static_generate
+// - The `transport_security_state_static_generate` script.
 //
 // - Source code for hstspreload.appspot.com
 package hstspreload

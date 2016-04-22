@@ -13,7 +13,7 @@ This repo is currently (April 2016) undergoing a full rewrite. See the [`app-eng
 
 To check if a domain satisfies the requirements for preloading (assuming `$PATH` contains `$GOPATH/bin/`):
 
-    go get github.com/chromium/hstspreload/cmd/hstspreload
-    hstspreload checkdomain wikipedia.org
+    go get github.com/chromium/hstspreload/...
+    hstspreload preloadabledomain wikipedia.org
 
 For full documentation, see <https://godoc.org/github.com/chromium/hstspreload>

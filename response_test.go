@@ -132,3 +132,70 @@ func TestPreloadableResponseMultipleHSTSHeaders(t *testing.T) {
 		NewIssues().addErrorf("Response error: Multiple HSTS headers (number of HSTS headers: 2)."),
 	)
 }
+
+func TestRemovableResponseNoHeader(t *testing.T) {
+	var resp http.Response
+	resp.Header = http.Header{}
+
+	header, issues := RemovableResponse(resp)
+	expectNil(t, header)
+
+	expectIssuesEqual(t, issues,
+		NewIssues().addErrorf("Response error: No HSTS header is present on the response."),
+	)
+}
+
+func TestRemovableResponseNoPreload(t *testing.T) {
+	var resp http.Response
+	resp.Header = http.Header{}
+
+	key := http.CanonicalHeaderKey("Strict-Transport-Security")
+	sentHeader := "max-age=15768000; includeSubDomains"
+	resp.Header.Add(key, sentHeader)
+
+	header, issues := RemovableResponse(resp)
+	expectString(t, header, sentHeader)
+
+	expectIssuesEmpty(t, issues)
+}
+
+func TestRemovableResponsePreload(t *testing.T) {
+	var resp http.Response
+	resp.Header = http.Header{}
+
+	key := http.CanonicalHeaderKey("Strict-Transport-Security")
+	sentHeader := "max-age=15768000; includeSubDomains; preload"
+	resp.Header.Add(key, sentHeader)
+
+	header, issues := RemovableResponse(resp)
+	expectString(t, header, sentHeader)
+
+	expectIssuesEqual(t, issues,
+		Issues{
+			Errors:   []string{"Header requirement error: Header must not contain the `preload` directive."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestRemovableResponsePreloadOnly(t *testing.T) {
+	var resp http.Response
+	resp.Header = http.Header{}
+
+	key := http.CanonicalHeaderKey("Strict-Transport-Security")
+	sentHeader := "preload"
+	resp.Header.Add(key, sentHeader)
+
+	header, issues := RemovableResponse(resp)
+	expectString(t, header, sentHeader)
+
+	expectIssuesEqual(t, issues,
+		Issues{
+			Errors: []string{
+				"Header requirement error: Header must not contain the `preload` directive.",
+				"Header requirement error: Header must contain a valid `max-age` directive.",
+			},
+			Warnings: []string{},
+		},
+	)
+}

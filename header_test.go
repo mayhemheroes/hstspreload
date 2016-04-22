@@ -461,3 +461,63 @@ func TestPreloadableHeaderStringMissingPreloadAndMoreThanTenYears(t *testing.T) 
 		},
 	)
 }
+
+/******** RemovableResponseString() without issues. ********/
+
+func TestRemovableResponseStringOkay(t *testing.T) {
+	expectIssuesEmpty(t,
+		RemovableHeaderString("max-age=315360001; includeSubDomains"),
+	)
+	expectIssuesEmpty(t,
+		RemovableHeaderString("max-age=315360001"),
+	)
+}
+
+func TestRemovableResponseStringMaxAge0(t *testing.T) {
+	expectIssuesEmpty(t,
+		RemovableHeaderString("max-age=0"),
+	)
+}
+
+func TestRemovableResponseStringMaxAgeMissing(t *testing.T) {
+	expectIssuesEqual(t,
+		RemovableHeaderString("includeSubDomains"),
+		Issues{
+			Errors:   []string{"Header requirement error: Header must contain a valid `max-age` directive."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestRemovableResponseStringEmptyHeader(t *testing.T) {
+	expectIssuesEqual(t,
+		RemovableHeaderString(""),
+		Issues{
+			Errors:   []string{"Header requirement error: Header must contain a valid `max-age` directive."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestRemovableResponseStringPreloadPresent(t *testing.T) {
+	expectIssuesEqual(t,
+		RemovableHeaderString("max-age=315360001; includeSubDomains; preload"),
+		Issues{
+			Errors:   []string{"Header requirement error: Header must not contain the `preload` directive."},
+			Warnings: []string{},
+		},
+	)
+}
+
+func TestRemovableResponseStringPreloadOnly(t *testing.T) {
+	expectIssuesEqual(t,
+		RemovableHeaderString("preload"),
+		Issues{
+			Errors: []string{
+				"Header requirement error: Header must not contain the `preload` directive.",
+				"Header requirement error: Header must contain a valid `max-age` directive.",
+			},
+			Warnings: []string{},
+		},
+	)
+}

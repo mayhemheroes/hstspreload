@@ -238,7 +238,7 @@ func TestHTTPWrongHostRedirect(t *testing.T) {
 		t,
 		mainIssues,
 		Issues{
-			Errors:   []string{"Redirect error: the first redirect from `http://bofa.com` is not to a secure page on the same host (`https://bofa.com`). It is to `https://www.bankofamerica.com/vanity/redirect.go?src=/` instead."},
+			Errors:   []string{"Redirect error: `http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`)."},
 			Warnings: []string{},
 		},
 	)
@@ -253,7 +253,21 @@ func TestHTTPSameOriginRedirect(t *testing.T) {
 		t,
 		mainIssues,
 		Issues{
-			Errors:   []string{"Redirect error: the first redirect from `http://www.wikia.com` is not to a secure page on the same host (`https://www.wikia.com`). It is to `http://www.wikia.com/fandom` instead."},
+			Errors:   []string{"Redirect error: `http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`)."},
+			Warnings: []string{},
+		},
+	)
+	expectIssuesEmpty(t, firstRedirectHSTSIssues)
+}
+
+func TestHTTPRedirectWWWFirst(t *testing.T) {
+	skipIfShort(t)
+	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("android.com")
+	expectIssuesEqual(
+		t,
+		mainIssues,
+		Issues{
+			Errors:   []string{"Redirect error: `http://android.com` (HTTP) should immediately redirect to `https://android.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.android.com/`."},
 			Warnings: []string{},
 		},
 	)

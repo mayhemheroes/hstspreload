@@ -21,6 +21,7 @@ const (
 	// The maximum number of redirects when you visit the root path of the
 	// domain over HTTP or HTTPS.
 	maxRedirects = 3
+	httpScheme   = "http"
 	httpsScheme  = "https"
 )
 
@@ -267,13 +268,25 @@ func checkHTTPRedirectsURL(initialURL string, domain string) (mainIssues Issues,
 
 		mainIssues = combineIssues(mainIssues, checkRedirectChainForHTTP(initialURL, chain))
 		return mainIssues, firstRedirectHSTSIssues
-	} else {
+	} else if chain[0].Host == "www."+domain {
+		// For simplicity, we use the same message for two cases:
+		// - http://example.com -> http://www.example.com
+		// - http://example.com -> https://www.example.com
 		return issues.addErrorf(
-			"Redirect error: the first redirect from `%s` is not to a secure page on the same host (`%s`). "+
-				"It is to `%s` instead.",
+			"Redirect error: `%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
+				"before adding the www subdomain. Right now, the first redirect is to `%s`.",
 			initialURL,
 			"https://"+domain,
 			chain[0],
+		), firstRedirectHSTSIssues
+	} else {
+		return issues.addErrorf(
+			"Redirect error: `%s` (HTTP) redirects to `%s`. The first redirect "+
+				"from `%s` should be to a secure page on the same host (`%s`).",
+			initialURL,
+			chain[0],
+			initialURL,
+			"https://"+domain,
 		), firstRedirectHSTSIssues
 	}
 }

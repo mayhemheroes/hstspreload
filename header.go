@@ -160,22 +160,23 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 	return hstsHeader, issues
 }
 
-// PreloadableHeader checks whether hstsHeader satisfies all requirements
-// for preloading in Chromium.
-//
-// To interpret the result, see the list of conventions in the
-// documentation for Issues.
-//
-// Most of the time, you'll probably want to use PreloadableHeaderString() instead.
-func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
-	if !hstsHeader.IncludeSubDomains {
-		issues = issues.addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive.")
-	}
-
+func preloadableHeaderPreload(hstsHeader HSTSHeader) (issues Issues) {
 	if !hstsHeader.Preload {
 		issues = issues.addErrorf("Header requirement error: Header must contain the `preload` directive.")
 	}
 
+	return issues
+}
+
+func preloadableHeaderSubDomains(hstsHeader HSTSHeader) (issues Issues) {
+	if !hstsHeader.IncludeSubDomains {
+		issues = issues.addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive.")
+	}
+
+	return issues
+}
+
+func preloadableHeaderMaxAge(hstsHeader HSTSHeader) (issues Issues) {
 	switch {
 	case hstsHeader.MaxAge == MaxAgeNotPresent:
 		issues = issues.addErrorf("Header requirement error: Header must contain a valid `max-age` directive.")
@@ -202,6 +203,20 @@ func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
 
 	}
 
+	return issues
+}
+
+// PreloadableHeader checks whether hstsHeader satisfies all requirements
+// for preloading in Chromium.
+//
+// To interpret the result, see the list of conventions in the
+// documentation for Issues.
+//
+// Most of the time, you'll probably want to use PreloadableHeaderString() instead.
+func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
+	issues = combineIssues(issues, preloadableHeaderSubDomains(hstsHeader))
+	issues = combineIssues(issues, preloadableHeaderPreload(hstsHeader))
+	issues = combineIssues(issues, preloadableHeaderMaxAge(hstsHeader))
 	return issues
 }
 

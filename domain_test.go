@@ -262,12 +262,15 @@ func TestHTTPSameOriginRedirect(t *testing.T) {
 
 func TestHTTPRedirectWWWFirst(t *testing.T) {
 	skipIfShort(t)
-	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("android.com")
+	mainIssues, firstRedirectHSTSIssues := checkHTTPRedirects("blogger.com")
 	expectIssuesEqual(
 		t,
 		mainIssues,
 		Issues{
-			Errors:   []string{"Redirect error: `http://android.com` (HTTP) should immediately redirect to `https://android.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.android.com/`."},
+			Errors: []string{
+				"Redirect error: More than 3 redirects from `http://blogger.com`.",
+				"Redirect error: `http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+			},
 			Warnings: []string{},
 		},
 	)

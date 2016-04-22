@@ -210,6 +210,10 @@ func RemovableHeader(hstsHeader HSTSHeader) (issues Issues) {
 		issues = issues.addErrorf("Header requirement error: Header must not contain the `preload` directive.")
 	}
 
+	if hstsHeader.MaxAge == MaxAgeNotPresent {
+		issues = issues.addErrorf("Header requirement error: Header must contain a valid `max-age` directive.")
+	}
+
 	return issues
 }
 

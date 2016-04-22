@@ -212,73 +212,90 @@ func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
 	return issues
 }
 
+func checkRedirectChainForHTTP(initialURL string, chain []*url.URL) (issues Issues) {
+	for i, u := range chain {
+		if u.Scheme != httpsScheme {
+			if i == 0 {
+				return issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", initialURL, u)
+			} else {
+				return issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, i+1, u)
+			}
+		}
+	}
+	return issues
+}
+
 func checkHTTPRedirects(domain string) (mainIssues Issues, firstRedirectHSTSIssues Issues) {
-	chain, issues := checkRedirects("http://" + domain)
+	return checkHTTPRedirectsURL("http://"+domain, domain)
+}
+
+// Taking a URL allows us to test more easily. Use checkHTTPRedirects()
+// where possible.
+func checkHTTPRedirectsURL(initialURL string, domain string) (mainIssues Issues, firstRedirectHSTSIssues Issues) {
+	chain, issues := checkRedirects(initialURL)
 	if len(chain) == 0 {
 		return issues.addErrorf(
 			"Redirect error: `%s` does not redirect to `%s`.",
-			"http://"+domain,
+			initialURL,
 			"https://"+domain,
 		), firstRedirectHSTSIssues
 	}
 
-	if chain[0].Host != domain {
+	if chain[0].Scheme == httpsScheme && chain[0].Host == domain {
+		// Check for HSTS on the first redirect.
+		resp, err := clientWithTimeout.Get(chain[0].String())
+		if err != nil {
+			// We cannot connect this time. This error has high priority,
+			// so return immediately and allow it to mask other errors.
+			return mainIssues, firstRedirectHSTSIssues.addErrorf(
+				"Redirect error: `%s` redirects to `%s`, which we could not connect to: %s",
+				initialURL,
+				chain[0],
+				err,
+			)
+		} else {
+			_, redirectHSTSIssues := PreloadableResponse(*resp)
+			if len(redirectHSTSIssues.Errors) > 0 {
+				firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
+					"Redirect error: `%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
+					initialURL,
+					chain[0],
+					redirectHSTSIssues.Errors[0],
+				)
+			}
+		}
+
+		mainIssues = combineIssues(mainIssues, checkRedirectChainForHTTP(initialURL, chain))
+		return mainIssues, firstRedirectHSTSIssues
+	} else {
 		return issues.addErrorf(
 			"Redirect error: the first redirect from `%s` is not to a secure page on the same host (`%s`). "+
 				"It is to `%s` instead.",
-			"http://"+domain,
+			initialURL,
 			"https://"+domain,
 			chain[0],
 		), firstRedirectHSTSIssues
 	}
-
-	if chain[0].Scheme == "https" && chain[0].Host == domain {
-		resp, err := clientWithTimeout.Get(chain[0].String())
-		if err != nil {
-			return mainIssues, firstRedirectHSTSIssues.addErrorf(
-				"Redirect error: `%s` redirects to `%s`, which we could not connect to: %s",
-				"http://"+domain,
-				chain[0],
-				err,
-			)
-		}
-		_, redirectHSTSIssues := PreloadableResponse(*resp)
-		if len(redirectHSTSIssues.Errors) > 0 {
-			return mainIssues, firstRedirectHSTSIssues.addErrorf(
-				"Redirect error: `%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
-				"http://"+domain,
-				chain[0],
-				redirectHSTSIssues.Errors[0],
-			)
-		}
-	}
-
-	return issues, firstRedirectHSTSIssues
 }
 
 func checkHTTPSRedirects(domain string) Issues {
-	_, issues := checkRedirects("https://" + domain)
-	return issues
+	return checkHTTPSRedirectsURL("https://" + domain)
+}
+
+// Taking a URL allows us to test more easily. Use checkHTTPSRedirects()
+// where possible.
+func checkHTTPSRedirectsURL(initialURL string) Issues {
+	chain, issues := checkRedirects(initialURL)
+	return combineIssues(issues, checkRedirectChainForHTTP(initialURL, chain))
 }
 
 func checkRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 	var redirectChain []*url.URL
-
-	insecureRedirect := errors.New("INSECURE_REDIRECT")
 	tooManyRedirects := errors.New("TOO_MANY_REDIRECTS")
 
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			redirectChain = append(redirectChain, req.URL)
-
-			if req.URL.Scheme != httpsScheme {
-				if len(redirectChain) == 1 {
-					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", initialURL, req.URL)
-				} else {
-					issues = issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, len(redirectChain), req.URL)
-				}
-				return insecureRedirect
-			}
 
 			if len(redirectChain) > maxRedirects {
 				issues = issues.addErrorf("Redirect error: More than %d redirects from `%s`.", maxRedirects, initialURL)
@@ -292,8 +309,7 @@ func checkRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 
 	_, err := client.Get(initialURL)
 	if err != nil {
-		if !strings.HasSuffix(err.Error(), insecureRedirect.Error()) &&
-			!strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
+		if !strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
 			issues = issues.addErrorf("Redirect error: %s", err.Error())
 		}
 	}

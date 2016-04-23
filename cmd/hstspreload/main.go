@@ -7,7 +7,6 @@ import (
 
 	"github.com/chromium/hstspreload"
 	"github.com/chromium/hstspreload/chromiumpreload"
-	"github.com/wsxiaoys/terminal"
 )
 
 func main() {
@@ -91,9 +90,9 @@ Return code:
 	showResult := func() int {
 		if header != nil {
 			fmt.Printf("Observed header: ")
-			terminal.Stdout.Color("!")
+			format(bold)
 			fmt.Printf("%s\n", *header)
-			terminal.Stdout.Reset()
+			format(reset)
 		}
 
 		fmt.Printf("\n")
@@ -105,19 +104,19 @@ Return code:
 			return 2
 
 		default:
-			terminal.Stdout.Color("!g")
+			format(green)
 			fmt.Printf("Satisfies requirements.\n\n")
-			terminal.Stdout.Reset()
+			format(reset)
 			return 0
 		}
 	}
 	exitCode := showResult()
 
-	terminal.Stdout.Color("r")
+	format(red)
 	printList(issues.Errors, "Error")
-	terminal.Stdout.Color("y")
+	format(yellow)
 	printList(issues.Warnings, "Warning")
-	terminal.Stdout.Reset()
+	format(reset)
 
 	os.Exit(exitCode)
 }
@@ -126,9 +125,9 @@ func preloadableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
 
 	fmt.Printf("Checking header \"")
-	terminal.Stdout.Color("!")
+	format(bold)
 	fmt.Printf("%s", header)
-	terminal.Stdout.Reset()
+	format(reset)
 	fmt.Printf("\" for preload requirements...\n")
 
 	return hstspreload.PreloadableHeaderString(header)
@@ -138,9 +137,9 @@ func removableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
 
 	fmt.Printf("Checking header \"")
-	terminal.Stdout.Color("!")
+	format(bold)
 	fmt.Printf("%s", header)
-	terminal.Stdout.Reset()
+	format(reset)
 	fmt.Printf("\" for removal requirements...\n")
 
 	return hstspreload.RemovableHeaderString(header)
@@ -150,9 +149,9 @@ func preloadableDomain(domain string) (header *string, issues hstspreload.Issues
 	expectDomainOrExit(domain)
 
 	fmt.Printf("Checking domain ")
-	terminal.Stdout.Color("!")
+	format(underline)
 	fmt.Printf("%s", domain)
-	terminal.Stdout.Reset()
+	format(reset)
 	fmt.Printf(" for preload requirements...\n")
 
 	return hstspreload.PreloadableDomain(domain)
@@ -162,9 +161,9 @@ func removableDomain(domain string) (header *string, issues hstspreload.Issues) 
 	expectDomainOrExit(domain)
 
 	fmt.Printf("Checking domain ")
-	terminal.Stdout.Color("!")
+	format(underline)
 	fmt.Printf("%s", domain)
-	terminal.Stdout.Reset()
+	format(reset)
 	fmt.Printf(" for removal requirements...\n")
 
 	return hstspreload.RemovableDomain(domain)

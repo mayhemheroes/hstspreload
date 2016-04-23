@@ -7,7 +7,7 @@ import (
 
 	"github.com/chromium/hstspreload"
 	"github.com/chromium/hstspreload/chromiumpreload"
-	"github.com/fatih/color"
+	"github.com/wsxiaoys/terminal"
 )
 
 func main() {
@@ -89,10 +89,11 @@ Return code:
 
 	// Wrap this in a function to (statically) enforce a return code.
 	showResult := func() int {
-		bold := color.New(color.Bold)
 		if header != nil {
 			fmt.Printf("Observed header: ")
-			bold.Printf("%s\n", *header)
+			terminal.Stdout.Color("!")
+			fmt.Printf("%s\n", *header)
+			terminal.Stdout.Reset()
 		}
 
 		fmt.Printf("\n")
@@ -104,42 +105,68 @@ Return code:
 			return 2
 
 		default:
-			boldGreen := color.New(color.Bold, color.FgGreen)
-			boldGreen.Printf("Satisfies requirements.\n\n")
+			terminal.Stdout.Color("!g")
+			fmt.Printf("Satisfies requirements.\n\n")
+			terminal.Stdout.Reset()
 			return 0
 		}
 	}
 	exitCode := showResult()
-	printList(issues.Errors, "Error", color.New(color.FgRed))
-	printList(issues.Warnings, "Warning", color.New(color.FgYellow))
+
+	terminal.Stdout.Color("r")
+	printList(issues.Errors, "Error")
+	terminal.Stdout.Color("y")
+	printList(issues.Warnings, "Warning")
+	terminal.Stdout.Reset()
+
 	os.Exit(exitCode)
 }
 
 func preloadableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
-	bolded := color.New(color.Bold).SprintFunc()
-	fmt.Printf("Checking header \"%s\" for preload requirements...\n", bolded(header))
+
+	fmt.Printf("Checking header \"")
+	terminal.Stdout.Color("!")
+	fmt.Printf("%s", header)
+	terminal.Stdout.Reset()
+	fmt.Printf("\" for preload requirements...\n")
+
 	return hstspreload.PreloadableHeaderString(header)
 }
 
 func removableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
-	bolded := color.New(color.Bold).SprintFunc()
-	fmt.Printf("Checking header \"%s\" for removal requirements...\n", bolded(header))
+
+	fmt.Printf("Checking header \"")
+	terminal.Stdout.Color("!")
+	fmt.Printf("%s", header)
+	terminal.Stdout.Reset()
+	fmt.Printf("\" for removal requirements...\n")
+
 	return hstspreload.RemovableHeaderString(header)
 }
 
 func preloadableDomain(domain string) (header *string, issues hstspreload.Issues) {
 	expectDomainOrExit(domain)
-	bolded := color.New(color.Bold).SprintFunc()
-	fmt.Printf("Checking domain %s for preload requirements...\n", bolded(domain))
+
+	fmt.Printf("Checking domain ")
+	terminal.Stdout.Color("!")
+	fmt.Printf("%s", domain)
+	terminal.Stdout.Reset()
+	fmt.Printf(" for preload requirements...\n")
+
 	return hstspreload.PreloadableDomain(domain)
 }
 
 func removableDomain(domain string) (header *string, issues hstspreload.Issues) {
 	expectDomainOrExit(domain)
-	bolded := color.New(color.Bold).SprintFunc()
-	fmt.Printf("Checking domain %s for removal requirements...\n", bolded(domain))
+
+	fmt.Printf("Checking domain ")
+	terminal.Stdout.Color("!")
+	fmt.Printf("%s", domain)
+	terminal.Stdout.Reset()
+	fmt.Printf(" for removal requirements...\n")
+
 	return hstspreload.RemovableDomain(domain)
 }
 
@@ -180,7 +207,7 @@ func probablyDomain(str string) bool {
 	return strings.Contains(str, ".") && !strings.Contains(str, " ")
 }
 
-func printList(list []string, title string, color *color.Color) {
+func printList(list []string, title string) {
 	if len(list) == 0 {
 		return
 	}
@@ -189,11 +216,11 @@ func printList(list []string, title string, color *color.Color) {
 	if len(list) != 1 {
 		titlePluralized += "s"
 	}
-	color.Printf("%s:\n", titlePluralized)
+	fmt.Printf("%s:\n", titlePluralized)
 
 	for i, s := range list {
-		color.Printf("\n%d. %s\n", i+1, s)
+		fmt.Printf("\n%d. %s\n", i+1, s)
 	}
 
-	color.Printf("\n")
+	fmt.Printf("\n")
 }

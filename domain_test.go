@@ -165,6 +165,53 @@ func TestPreloadableDomain(t *testing.T) {
 	}
 }
 
+var removableDomainTests = []struct {
+	description    string
+	domain         string
+	expectHeader   bool
+	expectedHeader string
+	expectedIssues Issues
+}{
+	{
+		"no header",
+		"example.com",
+		false, "",
+		Issues{Errors: []string{"Response error: No HSTS header is present on the response."}},
+	},
+	{
+		"no preload directive",
+		"hsts.badssl.com",
+		true, "max-age=15768000; includeSubDomains",
+		Issues{},
+	},
+	{
+		"preloaded",
+		"preloaded-hsts.badssl.com",
+		true, "max-age=15768000; includeSubDomains; preload",
+		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
+	},
+}
+
+func TestRemovableDomain(t *testing.T) {
+	skipIfShort(t)
+
+	for _, tt := range removableDomainTests {
+		header, issues := RemovableDomain(tt.domain)
+
+		if tt.expectHeader {
+			if header == nil {
+				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
+			} else if *header != tt.expectedHeader {
+				t.Errorf("[%s] %s: "+headersStringsShouldBeEqual, tt.description, tt.domain, header, tt.expectedHeader)
+			}
+		}
+
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] %s: "+issuesShouldBeEqual, tt.description, tt.domain, issues, tt.expectedIssues)
+		}
+	}
+}
+
 func TestPreloadableDomainBogusDomain(t *testing.T) {
 	skipIfShort(t)
 
@@ -343,52 +390,5 @@ func TestHTTPRedirectToCorrectOriginButNotHSTS(t *testing.T) {
 	expected := Issues{Errors: []string{"Redirect error: `http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: Response error: No HSTS header is present on the response."}}
 	if !issuesEqual(firstRedirectHSTSIssues, expected) {
 		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
-	}
-}
-
-var removableDomainTests = []struct {
-	description    string
-	domain         string
-	expectHeader   bool
-	expectedHeader string
-	expectedIssues Issues
-}{
-	{
-		"no header",
-		"example.com",
-		false, "",
-		Issues{Errors: []string{"Response error: No HSTS header is present on the response."}},
-	},
-	{
-		"no preload directive",
-		"hsts.badssl.com",
-		true, "max-age=15768000; includeSubDomains",
-		Issues{},
-	},
-	{
-		"preloaded",
-		"preloaded-hsts.badssl.com",
-		true, "max-age=15768000; includeSubDomains; preload",
-		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
-	},
-}
-
-func TestRemovableDomain(t *testing.T) {
-	skipIfShort(t)
-
-	for _, tt := range removableDomainTests {
-		header, issues := RemovableDomain(tt.domain)
-
-		if tt.expectHeader {
-			if header == nil {
-				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
-			} else if *header != tt.expectedHeader {
-				t.Errorf("[%s] %s: "+headersStringsShouldBeEqual, tt.description, tt.domain, header, tt.expectedHeader)
-			}
-		}
-
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] %s: "+issuesShouldBeEqual, tt.description, tt.domain, issues, tt.expectedIssues)
-		}
 	}
 }

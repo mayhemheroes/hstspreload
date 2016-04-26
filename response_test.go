@@ -18,7 +18,9 @@ func ExamplePreloadableResponse() {
 	resp, err := http.Get("localhost:8080")
 	if err != nil {
 		header, issues := PreloadableResponse(resp)
-		fmt.Printf("Header: %s", *header)
+		if header != nil {
+			fmt.Printf("Header: %s", *header)
+		}
 		fmt.Printf("Issues: %v", issues)
 	}
 }

@@ -276,50 +276,61 @@ func TestParseHeaderStringWithErrors(t *testing.T) {
 // We include a few direct tests here as a sanity check.
 
 func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeader(HSTSHeader{
-			Preload:           false,
-			IncludeSubDomains: true,
-			MaxAge:            315360001,
-		}),
-		Issues{
-			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
-			Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
-		},
-	)
+	issues := PreloadableHeader(HSTSHeader{
+		Preload:           false,
+		IncludeSubDomains: true,
+		MaxAge:            315360001,
+	})
+	expected := Issues{
+		Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
+		Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
+	}
+	if !issuesEqual(issues, expected) {
+		t.Errorf(issuesShouldBeEqual, issues, expected)
+	}
 }
 
 func TestPreloadableHeaderMaxAgeNotPresent(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeader(HSTSHeader{
-			Preload:           true,
-			IncludeSubDomains: true,
-			MaxAge:            -2,
-		}),
-		NewIssues().addErrorf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2"),
-	)
+	issues := PreloadableHeader(HSTSHeader{
+		Preload:           true,
+		IncludeSubDomains: true,
+		MaxAge:            -2,
+	})
+	expected := NewIssues().addErrorf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2")
+	if !issuesEqual(issues, expected) {
+		t.Errorf(issuesShouldBeEqual, issues, expected)
+	}
 }
 
 /******** PreloadableHeaderString() without issues. ********/
 
 func TestPreloadableHeaderStringFull(t *testing.T) {
-	expectIssuesEmpty(t, PreloadableHeaderString("max-age=10886400; includeSubDomains; preload"))
+	issues := PreloadableHeaderString("max-age=10886400; includeSubDomains; preload")
+	if !issuesEmpty(issues) {
+		t.Errorf(issuesShouldBeEmpty, issues)
+	}
 }
 
 /******** PreloadableHeaderString() with warnings only. ********/
 
 func TestPreloadableHeaderStringMoreThanTenYears(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("max-age=315360001; preload; includeSubDomains"),
-		NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."),
-	)
+	issues := PreloadableHeaderString("max-age=315360001; preload; includeSubDomains")
+	expected := NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.")
+	if !issuesEqual(issues, expected) {
+		t.Errorf(issuesShouldBeEqual, issues, expected)
+	}
 }
 
-/******** PreloadableHeaderString() with errors only. ********/
+/******** PreloadableHeaderString() with errors. ********/
 
-func TestPreloadableHeaderStringEmpty(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString(""),
+var preloadableHeaderStringTests = []struct {
+	description    string
+	header         string
+	expectedIssues Issues
+}{
+	{
+		"empty",
+		"",
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
@@ -328,33 +339,25 @@ func TestPreloadableHeaderStringEmpty(t *testing.T) {
 			},
 			Warnings: []string{"Syntax warning: Header is empty."},
 		},
-	)
-}
-
-func TestPreloadableHeaderStringMissingPreload(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains; max-age=10886400"),
+	},
+	{
+		"missing preload",
+		"includeSubDomains; max-age=10886400",
 		NewIssues().addErrorf("Header requirement error: Header must contain the `preload` directive."),
-	)
-}
-
-func TestPreloadableHeaderStringMissingIncludeSubdomains(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("preload; max-age=10886400"),
+	},
+	{
+		"missing includeSubdomains",
+		"preload; max-age=10886400",
 		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
-	)
-}
-
-func TestPreloadableHeaderStringMissingMaxAge(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains; preload"),
+	},
+	{
+		"missing max-age",
+		"includeSubDomains; preload",
 		NewIssues().addErrorf("Header requirement error: Header must contain a valid `max-age` directive."),
-	)
-}
-
-func TestPreloadableHeaderStringOnlyPreload(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("preload"),
+	},
+	{
+		"only preload",
+		"preload",
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
@@ -362,12 +365,10 @@ func TestPreloadableHeaderStringOnlyPreload(t *testing.T) {
 			},
 			Warnings: []string{},
 		},
-	)
-}
-
-func TestPreloadableHeaderStringOnlyIncludeSubdomains(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains"),
+	},
+	{
+		"only includeSubdomains",
+		"includeSubDomains",
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `preload` directive.",
@@ -375,12 +376,10 @@ func TestPreloadableHeaderStringOnlyIncludeSubdomains(t *testing.T) {
 			},
 			Warnings: []string{},
 		},
-	)
-}
-
-func TestPreloadableHeaderStringOnlyMaxAge(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("max-age=12345678"),
+	},
+	{
+		"only max-age",
+		"max-age=12345678",
 		Issues{
 			Errors: []string{
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
@@ -388,12 +387,10 @@ func TestPreloadableHeaderStringOnlyMaxAge(t *testing.T) {
 			},
 			Warnings: []string{},
 		},
-	)
-}
-
-func TestPreloadableHeaderStringMaxAgeWithoutValue(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains; preload; max-age"),
+	},
+	{
+		"max-age without vale",
+		"includeSubDomains; preload; max-age",
 		Issues{
 			Errors: []string{
 				"Syntax error: A max-age directive name is present without an associated value.",
@@ -401,34 +398,34 @@ func TestPreloadableHeaderStringMaxAgeWithoutValue(t *testing.T) {
 			},
 			Warnings: []string{},
 		},
-	)
-}
-
-func TestPreloadableHeaderStringMaxAge0(t *testing.T) {
-	// Give information about what to do if you want to remove HSTS.
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains; preload; max-age=0"),
+	},
+	{
+		"maxAge=0", // Give information about what to do if you want to remove HSTS.
+		"includeSubDomains; preload; max-age=0",
 		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0. If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"),
-	)
-}
-
-func TestPreloadableHeaderStringMaxAge100(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("includeSubDomains; preload; max-age=100"),
+	},
+	{
+		"maxAge=100",
+		"includeSubDomains; preload; max-age=100",
 		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."),
-	)
-}
-
-/******** PreloadableHeaderString() with errors and warnings. ********/
-
-func TestPreloadableHeaderStringMissingPreloadAndMoreThanTenYears(t *testing.T) {
-	expectIssuesEqual(t,
-		PreloadableHeaderString("max-age=315360001; includeSubDomains"),
+	},
+	{
+		"missing preload, >10 years",
+		"max-age=315360001; includeSubDomains",
 		Issues{
 			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
 			Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
 		},
-	)
+	},
+}
+
+func TestPreloadableHeaderString(t *testing.T) {
+	for _, tt := range preloadableHeaderStringTests {
+		issues := PreloadableHeaderString(tt.header)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		}
+	}
 }
 
 /******** RemovableResponseString() without issues. ********/

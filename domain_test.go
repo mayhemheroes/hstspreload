@@ -196,7 +196,9 @@ func TestPreloadableDomainBogusDomain(t *testing.T) {
 	// The error message contains a local IP in Travis CI. Since this is the only
 	// such test, we work around it with more crude checks.
 	header, issues := PreloadableDomain("example.notadomain")
-	expectNil(t, header)
+	if header != nil {
+		t.Errorf("Did not expect a header, but received `%s`", *header)
+	}
 	if len(issues.Errors) != 1 || len(issues.Warnings) != 0 {
 		t.Errorf("Expected one error and no warnings.")
 	}

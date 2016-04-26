@@ -25,21 +25,6 @@ func ExamplePreloadableResponse() {
 	}
 }
 
-/******** Helper functions tests. ********/
-
-func expectNil(t *testing.T, actual *string) {
-	if actual != nil {
-		t.Errorf("Expected nil.")
-	}
-}
-func expectString(t *testing.T, actual *string, expected string) {
-	if actual == nil {
-		t.Errorf("Expected `%s`, actual was nil.", expected)
-	} else if *actual != expected {
-		t.Errorf("Strings are not equal. Actual: `%s` Expected: `%s`", *actual, expected)
-	}
-}
-
 /******** Response tests. ********/
 
 var responseTests = []struct {

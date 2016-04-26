@@ -428,62 +428,69 @@ func TestPreloadableHeaderString(t *testing.T) {
 	}
 }
 
-/******** RemovableResponseString() without issues. ********/
+var removableHeaderStringTests = []struct {
+	description    string
+	header         string
+	expectedIssues Issues
+}{
 
-func TestRemovableResponseStringOkay(t *testing.T) {
-	expectIssuesEmpty(t,
-		RemovableHeaderString("max-age=315360001; includeSubDomains"),
-	)
-	expectIssuesEmpty(t,
-		RemovableHeaderString("max-age=315360001"),
-	)
-}
+	/******** no issues ********/
 
-func TestRemovableResponseStringMaxAge0(t *testing.T) {
-	expectIssuesEmpty(t,
-		RemovableHeaderString("max-age=0"),
-	)
-}
+	{
+		"max-age only",
+		"max-age=315360001",
+		Issues{},
+	},
+	{
+		"max-age=0",
+		"max-age=0",
+		Issues{},
+	},
+	{
+		"max-age and includeSubDomains",
+		"max-age=315360001; includeSubDomains",
+		Issues{},
+	},
 
-func TestRemovableResponseStringMaxAgeMissing(t *testing.T) {
-	expectIssuesEqual(t,
-		RemovableHeaderString("includeSubDomains"),
-		Issues{
-			Errors:   []string{"Header requirement error: Header must contain a valid `max-age` directive."},
-			Warnings: []string{},
-		},
-	)
-}
+	/******** errors ********/
 
-func TestRemovableResponseStringEmptyHeader(t *testing.T) {
-	expectIssuesEqual(t,
-		RemovableHeaderString(""),
-		Issues{
-			Errors:   []string{"Header requirement error: Header must contain a valid `max-age` directive."},
-			Warnings: []string{},
-		},
-	)
-}
-
-func TestRemovableResponseStringPreloadPresent(t *testing.T) {
-	expectIssuesEqual(t,
-		RemovableHeaderString("max-age=315360001; includeSubDomains; preload"),
-		Issues{
-			Errors:   []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."},
-			Warnings: []string{},
-		},
-	)
-}
-
-func TestRemovableResponseStringPreloadOnly(t *testing.T) {
-	expectIssuesEqual(t,
-		RemovableHeaderString("preload"),
+	{
+		"includeSubDomains only",
+		"includeSubDomains",
+		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+	},
+	{
+		"max-age missing",
+		"includeSubDomains",
+		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+	},
+	{
+		"empty header",
+		"includeSubDomains",
+		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+	},
+	{
+		"preload present",
+		"max-age=315360001; includeSubDomains; preload",
+		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
+	},
+	{
+		"preload only",
+		"preload",
 		Issues{
 			Errors: []string{
 				"Header requirement error: For preload list removal, the header must not contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			Warnings: []string{},
 		},
-	)
+	},
+}
+
+func TestRemovableHeaderString(t *testing.T) {
+	for _, tt := range removableHeaderStringTests {
+		issues := RemovableHeaderString(tt.header)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		}
+	}
 }

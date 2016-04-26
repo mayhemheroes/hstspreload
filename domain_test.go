@@ -44,16 +44,16 @@ func TestCheckDomainFormat(t *testing.T) {
 	}
 }
 
-var testCheckEffectiveTLDPlusOne = []struct {
+var testPreloadableDomainLevel = []struct {
 	actual   Issues
 	expected Issues
 }{
-	{checkEffectiveTLDPlusOne("subdomain.example.com"),
+	{preloadableDomainLevel("subdomain.example.com"),
 		Issues{Errors: []string{"Domain error: `subdomain.example.com` is a subdomain. Please preload `example.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."}}},
 }
 
-func TestCheckEffectiveTLDPlusOne(t *testing.T) {
-	for _, tt := range testCheckEffectiveTLDPlusOne {
+func TestPreloadableDomainLevel(t *testing.T) {
+	for _, tt := range testPreloadableDomainLevel {
 		if !issuesEqual(tt.actual, tt.expected) {
 			t.Errorf(issuesShouldBeEqual, tt.actual, tt.expected)
 		}

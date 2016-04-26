@@ -57,8 +57,8 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	}
 
 	// We don't currently allow automatic submissions of subdomains.
-	eTLD1Issues := checkEffectiveTLDPlusOne(domain)
-	issues = combineIssues(issues, eTLD1Issues)
+	levelIssues := preloadableDomainLevel(domain)
+	issues = combineIssues(issues, levelIssues)
 
 	// Start with an initial probe, and don't do the follow-up checks if
 	// we can't connect.
@@ -95,7 +95,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 		// checkWWW
 		go func() {
 			// Skip the WWW check if the domain is not eTLD+1.
-			if len(eTLD1Issues.Errors) == 0 {
+			if len(levelIssues.Errors) == 0 {
 				chanWWW <- checkWWW(domain)
 			}
 			chanWWW <- Issues{}
@@ -194,7 +194,7 @@ func checkDomainFormat(domain string) (issues Issues) {
 	return issues
 }
 
-func checkEffectiveTLDPlusOne(domain string) (issues Issues) {
+func preloadableDomainLevel(domain string) (issues Issues) {
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
 		return issues.addErrorf("Internal error: could not compute eTLD+1.")

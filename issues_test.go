@@ -13,7 +13,7 @@ const (
 %#v
 
 `
-	issuesShouldBeEmpty = `Issues be empty.
+	issuesShouldBeEmpty = `Issues should be empty.
 ## Actual
 
 %#v

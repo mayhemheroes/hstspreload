@@ -7,25 +7,27 @@ import (
 )
 
 // Includes ordering of errors and warnings.
-func issuesEqual(issues1 Issues, issues2 Issues) bool {
-	// reflect.DeepEqual seems to have false negatives, so we don't use it.
+func issuesEqual(i1, i2 Issues) bool {
+	// reflect.DeepEqual distinguishes between nil slices and 0-length slices, but
+	// we consider these to be the same (e.g. "no errors" == "0 errors"), so we
+	// implement our own comparison.
 
-	if len(issues1.Errors) != len(issues2.Errors) {
+	if len(i1.Errors) != len(i2.Errors) {
 		return false
 	}
 
-	if len(issues1.Warnings) != len(issues2.Warnings) {
+	if len(i1.Warnings) != len(i2.Warnings) {
 		return false
 	}
 
-	for e := range issues1.Errors {
-		if issues1.Errors[e] != issues2.Errors[e] {
+	for e := range i1.Errors {
+		if i1.Errors[e] != i2.Errors[e] {
 			return false
 		}
 	}
 
-	for w := range issues1.Warnings {
-		if issues1.Warnings[w] != issues2.Warnings[w] {
+	for w := range i1.Warnings {
+		if i1.Warnings[w] != i2.Warnings[w] {
 			return false
 		}
 	}

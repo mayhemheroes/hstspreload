@@ -35,45 +35,45 @@ func NewIssues() Issues {
 	}
 }
 
-func (issues Issues) addErrorf(format string, args ...interface{}) Issues {
+func (iss Issues) addErrorf(format string, args ...interface{}) Issues {
 	formattedError := fmt.Sprintf(format, args...)
 	return Issues{
-		Errors:   append(issues.Errors, formattedError),
-		Warnings: issues.Warnings,
+		Errors:   append(iss.Errors, formattedError),
+		Warnings: iss.Warnings,
 	}
 }
 
-func (issues Issues) addWarningf(format string, args ...interface{}) Issues {
+func (iss Issues) addWarningf(format string, args ...interface{}) Issues {
 	formattedWarning := fmt.Sprintf(format, args...)
 	return Issues{
-		Errors:   issues.Errors,
-		Warnings: append(issues.Warnings, formattedWarning),
+		Errors:   iss.Errors,
+		Warnings: append(iss.Warnings, formattedWarning),
 	}
 }
 
-func (issues Issues) addUniqueErrorf(format string, args ...interface{}) Issues {
+func (iss Issues) addUniqueErrorf(format string, args ...interface{}) Issues {
 	formattedError := fmt.Sprintf(format, args...)
-	for _, err := range issues.Errors {
+	for _, err := range iss.Errors {
 		if err == formattedError {
-			return issues
+			return iss
 		}
 	}
 	return Issues{
-		Errors:   append(issues.Errors, formattedError),
-		Warnings: issues.Warnings,
+		Errors:   append(iss.Errors, formattedError),
+		Warnings: iss.Warnings,
 	}
 }
 
-func (issues Issues) addUniqueWarningf(format string, args ...interface{}) Issues {
+func (iss Issues) addUniqueWarningf(format string, args ...interface{}) Issues {
 	formattedWarning := fmt.Sprintf(format, args...)
-	for _, warning := range issues.Warnings {
+	for _, warning := range iss.Warnings {
 		if warning == formattedWarning {
-			return issues
+			return iss
 		}
 	}
 	return Issues{
-		Errors:   issues.Errors,
-		Warnings: append(issues.Warnings, formattedWarning),
+		Errors:   iss.Errors,
+		Warnings: append(iss.Warnings, formattedWarning),
 	}
 }
 
@@ -101,32 +101,32 @@ func formatIssueListForString(list []string) string {
 	return output
 }
 
-// GoString formats issues with multiple lines and indentation.
+// GoString formats `iss` with multiple lines and indentation.
 // This is mainly used to provide output for unit tests in this project
 // that can be pasted back into the relevant unit tess.
-func (issues Issues) GoString() string {
+func (iss Issues) GoString() string {
 	return fmt.Sprintf(`Issues{
 	Errors:   []string{%s},
 	Warnings: []string{%s},
 }`,
-		formatIssueListForString(issues.Errors),
-		formatIssueListForString(issues.Warnings),
+		formatIssueListForString(iss.Errors),
+		formatIssueListForString(iss.Warnings),
 	)
 }
 
-func (issues Issues) MarshalJSON() ([]byte, error) {
+func (iss Issues) MarshalJSON() ([]byte, error) {
 	// We explicitly fill out the fields with slices so that they are
 	// marshalled to `[]` rather than `null` when they are empty.
-	if len(issues.Errors) == 0 {
-		issues.Errors = make([]string, 0)
+	if len(iss.Errors) == 0 {
+		iss.Errors = make([]string, 0)
 	}
-	if len(issues.Warnings) == 0 {
-		issues.Warnings = make([]string, 0)
+	if len(iss.Warnings) == 0 {
+		iss.Warnings = make([]string, 0)
 	}
 
 	// We use a type alias to call the "default" implementation of
 	// json.Marshal on Issues.
 	// See http://choly.ca/post/go-json-marshalling/
 	type IssuesAlias Issues
-	return json.Marshal(IssuesAlias(issues))
+	return json.Marshal(IssuesAlias(iss))
 }

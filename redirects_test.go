@@ -115,65 +115,54 @@ func TestHTTPNoRedirect(t *testing.T) {
 	}
 }
 
-func TestHTTPWrongHostRedirect(t *testing.T) {
-	skipIfShort(t)
-	// http://bofa.com redirects to https://www.bankofamerica.com
-	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects("bofa.com")
-
-	expected := Issues{Errors: []string{"Redirect error: `http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`)."}}
-	if !issuesEqual(mainIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, mainIssues, expected)
-	}
-
-	if !issuesEmpty(firstRedirectHSTSIssues) {
-		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
-	}
-}
-
-func TestHTTPSameOriginRedirect(t *testing.T) {
-	skipIfShort(t)
-	// http://www.wikia.com redirects to http://www.wikia.com/fandom
-	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects("www.wikia.com")
-
-	expected := Issues{Errors: []string{"Redirect error: `http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`)."}}
-	if !issuesEqual(mainIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, mainIssues, expected)
-	}
-
-	if !issuesEmpty(firstRedirectHSTSIssues) {
-		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
-	}
-}
-
-func TestHTTPRedirectWWWFirst(t *testing.T) {
-	skipIfShort(t)
-	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects("blogger.com")
-
-	expected := Issues{
-		Errors: []string{
-			"Redirect error: More than 3 redirects from `http://blogger.com`.",
-			"Redirect error: `http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+var preloadableHTTPRedirectsTests = []struct {
+	description                     string
+	domain                          string
+	expectedMainIssues              Issues
+	expectedFirstRedirectHSTSIssues Issues
+}{
+	{
+		"different host",
+		"bofa.com", // http://bofa.com redirects to https://www.bankofamerica.com
+		Issues{Errors: []string{"Redirect error: `http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`)."}},
+		Issues{},
+	},
+	{
+		"same origin",
+		"www.wikia.com", // http://www.wikia.com redirects to http://www.wikia.com/fandom
+		Issues{Errors: []string{"Redirect error: `http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`)."}},
+		Issues{},
+	},
+	{
+		"www first and > 3 redirects",
+		"blogger.com",
+		Issues{
+			Errors: []string{
+				"Redirect error: More than 3 redirects from `http://blogger.com`.",
+				"Redirect error: `http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+			},
 		},
-	}
-	if !issuesEqual(mainIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, mainIssues, expected)
-	}
-
-	if !issuesEmpty(firstRedirectHSTSIssues) {
-		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
-	}
+		Issues{},
+	},
+	{
+		"correct origin but not HSTS",
+		"sha256.badssl.com",
+		Issues{},
+		Issues{Errors: []string{"Redirect error: `http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: Response error: No HSTS header is present on the response."}},
+	},
 }
 
-func TestHTTPRedirectToCorrectOriginButNotHSTS(t *testing.T) {
+func TestPreloadableHTTPRedirects(t *testing.T) {
 	skipIfShort(t)
-	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects("sha256.badssl.com")
+	for _, tt := range preloadableHTTPRedirectsTests {
+		mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
 
-	if !issuesEmpty(mainIssues) {
-		t.Errorf(issuesShouldBeEmpty, mainIssues)
-	}
+		if !issuesEqual(mainIssues, tt.expectedMainIssues) {
+			t.Errorf("[%s] main issues for %s: "+issuesShouldBeEqual, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
+		}
 
-	expected := Issues{Errors: []string{"Redirect error: `http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: Response error: No HSTS header is present on the response."}}
-	if !issuesEqual(firstRedirectHSTSIssues, expected) {
-		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
+		if !issuesEqual(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
+			t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldBeEqual, tt.description, tt.domain, issuesShouldBeEmpty, tt.expectedFirstRedirectHSTSIssues)
+		}
 	}
 }

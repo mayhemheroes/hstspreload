@@ -21,7 +21,6 @@ const (
 	// The maximum number of redirects when you visit the root path of the
 	// domain over HTTP or HTTPS.
 	maxRedirects = 3
-	httpScheme   = "http"
 	httpsScheme  = "https"
 )
 

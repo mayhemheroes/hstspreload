@@ -7,6 +7,4 @@
 // - The `hstspreload` command line tool.
 //
 // - The `transport_security_state_static_generate` script.
-//
-// - Source code for hstspreload.appspot.com
 package hstspreload

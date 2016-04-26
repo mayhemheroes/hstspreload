@@ -27,14 +27,6 @@ type Issues struct {
 	Warnings []string `json:"warnings"`
 }
 
-// NewIssues constructs a new, empty Issues struct.
-func NewIssues() Issues {
-	return Issues{
-		Errors:   []string{},
-		Warnings: []string{},
-	}
-}
-
 func (iss Issues) addErrorf(format string, args ...interface{}) Issues {
 	formattedError := fmt.Sprintf(format, args...)
 	return Issues{

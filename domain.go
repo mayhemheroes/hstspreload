@@ -98,7 +98,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 			if len(eTLD1Issues.Errors) == 0 {
 				chanWWW <- checkWWW(domain)
 			}
-			chanWWW <- NewIssues()
+			chanWWW <- Issues{}
 		}()
 
 		// Combine the issues in deterministic order.

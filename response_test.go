@@ -65,7 +65,7 @@ var responseTests = []struct {
 		PreloadableResponse,
 		"missing includeSubDomains",
 		[]string{"preload; max-age=10886400"},
-		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
+		Issues{Errors: []string{"Header requirement error: Header must contain the `includeSubDomains` directive."}},
 	},
 	{
 		PreloadableResponse,

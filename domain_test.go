@@ -21,19 +21,19 @@ var testCheckDomainFormatTests = []struct {
 	expected Issues
 }{
 	{checkDomainFormat(".example.com"),
-		NewIssues().addErrorf("Domain name error: begins with `.`")},
+		Issues{Errors: []string{"Domain name error: begins with `.`"}}},
 
 	{checkDomainFormat("example.com."),
-		NewIssues().addErrorf("Domain name error: ends with `.`")},
+		Issues{Errors: []string{"Domain name error: ends with `.`"}}},
 
 	{checkDomainFormat("example..com"),
-		NewIssues().addErrorf("Domain name error: contains `..`")},
+		Issues{Errors: []string{"Domain name error: contains `..`"}}},
 
 	{checkDomainFormat("example"),
-		NewIssues().addErrorf("Domain name error: must have at least two labels.")},
+		Issues{Errors: []string{"Domain name error: must have at least two labels."}}},
 
 	{checkDomainFormat("example&co.com"),
-		NewIssues().addErrorf("Domain name error: contains invalid characters.")},
+		Issues{Errors: []string{"Domain name error: contains invalid characters."}}},
 }
 
 func TestCheckDomainFormat(t *testing.T) {
@@ -49,7 +49,7 @@ var testCheckEffectiveTLDPlusOne = []struct {
 	expected Issues
 }{
 	{checkEffectiveTLDPlusOne("subdomain.example.com"),
-		NewIssues().addErrorf("Domain error: `subdomain.example.com` is a subdomain. Please preload `example.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics.")},
+		Issues{Errors: []string{"Domain error: `subdomain.example.com` is a subdomain. Please preload `example.com` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."}}},
 }
 
 func TestCheckEffectiveTLDPlusOne(t *testing.T) {
@@ -118,7 +118,7 @@ var preloadableDomainTests = []struct {
 		"subdomain",
 		"en.wikipedia.org",
 		true, "max-age=31536000; includeSubDomains; preload",
-		NewIssues().addErrorf("Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."),
+		Issues{Errors: []string{"Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."}},
 	},
 	{
 		PreloadableDomain,
@@ -138,7 +138,7 @@ var preloadableDomainTests = []struct {
 	// 	"bogus domain",
 	// 	"example.notadomain",
 	// 	false, "",
-	// 	NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"),
+	// 	Issues{Errors: []string{"TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"}},
 	// },
 
 	/******** RemovableDomain() ********/

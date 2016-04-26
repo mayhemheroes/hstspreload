@@ -141,25 +141,25 @@ var parseHeaderStringTests = []struct {
 	{
 		"empty",
 		"",
-		NewIssues().addWarningf("Syntax warning: Header is empty."),
+		Issues{Warnings: []string{"Syntax warning: Header is empty."}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
 	},
 	{
 		"case-insensitive",
 		"inCLUDESUBDomaINs; max-AGe=12345678",
-		NewIssues().addWarningf("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."),
+		Issues{Warnings: []string{"Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."}},
 		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"repeated preload",
 		"preload; includeSubDomains; preload; max-age=12345678; preload",
-		NewIssues().addWarningf("Syntax warning: Header contains a repeated directive: `preload`"),
+		Issues{Warnings: []string{"Syntax warning: Header contains a repeated directive: `preload`"}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"single extra directive",
 		"includeSubDomains; max-age=12345678; preload; extraDirective",
-		NewIssues().addWarningf("Syntax warning: Header contains an unknown directive: `extraDirective`"),
+		Issues{Warnings: []string{"Syntax warning: Header contains an unknown directive: `extraDirective`"}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
@@ -174,25 +174,25 @@ var parseHeaderStringTests = []struct {
 	{
 		"semicolon only",
 		";",
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
 	},
 	{
 		"trailing semicolon",
 		"max-age=10886400; includeSubDomains; preload;",
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
 	},
 	{
 		"prefixed by semicolon",
 		"; max-age=10886400; includeSubDomains; preload",
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
 	},
 	{
 		"bad max-age: leading 0",
 		"max-age=01234",
-		NewIssues().addWarningf("Syntax warning: max-age value contains a leading 0: `max-age=01234`"),
+		Issues{Warnings: []string{"Syntax warning: max-age value contains a leading 0: `max-age=01234`"}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: 1234},
 	},
 }
@@ -220,22 +220,22 @@ var parseHeaderStringWithErrorsTests = []struct {
 	{
 		"bad max-age: empty value",
 		"max-age=",
-		NewIssues().addErrorf("Syntax error: Could not parse max-age value ``."),
+		Issues{Errors: []string{"Syntax error: Could not parse max-age value ``."}},
 	},
 	{
 		"bad max-age: no value",
 		"max-age",
-		NewIssues().addErrorf("Syntax error: A max-age directive name is present without an associated value."),
+		Issues{Errors: []string{"Syntax error: A max-age directive name is present without an associated value."}},
 	},
 	{
 		" max-age: minus", // Motivated by https://crbug.com/596561
 		"max-age=-101",    // Motivated by https://crbug.com/596561
-		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=-101`"),
+		Issues{Errors: []string{"Syntax error: max-age value contains characters that are not digits: `max-age=-101`"}},
 	},
 	{
 		" max-age: plus", // Motivated by https://crbug.com/596561
 		"max-age=+101",
-		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=+101`"),
+		Issues{Errors: []string{"Syntax error: max-age value contains characters that are not digits: `max-age=+101`"}},
 	},
 
 	/******** errors and warnings ********/
@@ -296,7 +296,7 @@ func TestPreloadableHeaderMaxAgeNotPresent(t *testing.T) {
 		IncludeSubDomains: true,
 		MaxAge:            -2,
 	})
-	expected := NewIssues().addErrorf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2")
+	expected := Issues{Errors: []string{"Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2"}}
 	if !issuesEqual(issues, expected) {
 		t.Errorf(issuesShouldBeEqual, issues, expected)
 	}
@@ -321,7 +321,7 @@ var preloadableHeaderStringTests = []struct {
 	{
 		"max-age > 10 years",
 		"max-age=315360001; preload; includeSubDomains",
-		NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."),
+		Issues{Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."}},
 	},
 
 	/******** errors only, no warnings ********/
@@ -341,17 +341,17 @@ var preloadableHeaderStringTests = []struct {
 	{
 		"missing preload",
 		"includeSubDomains; max-age=10886400",
-		NewIssues().addErrorf("Header requirement error: Header must contain the `preload` directive."),
+		Issues{Errors: []string{"Header requirement error: Header must contain the `preload` directive."}},
 	},
 	{
 		"missing includeSubdomains",
 		"preload; max-age=10886400",
-		NewIssues().addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive."),
+		Issues{Errors: []string{"Header requirement error: Header must contain the `includeSubDomains` directive."}},
 	},
 	{
 		"missing max-age",
 		"includeSubDomains; preload",
-		NewIssues().addErrorf("Header requirement error: Header must contain a valid `max-age` directive."),
+		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
 	},
 	{
 		"only preload",
@@ -396,12 +396,12 @@ var preloadableHeaderStringTests = []struct {
 	{
 		"maxAge=0", // Give information about what to do if you want to remove HSTS.
 		"includeSubDomains; preload; max-age=0",
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0. If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"),
+		Issues{Errors: []string{"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0. If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"}},
 	},
 	{
 		"maxAge=100",
 		"includeSubDomains; preload; max-age=100",
-		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."),
+		Issues{Errors: []string{"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."}},
 	},
 
 	/******** errors and warnings ********/

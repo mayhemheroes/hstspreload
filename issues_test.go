@@ -54,10 +54,6 @@ func issuesEmpty(iss Issues) bool {
 	return issuesEqual(iss, Issues{})
 }
 
-func TestNewIssues(t *testing.T) {
-	NewIssues()
-}
-
 var issuesEqualTests = []struct {
 	actual   Issues
 	expected Issues
@@ -72,31 +68,31 @@ var issuesEqualTests = []struct {
 	{Issues{
 		Errors:   []string{},
 		Warnings: []string{},
-	}, NewIssues()},
+	}, Issues{}},
 	{Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{},
-	}, NewIssues().addErrorf("Single Error")},
+	}, Issues{}.addErrorf("Single Error")},
 	{Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{},
-	}, NewIssues().addErrorf("First Error").addErrorf("Second Error")},
+	}, Issues{}.addErrorf("First Error").addErrorf("Second Error")},
 	{Issues{
 		Errors:   []string{},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().addWarningf("Single Warning")},
+	}, Issues{}.addWarningf("Single Warning")},
 	{Issues{
 		Errors:   []string{},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarningf("First Warning").addWarningf("Second Warning")},
+	}, Issues{}.addWarningf("First Warning").addWarningf("Second Warning")},
 	{Issues{
 		Errors:   []string{"Single Error"},
 		Warnings: []string{"Single Warning"},
-	}, NewIssues().addErrorf("Single Error").addWarningf("Single Warning")},
+	}, Issues{}.addErrorf("Single Error").addWarningf("Single Warning")},
 	{Issues{
 		Errors:   []string{"First Error", "Second Error"},
 		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error")},
+	}, Issues{}.addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error")},
 }
 
 func TestIssuesEqual(t *testing.T) {
@@ -111,12 +107,12 @@ var issuesNotEqualTests = []struct {
 	actual   Issues
 	expected Issues
 }{
-	{NewIssues().addWarningf("test"),
-		NewIssues().addErrorf("test")},
-	{NewIssues().addErrorf("first").addErrorf("second"),
-		NewIssues().addErrorf("first")},
-	{NewIssues().addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
-		NewIssues().addErrorf("cake").addErrorf("pie").addErrorf("anything you bake")},
+	{Issues{}.addWarningf("test"),
+		Issues{}.addErrorf("test")},
+	{Issues{}.addErrorf("first").addErrorf("second"),
+		Issues{}.addErrorf("first")},
+	{Issues{}.addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
+		Issues{}.addErrorf("cake").addErrorf("pie").addErrorf("anything you bake")},
 }
 
 func TestIssuesNotEqual(t *testing.T) {

@@ -9,8 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
+	"strings"
 	"time"
+	"unicode"
 )
 
 const (
@@ -91,35 +92,26 @@ func PreloadEntriesToMap(preloadList PreloadList) map[Domain]PreloadEntry {
 	return m
 }
 
-// commentRegexp matches lines that optionally start with whitespace
-// followed by "//".
-var commentRegexp = regexp.MustCompile("^[ \t]*//")
-
-var newLine = []byte("\n")
-
 // removeComments reads the contents of |r| and removes any lines beginning
 // with optional whitespace followed by "//"
 func removeComments(r io.Reader) ([]byte, error) {
 	var buf bytes.Buffer
-	in := bufio.NewReader(r)
 
-	for {
-		line, isPrefix, err := in.ReadLine()
-		if isPrefix {
-			return nil, errors.New("line too long in JSON")
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
+		if isCommentLine(line) {
+			fmt.Fprintln(&buf, line)
 		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if commentRegexp.Match(line) {
-			continue
-		}
-		buf.Write(line)
-		buf.Write(newLine)
+	}
+	if err := sc.Err(); err != nil {
+		return nil, err
 	}
 
 	return buf.Bytes(), nil
+}
+
+func isCommentLine(line string) bool {
+	trimmed := strings.TrimLeftFunc(line, unicode.IsSpace)
+	return !strings.HasPrefix(trimmed, "//")
 }

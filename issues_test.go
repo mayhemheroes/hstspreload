@@ -1,10 +1,6 @@
 package hstspreload
 
-import (
-	"runtime"
-	"strings"
-	"testing"
-)
+import "testing"
 
 const (
 	issuesShouldBeEqual = `Issues should be equal.
@@ -56,66 +52,6 @@ func issuesEqual(i1, i2 Issues) bool {
 
 func issuesEmpty(iss Issues) bool {
 	return issuesEqual(iss, Issues{})
-}
-
-// Based on https://golang.org/src/testing/testing.go
-func getCaller(levelsUp int) (file string, line int) {
-	_, file, line, ok := runtime.Caller(levelsUp + 1)
-	if ok {
-		// Truncate file name at last file name separator.
-		if index := strings.LastIndex(file, "/"); index >= 0 {
-			file = file[index+1:]
-		} else if index = strings.LastIndex(file, "\\"); index >= 0 {
-			file = file[index+1:]
-		}
-	} else {
-		file = "???"
-		line = 1
-	}
-	return file, line
-}
-
-func expectIssuesEqualImpl(t *testing.T, actual Issues, expected Issues, levelsUp int) {
-	file, line := getCaller(levelsUp + 1)
-	if !issuesEqual(actual, expected) {
-		t.Errorf(`Issues should be equal. (%s:%d)
-
-## Actual
-
-%#v
-
-## Expected
-
-%#v
-
-`, file, line, actual, expected)
-	}
-}
-
-func expectIssuesNotEqual(t *testing.T, actual Issues, expected Issues) {
-	file, line := getCaller(1)
-	if issuesEqual(actual, expected) {
-		t.Errorf(`Issues should not be equal. (%s:%d)
-
-## Actual
-
-%#v
-
-## (Not) Expected
-
-%#v
-
-`, file, line, actual, expected)
-	}
-}
-
-func expectIssuesEqual(t *testing.T, actual Issues, expected Issues) {
-	expectIssuesEqualImpl(t, actual, expected, 1)
-}
-
-// This function name is more clear than comparing whether we're "equal" to empty.
-func expectIssuesEmpty(t *testing.T, actual Issues) {
-	expectIssuesEqualImpl(t, actual, NewIssues(), 1)
 }
 
 func TestNewIssues(t *testing.T) {

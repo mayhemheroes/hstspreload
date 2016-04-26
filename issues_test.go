@@ -157,3 +157,31 @@ func TestIssuesNotEqual(t *testing.T) {
 		NewIssues().addErrorf("cake").addErrorf("pie").addErrorf("anything you bake"),
 	)
 }
+
+func TestAddUniqueErrorf(t *testing.T) {
+	iss := Issues{
+		Errors: []string{"error 1", "error 2"},
+	}
+	iss.addUniqueErrorf("error 2")
+	expectIssuesEqual(t, iss,
+		Issues{Errors: []string{"error 1", "error 2"}},
+	)
+	iss.addUniqueErrorf("error 1")
+	expectIssuesEqual(t, iss,
+		Issues{Errors: []string{"error 1", "error 2"}},
+	)
+}
+
+func TestAddUniqueWarningf(t *testing.T) {
+	iss := Issues{
+		Warnings: []string{"warning 1", "warning 2"},
+	}
+	iss.addUniqueWarningf("warning 2")
+	expectIssuesEqual(t, iss,
+		Issues{Warnings: []string{"warning 1", "warning 2"}},
+	)
+	iss.addUniqueWarningf("warning 1")
+	expectIssuesEqual(t, iss,
+		Issues{Warnings: []string{"warning 1", "warning 2"}},
+	)
+}

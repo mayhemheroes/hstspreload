@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	issuesShouldBeEqualExplanation = `Issues should be equal.
+	issuesShouldBeEqual = `Issues should be equal.
 ## Actual
 
 %#v
@@ -17,12 +17,8 @@ const (
 %#v
 
 `
-	issuesShouldNotBeEqualExplanation = `Issues should not be be equal.
+	issuesShouldBeEmpty = `Issues be empty.
 ## Actual
-
-%#v
-
-## (Not) Expected
 
 %#v
 
@@ -56,6 +52,10 @@ func issuesEqual(i1, i2 Issues) bool {
 	}
 
 	return true
+}
+
+func issuesEmpty(iss Issues) bool {
+	return issuesEqual(iss, Issues{})
 }
 
 // Based on https://golang.org/src/testing/testing.go
@@ -166,7 +166,7 @@ var issuesEqualTests = []struct {
 func TestIssuesEqual(t *testing.T) {
 	for _, tt := range issuesEqualTests {
 		if !issuesEqual(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldBeEqualExplanation, tt.actual, tt.expected)
+			t.Errorf(issuesShouldBeEqual, tt.actual, tt.expected)
 		}
 	}
 }
@@ -186,7 +186,7 @@ var issuesNotEqualTests = []struct {
 func TestIssuesNotEqual(t *testing.T) {
 	for _, tt := range issuesNotEqualTests {
 		if issuesEqual(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldNotBeEqualExplanation, tt.actual, tt.expected)
+			t.Errorf(issuesShouldBeEqual, tt.actual, tt.expected)
 		}
 	}
 }
@@ -201,13 +201,13 @@ func TestAddUniqueErrorf(t *testing.T) {
 	iss.addUniqueErrorf("error 2")
 	expected = Issues{Errors: []string{"error 1", "error 2"}}
 	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+		t.Errorf(issuesShouldBeEqual, iss, expected)
 	}
 
 	iss.addUniqueErrorf("error 1")
 	expected = Issues{Errors: []string{"error 1", "error 2"}}
 	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+		t.Errorf(issuesShouldBeEqual, iss, expected)
 	}
 }
 
@@ -221,12 +221,12 @@ func TestAddUniqueWarningf(t *testing.T) {
 	iss.addUniqueWarningf("warning 2")
 	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
 	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+		t.Errorf(issuesShouldBeEqual, iss, expected)
 	}
 
 	iss.addUniqueWarningf("warning 1")
 	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
 	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+		t.Errorf(issuesShouldBeEqual, iss, expected)
 	}
 }

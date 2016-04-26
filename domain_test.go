@@ -7,12 +7,6 @@ import (
 	"testing"
 )
 
-const (
-	headersStringsShouldBeEqual = `Did not receive expected header.
-			Actual: %v
-			Expected: %v`
-)
-
 func ExamplePreloadableDomain() {
 	header, issues := PreloadableDomain("wikipedia.org")
 	if header != nil {
@@ -78,6 +72,7 @@ func skipIfShort(t *testing.T) {
 }
 
 var preloadableDomainTests = []struct {
+	function       func(domain string) (header *string, issues Issues)
 	description    string
 	domain         string
 	expectHeader   bool
@@ -85,18 +80,17 @@ var preloadableDomainTests = []struct {
 	expectedIssues Issues
 }{
 
-	/********* preloadable ********/
+	/********* PreloadableDomain() ********/
 
 	{
+		PreloadableDomain,
 		"valid HSTS",
 		"wikipedia.org",
 		true, "max-age=31536000; includeSubDomains; preload",
 		Issues{},
 	},
-
-	/********* not preloadable ********/
-
 	{
+		PreloadableDomain,
 		"incomplete chain",
 		"incomplete-chain.badssl.com",
 		false, "",
@@ -108,6 +102,7 @@ var preloadableDomainTests = []struct {
 		},
 	},
 	{
+		PreloadableDomain,
 		"SHA-1",
 		"sha1.badssl.com",
 		false, "",
@@ -120,12 +115,14 @@ var preloadableDomainTests = []struct {
 		},
 	},
 	{
+		PreloadableDomain,
 		"subdomain",
 		"en.wikipedia.org",
 		true, "max-age=31536000; includeSubDomains; preload",
 		NewIssues().addErrorf("Domain error: `en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. The interaction of cookies, HSTS and user behaviour is complex; we believe that only accepting whole domains is simple enough to have clear security semantics."),
 	},
 	{
+		PreloadableDomain,
 		"no HSTS",
 		"example.com",
 		false, "",
@@ -138,53 +135,31 @@ var preloadableDomainTests = []struct {
 	},
 	// Don't run this test like normal. See TestPreloadableDomainBogusDomain().
 	// {
+	// 	PreloadableDomain,
 	// 	"bogus domain",
 	// 	"example.notadomain",
 	// 	false, "",
 	// 	NewIssues().addErrorf("TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain: no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/"),
 	// },
-}
 
-func TestPreloadableDomain(t *testing.T) {
-	skipIfShort(t)
+	/******** RemovableDomain() ********/
 
-	for _, tt := range preloadableDomainTests {
-		header, issues := PreloadableDomain(tt.domain)
-
-		if tt.expectHeader {
-			if header == nil {
-				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
-			} else if *header != tt.expectedHeader {
-				t.Errorf("[%s] %s: "+headersStringsShouldBeEqual, tt.description, tt.domain, header, tt.expectedHeader)
-			}
-		}
-
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] %s: "+issuesShouldBeEqual, tt.description, tt.domain, issues, tt.expectedIssues)
-		}
-	}
-}
-
-var removableDomainTests = []struct {
-	description    string
-	domain         string
-	expectHeader   bool
-	expectedHeader string
-	expectedIssues Issues
-}{
 	{
+		RemovableDomain,
 		"no header",
 		"example.com",
 		false, "",
 		Issues{Errors: []string{"Response error: No HSTS header is present on the response."}},
 	},
 	{
+		RemovableDomain,
 		"no preload directive",
 		"hsts.badssl.com",
 		true, "max-age=15768000; includeSubDomains",
 		Issues{},
 	},
 	{
+		RemovableDomain,
 		"preloaded",
 		"preloaded-hsts.badssl.com",
 		true, "max-age=15768000; includeSubDomains; preload",
@@ -192,17 +167,21 @@ var removableDomainTests = []struct {
 	},
 }
 
-func TestRemovableDomain(t *testing.T) {
+func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 	skipIfShort(t)
 
-	for _, tt := range removableDomainTests {
-		header, issues := RemovableDomain(tt.domain)
+	for _, tt := range preloadableDomainTests {
+		header, issues := tt.function(tt.domain)
 
 		if tt.expectHeader {
 			if header == nil {
 				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
 			} else if *header != tt.expectedHeader {
-				t.Errorf("[%s] %s: "+headersStringsShouldBeEqual, tt.description, tt.domain, header, tt.expectedHeader)
+				t.Errorf("[%s] %s: "+headerStringsShouldBeEqual, tt.description, tt.domain, *header, tt.expectedHeader)
+			}
+		} else {
+			if header != nil {
+				t.Errorf("[%s] %s: Did not expect a header, but received `%s`", tt.description, tt.domain, *header)
 			}
 		}
 

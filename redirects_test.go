@@ -18,28 +18,37 @@ func chainsEqual(actual []*url.URL, expected []string) bool {
 	return true
 }
 
-func TestAlmostTooManyRedirects(t *testing.T) {
-	skipIfShort(t)
-	chain, issues := preloadableRedirects("https://httpbin.org/redirect/3")
-	if !chainsEqual(chain, []string{"https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"}) {
-		t.Errorf("Unexpected chain: %v", chain)
-	}
-
-	if !issuesEmpty(issues) {
-		t.Errorf(issuesShouldBeEmpty, issues)
-	}
+var tooManyRedirectsTests = []struct {
+	description    string
+	url            string
+	expectedChain  []string
+	expectedIssues Issues
+}{
+	{
+		"almost too many redirects",
+		"https://httpbin.org/redirect/3",
+		[]string{"https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"},
+		Issues{},
+	},
+	{
+		"too many redirects",
+		"https://httpbin.org/redirect/4",
+		[]string{"https://httpbin.org/relative-redirect/3", "https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"},
+		Issues{Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/4`."}},
+	},
 }
 
 func TestTooManyRedirects(t *testing.T) {
 	skipIfShort(t)
-	chain, issues := preloadableRedirects("https://httpbin.org/redirect/4")
-	if !chainsEqual(chain, []string{"https://httpbin.org/relative-redirect/3", "https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"}) {
-		t.Errorf("Unexpected chain: %v", chain)
-	}
+	for _, tt := range tooManyRedirectsTests {
+		chain, issues := preloadableRedirects(tt.url)
+		if !chainsEqual(chain, tt.expectedChain) {
+			t.Errorf("[%s] Unexpected chain: %v", tt.description, chain)
+		}
 
-	expected := Issues{Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/4`."}}
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEqual, issues, expected)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		}
 	}
 }
 

@@ -6,6 +6,29 @@ import (
 	"testing"
 )
 
+const (
+	issuesShouldBeEqualExplanation = `Issues should be equal.
+## Actual
+
+%#v
+
+## (Not) Expected
+
+%#v
+
+`
+	issuesShouldNotBeEqualExplanation = `Issues should not be be equal.
+## Actual
+
+%#v
+
+## (Not) Expected
+
+%#v
+
+`
+)
+
 // Includes ordering of errors and warnings.
 func issuesEqual(i1, i2 Issues) bool {
 	// reflect.DeepEqual distinguishes between nil slices and 0-length slices, but
@@ -99,89 +122,111 @@ func TestNewIssues(t *testing.T) {
 	NewIssues()
 }
 
+var issuesEqualTests = []struct {
+	actual   Issues
+	expected Issues
+}{
+	{Issues{
+		Errors:   []string{},
+		Warnings: []string{},
+	}, Issues{
+		Errors:   []string{},
+		Warnings: []string{},
+	}},
+	{Issues{
+		Errors:   []string{},
+		Warnings: []string{},
+	}, NewIssues()},
+	{Issues{
+		Errors:   []string{"Single Error"},
+		Warnings: []string{},
+	}, NewIssues().addErrorf("Single Error")},
+	{Issues{
+		Errors:   []string{"First Error", "Second Error"},
+		Warnings: []string{},
+	}, NewIssues().addErrorf("First Error").addErrorf("Second Error")},
+	{Issues{
+		Errors:   []string{},
+		Warnings: []string{"Single Warning"},
+	}, NewIssues().addWarningf("Single Warning")},
+	{Issues{
+		Errors:   []string{},
+		Warnings: []string{"First Warning", "Second Warning"},
+	}, NewIssues().addWarningf("First Warning").addWarningf("Second Warning")},
+	{Issues{
+		Errors:   []string{"Single Error"},
+		Warnings: []string{"Single Warning"},
+	}, NewIssues().addErrorf("Single Error").addWarningf("Single Warning")},
+	{Issues{
+		Errors:   []string{"First Error", "Second Error"},
+		Warnings: []string{"First Warning", "Second Warning"},
+	}, NewIssues().addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error")},
+}
+
 func TestIssuesEqual(t *testing.T) {
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{},
-		Warnings: []string{},
-	}, NewIssues())
+	for _, tt := range issuesEqualTests {
+		if !issuesEqual(tt.actual, tt.expected) {
+			t.Errorf(issuesShouldBeEqualExplanation, tt.actual, tt.expected)
+		}
+	}
+}
 
-	expectIssuesEmpty(t, Issues{
-		Errors:   []string{},
-		Warnings: []string{},
-	})
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{"Single Error"},
-		Warnings: []string{},
-	}, NewIssues().addErrorf("Single Error"))
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{"First Error", "Second Error"},
-		Warnings: []string{},
-	}, NewIssues().addErrorf("First Error").addErrorf("Second Error"))
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{},
-		Warnings: []string{"Single Warning"},
-	}, NewIssues().addWarningf("Single Warning"))
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{},
-		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarningf("First Warning").addWarningf("Second Warning"))
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{"Single Error"},
-		Warnings: []string{"Single Warning"},
-	}, NewIssues().addErrorf("Single Error").addWarningf("Single Warning"))
-
-	expectIssuesEqual(t, Issues{
-		Errors:   []string{"First Error", "Second Error"},
-		Warnings: []string{"First Warning", "Second Warning"},
-	}, NewIssues().addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error"))
+var issuesNotEqualTests = []struct {
+	actual   Issues
+	expected Issues
+}{
+	{NewIssues().addWarningf("test"),
+		NewIssues().addErrorf("test")},
+	{NewIssues().addErrorf("first").addErrorf("second"),
+		NewIssues().addErrorf("first")},
+	{NewIssues().addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
+		NewIssues().addErrorf("cake").addErrorf("pie").addErrorf("anything you bake")},
 }
 
 func TestIssuesNotEqual(t *testing.T) {
-	expectIssuesNotEqual(t,
-		NewIssues().addWarningf("test"),
-		NewIssues().addErrorf("test"),
-	)
-
-	expectIssuesNotEqual(t,
-		NewIssues().addErrorf("first").addErrorf("second"),
-		NewIssues().addErrorf("first"),
-	)
-
-	expectIssuesNotEqual(t,
-		NewIssues().addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
-		NewIssues().addErrorf("cake").addErrorf("pie").addErrorf("anything you bake"),
-	)
+	for _, tt := range issuesNotEqualTests {
+		if issuesEqual(tt.actual, tt.expected) {
+			t.Errorf(issuesShouldNotBeEqualExplanation, tt.actual, tt.expected)
+		}
+	}
 }
 
 func TestAddUniqueErrorf(t *testing.T) {
 	iss := Issues{
 		Errors: []string{"error 1", "error 2"},
 	}
+
+	var expected Issues
+
 	iss.addUniqueErrorf("error 2")
-	expectIssuesEqual(t, iss,
-		Issues{Errors: []string{"error 1", "error 2"}},
-	)
+	expected = Issues{Errors: []string{"error 1", "error 2"}}
+	if !issuesEqual(iss, expected) {
+		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+	}
+
 	iss.addUniqueErrorf("error 1")
-	expectIssuesEqual(t, iss,
-		Issues{Errors: []string{"error 1", "error 2"}},
-	)
+	expected = Issues{Errors: []string{"error 1", "error 2"}}
+	if !issuesEqual(iss, expected) {
+		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+	}
 }
 
 func TestAddUniqueWarningf(t *testing.T) {
 	iss := Issues{
 		Warnings: []string{"warning 1", "warning 2"},
 	}
+
+	var expected Issues
+
 	iss.addUniqueWarningf("warning 2")
-	expectIssuesEqual(t, iss,
-		Issues{Warnings: []string{"warning 1", "warning 2"}},
-	)
+	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
+	if !issuesEqual(iss, expected) {
+		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+	}
+
 	iss.addUniqueWarningf("warning 1")
-	expectIssuesEqual(t, iss,
-		Issues{Warnings: []string{"warning 1", "warning 2"}},
-	)
+	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
+	if !issuesEqual(iss, expected) {
+		t.Errorf(issuesShouldNotBeEqualExplanation, iss, expected)
+	}
 }

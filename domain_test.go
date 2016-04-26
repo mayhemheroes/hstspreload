@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+const (
+	headersStringsShouldBeEqual = `Did not receive expected header.
+			Actual: %v
+			Expected: %v`
+)
+
 func ExamplePreloadableDomain() {
 	header, issues := PreloadableDomain("wikipedia.org")
 	if header != nil {
@@ -330,34 +336,49 @@ func TestHTTPRedirectToCorrectOriginButNotHSTS(t *testing.T) {
 	}
 }
 
-func TestRemovableDomainNoHeader(t *testing.T) {
-	skipIfShort(t)
-	header, issues := RemovableDomain("example.com")
-	expectNil(t, header)
-
-	expected := Issues{Errors: []string{"Response error: No HSTS header is present on the response."}}
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEmpty, issues)
-	}
+var removableDomainTests = []struct {
+	description    string
+	domain         string
+	expectHeader   bool
+	expectedHeader string
+	expectedIssues Issues
+}{
+	{
+		"no header",
+		"example.com",
+		false, "",
+		Issues{Errors: []string{"Response error: No HSTS header is present on the response."}},
+	},
+	{
+		"no preload directive",
+		"hsts.badssl.com",
+		true, "max-age=15768000; includeSubDomains",
+		Issues{},
+	},
+	{
+		"preloaded",
+		"preloaded-hsts.badssl.com",
+		true, "max-age=15768000; includeSubDomains; preload",
+		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
+	},
 }
 
-func TestRemovableDomainNoPreload(t *testing.T) {
+func TestRemovableDomain(t *testing.T) {
 	skipIfShort(t)
-	header, issues := RemovableDomain("hsts.badssl.com")
-	expectString(t, header, "max-age=15768000; includeSubDomains")
 
-	if !issuesEmpty(issues) {
-		t.Errorf(issuesShouldBeEmpty, issues)
-	}
-}
+	for _, tt := range removableDomainTests {
+		header, issues := RemovableDomain(tt.domain)
 
-func TestRemovableDomainPreload(t *testing.T) {
-	skipIfShort(t)
-	header, issues := RemovableDomain("preloaded-hsts.badssl.com")
-	expectString(t, header, "max-age=15768000; includeSubDomains; preload")
+		if tt.expectHeader {
+			if header == nil {
+				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
+			} else if *header != tt.expectedHeader {
+				t.Errorf("[%s] %s: "+headersStringsShouldBeEqual, tt.description, tt.domain, header, tt.expectedHeader)
+			}
+		}
 
-	expected := Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}}
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEmpty, issues)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] %s: "+issuesShouldBeEqual, tt.description, tt.domain, issues, tt.expectedIssues)
+		}
 	}
 }

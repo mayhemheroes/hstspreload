@@ -302,32 +302,30 @@ func TestPreloadableHeaderMaxAgeNotPresent(t *testing.T) {
 	}
 }
 
-/******** PreloadableHeaderString() without issues. ********/
-
-func TestPreloadableHeaderStringFull(t *testing.T) {
-	issues := PreloadableHeaderString("max-age=10886400; includeSubDomains; preload")
-	if !issuesEmpty(issues) {
-		t.Errorf(issuesShouldBeEmpty, issues)
-	}
-}
-
-/******** PreloadableHeaderString() with warnings only. ********/
-
-func TestPreloadableHeaderStringMoreThanTenYears(t *testing.T) {
-	issues := PreloadableHeaderString("max-age=315360001; preload; includeSubDomains")
-	expected := NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.")
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEqual, issues, expected)
-	}
-}
-
-/******** PreloadableHeaderString() with errors. ********/
-
 var preloadableHeaderStringTests = []struct {
 	description    string
 	header         string
 	expectedIssues Issues
 }{
+
+	/******** no errors, no warnings ********/
+
+	{
+		"no issues",
+		"max-age=10886400; includeSubDomains; preload",
+		Issues{},
+	},
+
+	/******** no errors, warnings only ********/
+
+	{
+		"max-age > 10 years",
+		"max-age=315360001; preload; includeSubDomains",
+		NewIssues().addWarningf("Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."),
+	},
+
+	/******** errors only, no warnings ********/
+
 	{
 		"empty",
 		"",
@@ -363,7 +361,6 @@ var preloadableHeaderStringTests = []struct {
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			Warnings: []string{},
 		},
 	},
 	{
@@ -374,7 +371,6 @@ var preloadableHeaderStringTests = []struct {
 				"Header requirement error: Header must contain the `preload` directive.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			Warnings: []string{},
 		},
 	},
 	{
@@ -385,7 +381,6 @@ var preloadableHeaderStringTests = []struct {
 				"Header requirement error: Header must contain the `includeSubDomains` directive.",
 				"Header requirement error: Header must contain the `preload` directive.",
 			},
-			Warnings: []string{},
 		},
 	},
 	{
@@ -396,7 +391,6 @@ var preloadableHeaderStringTests = []struct {
 				"Syntax error: A max-age directive name is present without an associated value.",
 				"Header requirement error: Header must contain a valid `max-age` directive.",
 			},
-			Warnings: []string{},
 		},
 	},
 	{
@@ -409,6 +403,9 @@ var preloadableHeaderStringTests = []struct {
 		"includeSubDomains; preload; max-age=100",
 		NewIssues().addErrorf("Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."),
 	},
+
+	/******** errors and warnings ********/
+
 	{
 		"missing preload, >10 years",
 		"max-age=315360001; includeSubDomains",

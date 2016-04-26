@@ -5,6 +5,12 @@ import (
 	"testing"
 )
 
+const (
+	headersShouldBeEqual = `Header did not match expected value after parsing.
+			Actual: %v
+			Expected: %v`
+)
+
 func ExampleParseHeaderString() {
 	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
 	fmt.Printf("%v\n%v", hstsHeader, issues)
@@ -62,243 +68,206 @@ func TestHeadersEqual(t *testing.T) {
 
 func expectHeadersEqual(t *testing.T, expected HSTSHeader, actual HSTSHeader) {
 	if !headersEqual(actual, expected) {
-		t.Errorf(`Header did not match expected value after parsing.
-			Actual: %v
-			Expected: %v`, actual, expected)
+		t.Errorf(headersShouldBeEqual, actual, expected)
 	}
 }
 
-/******** ParseHeaderString() without issues. ********/
+var parseHeaderStringTests = []struct {
+	description        string
+	header             string
+	expectedIssues     Issues
+	expectedHSTSHeader HSTSHeader
+}{
 
-func TestParseHeaderStringWithoutPreload(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age=1337")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: true,
-		MaxAge:            1337,
-	})
+	/******** no warnings, no errors ********/
+
+	{
+		"without preload",
+		"includeSubDomains; max-age=1337",
+		Issues{},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 1337},
+	},
+	{
+		"without includeSubDomains",
+		"preload; max-age=1337",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: false, MaxAge: 1337},
+	},
+	{
+		"without max-age",
+		"preload; includeSubDomains",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: MaxAgeNotPresent},
+	},
+	{
+		"full",
+		"max-age=10886400; includeSubDomains; preload",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+	{
+		"any order",
+		"includeSubDomains; preload; max-age=4321",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 4321},
+	},
+	{
+		"extra whitespace",
+		"   max-age=10886400  ;     includeSubDomains    ;     preload      ",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+	{
+		"larger max-age",
+		"includeSubDomains; preload; max-age=12345678",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+	},
+	{
+		"reordered",
+		"max-age=10886400; preload; includeSubDomains",
+		Issues{},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+	{
+		"reordered, without preload",
+		"max-age=10886400; includeSubDomains",
+		Issues{},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+
+	/******** no errors, warnings only ********/
+
+	{
+		"empty",
+		"",
+		NewIssues().addWarningf("Syntax warning: Header is empty."),
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
+	},
+	{
+		"case-insensitive",
+		"inCLUDESUBDomaINs; max-AGe=12345678",
+		NewIssues().addWarningf("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."),
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 12345678},
+	},
+	{
+		"repeated preload",
+		"preload; includeSubDomains; preload; max-age=12345678; preload",
+		NewIssues().addWarningf("Syntax warning: Header contains a repeated directive: `preload`"),
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+	},
+	{
+		"single extra directive",
+		"includeSubDomains; max-age=12345678; preload; extraDirective",
+		NewIssues().addWarningf("Syntax warning: Header contains an unknown directive: `extraDirective`"),
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+	},
+	{
+		"multiple extra directives",
+		"max-age=12345678; extra; includeSubDomains; directives; preload",
+		Issues{Warnings: []string{
+			"Syntax warning: Header contains an unknown directive: `extra`",
+			"Syntax warning: Header contains an unknown directive: `directives`",
+		}},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+	},
+	{
+		"semicolon only",
+		";",
+		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
+	},
+	{
+		"trailing semicolon",
+		"max-age=10886400; includeSubDomains; preload;",
+		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+	{
+		"prefixed by semicolon",
+		"; max-age=10886400; includeSubDomains; preload",
+		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."),
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+	},
+	{
+		"bad max-age: leading 0",
+		"max-age=01234",
+		NewIssues().addWarningf("Syntax warning: max-age value contains a leading 0: `max-age=01234`"),
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: 1234},
+	},
 }
 
-func TestParseHeaderStringWithoutIncludeSubDomains(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("preload; max-age=1337")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: false,
-		MaxAge:            1337,
-	})
+func TestParseHeaderString(t *testing.T) {
+	for _, tt := range parseHeaderStringTests {
+		hstsHeader, issues := ParseHeaderString(tt.header)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		}
+		if !headersEqual(hstsHeader, tt.expectedHSTSHeader) {
+			t.Errorf("[%s] "+headersShouldBeEqual, tt.description, hstsHeader, tt.expectedHSTSHeader)
+		}
+	}
 }
 
-func TestParseHeaderStringWithoutMaxAge(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("preload; includeSubDomains")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            MaxAgeNotPresent,
-	})
-}
+var parseHeaderStringWithErrorsTests = []struct {
+	description    string
+	header         string
+	expectedIssues Issues
+}{
 
-func TestParseHeaderStringFull(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains; preload")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
+	/******** errors only, no warnings ********/
 
-func TestParseHeaderStringAnyOrder(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("includeSubDomains; preload; max-age=4321")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            4321,
-	})
-}
+	{
+		"bad max-age: empty value",
+		"max-age=",
+		NewIssues().addErrorf("Syntax error: Could not parse max-age value ``."),
+	},
+	{
+		"bad max-age: no value",
+		"max-age",
+		NewIssues().addErrorf("Syntax error: A max-age directive name is present without an associated value."),
+	},
+	{
+		" max-age: minus", // Motivated by https://crbug.com/596561
+		"max-age=-101",    // Motivated by https://crbug.com/596561
+		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=-101`"),
+	},
+	{
+		" max-age: plus", // Motivated by https://crbug.com/596561
+		"max-age=+101",
+		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=+101`"),
+	},
 
-func TestParseHeaderStringExtraWhitespace(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("   max-age=10886400  ;     includeSubDomains    ;     preload      ")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
+	/******** errors and warnings ********/
 
-func TestParseHeaderStringLargerMaxAge(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("includeSubDomains; preload; max-age=12345678")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            12345678,
-	})
-}
-
-func TestParseHeaderStringReordered(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("max-age=10886400; preload; includeSubDomains")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
-
-func TestParseHeaderStringReorderedWithoutPreload(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains")
-	expectIssuesEmpty(t, issues)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
-
-/******** ParseHeaderString() with warnings only. ********/
-
-func TestParseHeaderStringEmpty(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header is empty."))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: false,
-		MaxAge:            MaxAgeNotPresent,
-	})
-}
-
-func TestParseHeaderStringCaseInsensitive(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("inCLUDESUBDomaINs; max-AGe=12345678")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: true,
-		MaxAge:            12345678,
-	})
-}
-
-func TestParseHeaderStringRepeatedPreload(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("preload; includeSubDomains; preload; max-age=12345678; preload")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header contains a repeated directive: `preload`"))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            12345678,
-	})
-}
-
-func TestParseHeaderStringSingleExtraDirective(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age=12345678; preload; extraDirective")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header contains an unknown directive: `extraDirective`"))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            12345678,
-	})
-}
-
-func TestParseHeaderStringMultipleExtraDirectives(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("max-age=12345678; extra; includeSubDomains; directives; preload")
-	expectIssuesEqual(t, issues,
-		Issues{
-			Errors: []string{},
-			Warnings: []string{
-				"Syntax warning: Header contains an unknown directive: `extra`",
-				"Syntax warning: Header contains an unknown directive: `directives`",
-			},
-		})
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            12345678,
-	})
-}
-
-func TestParseHeaderStringSemicolonOnly(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString(";")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: false,
-		MaxAge:            MaxAgeNotPresent,
-	})
-}
-
-func TestParseHeaderStringTrailingSemicolon(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("max-age=10886400; includeSubDomains; preload;")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
-
-func TestParseHeaderStringPrefixedBySemicolon(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("; max-age=10886400; includeSubDomains; preload")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: Header includes an empty directive or extra semicolon."))
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            10886400,
-	})
-}
-
-func TestParseHeaderStringBadMaxAgeLeadingZero(t *testing.T) {
-	_, issues := ParseHeaderString("max-age=01234")
-	expectIssuesEqual(t, issues,
-		NewIssues().addWarningf("Syntax warning: max-age value contains a leading 0: `max-age=01234`"))
-}
-
-/******** ParseHeaderString() with only errors. ********/
-
-func TestParseHeaderStringBadMaxAgeNoValue(t *testing.T) {
-	_, issues := ParseHeaderString("max-age")
-	expectIssuesEqual(t, issues,
-		NewIssues().addErrorf("Syntax error: A max-age directive name is present without an associated value."))
-}
-
-// Motivated by https://crbug.com/596561
-func TestParseHeaderStringBadMaxAgeMinus(t *testing.T) {
-	_, issues := ParseHeaderString("max-age=-101")
-	expectIssuesEqual(t, issues,
-		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=-101`"))
-}
-
-// Motivated by https://crbug.com/596561
-func TestParseHeaderStringBadMaxAgePlus(t *testing.T) {
-	_, issues := ParseHeaderString("max-age=+101")
-	expectIssuesEqual(t, issues,
-		NewIssues().addErrorf("Syntax error: max-age value contains characters that are not digits: `max-age=+101`"))
-}
-
-/******** ParseHeaderString() with warnings and errors. ********/
-
-func TestParseHeaderStringMaxAgeWithoutValueAndTrailingSemicolon(t *testing.T) {
-	hstsHeader, issues := ParseHeaderString("includeSubDomains; max-age;")
-	expectIssuesEqual(t, issues,
+	{
+		"error and warning: no max-age value, trailing semicolon", // Motivated by https://crbug.com/596561
+		"max-age;",
 		Issues{
 			Errors:   []string{"Syntax error: A max-age directive name is present without an associated value."},
 			Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."},
 		},
-	)
-	expectHeadersEqual(t, hstsHeader, HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: true,
-		MaxAge:            MaxAgeNotPresent,
-	})
+	},
+	{
+		"error and warnings: no max-age value, unknown directive, trailing semicolon", // Motivated by https://crbug.com/596561
+		"includeDomains; max-age;",
+		Issues{
+			Errors: []string{"Syntax error: A max-age directive name is present without an associated value."},
+			Warnings: []string{
+				"Syntax warning: Header contains an unknown directive: `includeDomains`",
+				"Syntax warning: Header includes an empty directive or extra semicolon.",
+			},
+		},
+	},
+}
+
+func TestParseHeaderStringWithErrors(t *testing.T) {
+	for _, tt := range parseHeaderStringWithErrorsTests {
+		_, issues := ParseHeaderString(tt.header)
+		if !issuesEqual(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		}
+	}
 }
 
 /******** PreloadableHeader() ********/

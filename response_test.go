@@ -26,14 +26,14 @@ func expectString(t *testing.T, actual *string, expected string) {
 func ExamplePreloadableResponse() {
 	resp, err := http.Get("localhost:8080")
 	if err != nil {
-		header, issues := PreloadableResponse(*resp)
+		header, issues := PreloadableResponse(resp)
 		fmt.Printf("Header: %s", *header)
 		fmt.Printf("Issues: %v", issues)
 	}
 }
 
 func TestPreloadableResponseGoodHeader(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -46,7 +46,7 @@ func TestPreloadableResponseGoodHeader(t *testing.T) {
 }
 
 func TestPreloadableResponseEmpty(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -68,7 +68,7 @@ func TestPreloadableResponseEmpty(t *testing.T) {
 }
 
 func TestPreloadableResponseMultipleErrors(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -90,7 +90,7 @@ func TestPreloadableResponseMultipleErrors(t *testing.T) {
 }
 
 func TestPreloadableResponseMissingIncludeSubDomains(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -106,7 +106,7 @@ func TestPreloadableResponseMissingIncludeSubDomains(t *testing.T) {
 }
 
 func TestPreloadableResponseWithoutHSTSHeaders(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	header, issues := PreloadableResponse(resp)
@@ -118,7 +118,7 @@ func TestPreloadableResponseWithoutHSTSHeaders(t *testing.T) {
 }
 
 func TestPreloadableResponseMultipleHSTSHeaders(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -134,7 +134,7 @@ func TestPreloadableResponseMultipleHSTSHeaders(t *testing.T) {
 }
 
 func TestRemovableResponseNoHeader(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	header, issues := RemovableResponse(resp)
@@ -146,7 +146,7 @@ func TestRemovableResponseNoHeader(t *testing.T) {
 }
 
 func TestRemovableResponseNoPreload(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -160,7 +160,7 @@ func TestRemovableResponseNoPreload(t *testing.T) {
 }
 
 func TestRemovableResponsePreload(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -179,7 +179,7 @@ func TestRemovableResponsePreload(t *testing.T) {
 }
 
 func TestRemovableResponsePreloadOnly(t *testing.T) {
-	var resp http.Response
+	resp := &http.Response{}
 	resp.Header = http.Header{}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")

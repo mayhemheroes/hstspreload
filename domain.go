@@ -76,7 +76,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 		// PreloadableResponse
 		go func() {
 			var preloadableIssues Issues
-			header, preloadableIssues = PreloadableResponse(*resp)
+			header, preloadableIssues = PreloadableResponse(resp)
 			chanPreloadableResponse <- preloadableIssues
 		}()
 
@@ -134,7 +134,7 @@ func RemovableDomain(domain string) (header *string, issues Issues) {
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
 		var removableIssues Issues
-		header, removableIssues = RemovableResponse(*resp)
+		header, removableIssues = RemovableResponse(resp)
 		issues = combineIssues(issues, removableIssues)
 	}
 
@@ -255,7 +255,7 @@ func checkHTTPRedirectsURL(initialURL string, domain string) (mainIssues Issues,
 				err,
 			)
 		} else {
-			_, redirectHSTSIssues := PreloadableResponse(*resp)
+			_, redirectHSTSIssues := PreloadableResponse(resp)
 			if len(redirectHSTSIssues.Errors) > 0 {
 				firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
 					"Redirect error: `%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",

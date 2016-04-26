@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func checkSingleHeader(resp http.Response) (header *string, issues Issues) {
+func checkSingleHeader(resp *http.Response) (header *string, issues Issues) {
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
 	hstsHeaders := resp.Header[key]
 
@@ -20,7 +20,7 @@ func checkSingleHeader(resp http.Response) (header *string, issues Issues) {
 	return &hstsHeaders[0], issues
 }
 
-func checkResponse(resp http.Response, headerCondition func(string) Issues) (header *string, issues Issues) {
+func checkResponse(resp *http.Response, headerCondition func(string) Issues) (header *string, issues Issues) {
 	header, issues = checkSingleHeader(resp)
 	if len(issues.Errors) > 0 {
 		return nil, issues
@@ -36,7 +36,7 @@ func checkResponse(resp http.Response, headerCondition func(string) Issues) (hea
 // `header` is `nil`.
 // To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
-func PreloadableResponse(resp http.Response) (header *string, issues Issues) {
+func PreloadableResponse(resp *http.Response) (header *string, issues Issues) {
 	return checkResponse(resp, PreloadableHeaderString)
 }
 
@@ -47,6 +47,6 @@ func PreloadableResponse(resp http.Response) (header *string, issues Issues) {
 // `header` is `nil`.
 // To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
-func RemovableResponse(resp http.Response) (header *string, issues Issues) {
+func RemovableResponse(resp *http.Response) (header *string, issues Issues) {
 	return checkResponse(resp, RemovableHeaderString)
 }

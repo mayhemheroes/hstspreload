@@ -1,6 +1,7 @@
 package hstspreload
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -113,17 +114,19 @@ func (issues Issues) GoString() string {
 	)
 }
 
-// MakeSlices replaces empty Errors or Warnings with make([]string, 0)
-//
-// When converting Issues to JSON, it may be desirable for empty errors
-// to be marshalled as `[]` instead of `null`. To ensure this, call
-// MakeSlices() on the Issues first.
-func MakeSlices(issues Issues) Issues {
+func (issues Issues) MarshalJSON() ([]byte, error) {
+	// We explicitly fill out the fields with slices so that they are
+	// marshalled to `[]` rather than `null` when they are empty.
 	if len(issues.Errors) == 0 {
 		issues.Errors = make([]string, 0)
 	}
 	if len(issues.Warnings) == 0 {
 		issues.Warnings = make([]string, 0)
 	}
-	return issues
+
+	// We use a type alias to call the "default" implementation of
+	// json.Marshal on Issues.
+	// See http://choly.ca/post/go-json-marshalling/
+	type IssuesAlias Issues
+	return json.Marshal(IssuesAlias(issues))
 }

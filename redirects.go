@@ -19,9 +19,15 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) (issues Issue
 	for i, u := range chain {
 		if u.Scheme != httpsScheme {
 			if i == 0 {
-				return issues.addErrorf("Redirect error: `%s` redirects to an insecure page: `%s`", initialURL, u)
+				return issues.addErrorf(
+					IssueCode("redirects.insecure.initial"),
+					"Insecure redirect",
+					"`%s` redirects to an insecure page: `%s`", initialURL, u)
 			} else {
-				return issues.addErrorf("Redirect error: `%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, i+1, u)
+				return issues.addErrorf(
+					IssueCode("redirects.insecure.subsequent"),
+					"Insecure redirect",
+					"`%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, i+1, u)
 			}
 		}
 	}
@@ -34,7 +40,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 	chain, issues := preloadableRedirects(initialURL)
 	if len(chain) == 0 {
 		return issues.addErrorf(
-			"Redirect error: `%s` does not redirect to `%s`.",
+			IssueCode("redirects.http.no_redirect"),
+			"No redirect from HTTP",
+			"`%s` does not redirect to `%s`.",
 			initialURL,
 			"https://"+domain,
 		), firstRedirectHSTSIssues
@@ -47,7 +55,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			// We cannot connect this time. This error has high priority,
 			// so return immediately and allow it to mask other errors.
 			return mainIssues, firstRedirectHSTSIssues.addErrorf(
-				"Redirect error: `%s` redirects to `%s`, which we could not connect to: %s",
+				IssueCode("redirects.http.first_redirect.invalid"),
+				"Invalid redirect",
+				"`%s` redirects to `%s`, which we could not connect to: %s",
 				initialURL,
 				chain[0],
 				err,
@@ -56,10 +66,12 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			_, redirectHSTSIssues := PreloadableResponse(resp)
 			if len(redirectHSTSIssues.Errors) > 0 {
 				firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
-					"Redirect error: `%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
+					IssueCode("redirects.http.first_redirect.no_hsts"),
+					"HTTP redirects to a page without HSTS",
+					"`%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
 					initialURL,
 					chain[0],
-					redirectHSTSIssues.Errors[0],
+					redirectHSTSIssues.Errors[0].Summary,
 				)
 			}
 		}
@@ -71,7 +83,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 		// - http://example.com -> http://www.example.com
 		// - http://example.com -> https://www.example.com
 		return issues.addErrorf(
-			"Redirect error: `%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
+			IssueCode("redirects.http.www_first"),
+			"HTTP redirects to www first",
+			"`%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
 				"before adding the www subdomain. Right now, the first redirect is to `%s`.",
 			initialURL,
 			"https://"+domain,
@@ -79,7 +93,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 		), firstRedirectHSTSIssues
 	} else {
 		return issues.addErrorf(
-			"Redirect error: `%s` (HTTP) redirects to `%s`. The first redirect "+
+			IssueCode("redirects.http.first_redirect.insecure"),
+			"HTTP does not redirect to HTTPS",
+			"`%s` (HTTP) redirects to `%s`. The first redirect "+
 				"from `%s` should be to a secure page on the same host (`%s`).",
 			initialURL,
 			chain[0],
@@ -105,7 +121,10 @@ func preloadableRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 			redirectChain = append(redirectChain, req.URL)
 
 			if len(redirectChain) > maxRedirects {
-				issues = issues.addErrorf("Redirect error: More than %d redirects from `%s`.", maxRedirects, initialURL)
+				issues = issues.addErrorf(
+					IssueCode("redirects.too_many"),
+					"Too many redirects",
+					"There are more than %d redirects starting from `%s`.", maxRedirects, initialURL)
 				return tooManyRedirects
 			}
 
@@ -117,7 +136,10 @@ func preloadableRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 	_, err := client.Get(initialURL)
 	if err != nil {
 		if !strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
-			issues = issues.addErrorf("Redirect error: %s", err.Error())
+			issues = issues.addErrorf(
+				IssueCode("redirects.follow_error"),
+				"Error following redirects",
+				"Redirect error: %s", err.Error())
 		}
 	}
 

@@ -112,11 +112,8 @@ Return code:
 	}
 	exitCode := showResult()
 
-	format(red)
-	printList(issues.Errors, "Error")
-	format(yellow)
-	printList(issues.Warnings, "Warning")
-	format(reset)
+	printList(issues.Errors, "Error", red)
+	printList(issues.Warnings, "Warning", yellow)
 
 	os.Exit(exitCode)
 }
@@ -206,7 +203,7 @@ func probablyDomain(str string) bool {
 	return strings.Contains(str, ".") && !strings.Contains(str, " ")
 }
 
-func printList(list []string, title string) {
+func printList(list []hstspreload.Issue, title string, fs string) {
 	if len(list) == 0 {
 		return
 	}
@@ -215,10 +212,16 @@ func printList(list []string, title string) {
 	if len(list) != 1 {
 		titlePluralized += "s"
 	}
+	format(fs)
 	fmt.Printf("%s:\n", titlePluralized)
+	format(reset)
 
-	for i, s := range list {
-		fmt.Printf("\n%d. %s\n", i+1, s)
+	for i, is := range list {
+		fmt.Printf("\n%d. ", i+1)
+		format(fs)
+		fmt.Printf("%s", is.Summary)
+		format(reset)
+		fmt.Printf(" [%s]\n%s\n", is.Code, is.Message)
 	}
 
 	fmt.Printf("\n")

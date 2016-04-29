@@ -54,21 +54,33 @@ func parseMaxAge(directive string) (maxAge int64, issues Issues) {
 	// TODO: Use more concise validation code to parse a digit string to a signed int.
 	for i, c := range maxAgeNumericalString {
 		if i == 0 && c == '0' && len(maxAgeNumericalString) > 1 {
-			issues = issues.addWarningf("Syntax warning: max-age value contains a leading 0: `%s`", directive)
+			issues = issues.addWarningf(
+				"header.parse.max_age.leading_zero",
+				"Unexpected max-age syntax",
+				"The header's max-age value contains a leading 0: `%s`", directive)
 		}
 		if c < '0' || c > '9' {
-			return MaxAgeNotPresent, issues.addErrorf("Syntax error: max-age value contains characters that are not digits: `%s`", directive)
+			return MaxAgeNotPresent, issues.addErrorf(
+				"header.parse.max_age.non_digit_characters",
+				"Invalid max-age syntax",
+				"The header's max-age value contains characters that are not digits: `%s`", directive)
 		}
 	}
 
 	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
 
 	if err != nil {
-		return MaxAgeNotPresent, issues.addErrorf("Syntax error: Could not parse max-age value `%s`.", maxAgeNumericalString)
+		return MaxAgeNotPresent, issues.addErrorf(
+			"header.parse.max_age.parse_int_error",
+			"Invalid max-age syntax",
+			"We could not parse the header's max-age value `%s`.", maxAgeNumericalString)
 	}
 
 	if maxAge < 0 {
-		return MaxAgeNotPresent, issues.addErrorf("Internal error: unexpected negative integer: `%d`", maxAge)
+		return MaxAgeNotPresent, issues.addErrorf(
+			"internal.header.parse.max_age.negative",
+			"Invalid max-age syntax",
+			"Parsing the header's max-age resulted in an unexpected negative integer: `%d`", maxAge)
 	}
 
 	return maxAge, issues
@@ -94,7 +106,10 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 	// So we handle this case separately.
 	if len(directives) == 1 && directives[0] == "" {
 		// Return immediately, because all the extra information is redundant.
-		return hstsHeader, issues.addWarningf("Syntax warning: Header is empty.")
+		return hstsHeader, issues.addWarningf(
+			"header.parse.empty",
+			"Empty Header",
+			"The HSTS header is empty.")
 	}
 
 	for _, directive := range directives {
@@ -109,29 +124,43 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 		switch {
 		case directiveEqualsIgnoringCase("preload"):
 			if hstsHeader.Preload {
-				issues = issues.addUniqueWarningf("Syntax warning: Header contains a repeated directive: `preload`")
+				issues = issues.addUniqueWarningf(
+					"header.parse.repeated.preload",
+					"Repeated preload directive",
+					"Header contains a repeated directive: `preload`")
 			} else {
 				hstsHeader.Preload = true
 			}
 
 		case directiveHasPrefixIgnoringCase("preload"):
-			issues = issues.addUniqueWarningf("Syntax warning: Header contains a `preload` directive with extra directives.")
+			issues = issues.addUniqueWarningf(
+				"header.parse.invalid.preload",
+				"Invalid preload directive",
+				"Header contains a `preload` directive with extra parts.")
 
 		case directiveEqualsIgnoringCase("includeSubDomains"):
 			if hstsHeader.IncludeSubDomains {
-				issues = issues.addUniqueWarningf("Syntax warning: Header contains a repeated directive: `includeSubDomains`")
+				issues = issues.addUniqueWarningf(
+					"header.parse.repeated.include_sub_domains",
+					"Repeated includeSubDomains directive",
+					"Header contains a repeated directive: `includeSubDomains`")
 			} else {
 				hstsHeader.IncludeSubDomains = true
 				if directive != "includeSubDomains" {
 					issues = issues.addUniqueWarningf(
-						"Syntax warning: Header contains the token `%s`. The recommended capitalization is `includeSubDomains`.",
+						"header.parse.spelling.include_sub_domains",
+						"Non-standard capitalization of includeSubDomains",
+						"Header contains the token `%s`. The recommended capitalization is `includeSubDomains`.",
 						directive,
 					)
 				}
 			}
 
 		case directiveHasPrefixIgnoringCase("includeSubDomains"):
-			issues = issues.addUniqueWarningf("Syntax warning: Header contains an `includeSubDomains` directive with extra directives.")
+			issues = issues.addUniqueWarningf(
+				"header.parse.invalid.include_sub_domains",
+				"Invalid includeSubDomains directive",
+				"The header contains an `includeSubDomains` directive with extra directives.")
 
 		case directiveHasPrefixIgnoringCase("max-age="):
 			maxAge, maxAgeIssues := parseMaxAge(directive)
@@ -144,17 +173,29 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 			if hstsHeader.MaxAge == MaxAgeNotPresent {
 				hstsHeader.MaxAge = maxAge
 			} else {
-				issues = issues.addUniqueWarningf("Syntax warning: Header contains a repeated directive: `max-age`")
+				issues = issues.addUniqueWarningf(
+					"header.parse.repeated.max_age",
+					"Repeated max-age directive",
+					"The header contains a repeated directive: `max-age`")
 			}
 
 		case directiveHasPrefixIgnoringCase("max-age"):
-			issues = issues.addUniqueErrorf("Syntax error: A max-age directive name is present without an associated value.")
+			issues = issues.addUniqueErrorf(
+				"header.parse.invalid.max_age.no_value",
+				"Max-age drective without a value",
+				"The header contains a max-age directive name without an associated value. Please specify the max-age in seconds.")
 
 		case directiveEqualsIgnoringCase(""):
-			issues = issues.addUniqueWarningf("Syntax warning: Header includes an empty directive or extra semicolon.")
+			issues = issues.addUniqueWarningf(
+				"header.parse.empty_directive",
+				"Empty directive or extra semicolon",
+				"The header includes an empty directive or extra semicolon.")
 
 		default:
-			issues = issues.addWarningf("Syntax warning: Header contains an unknown directive: `%s`", directive)
+			issues = issues.addWarningf(
+				"header.parse.unknown_directive",
+				"Unknown directive",
+				"The header contains an unknown directive: `%s`", directive)
 		}
 	}
 	return hstsHeader, issues
@@ -162,7 +203,10 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 
 func preloadableHeaderPreload(hstsHeader HSTSHeader) (issues Issues) {
 	if !hstsHeader.Preload {
-		issues = issues.addErrorf("Header requirement error: Header must contain the `preload` directive.")
+		issues = issues.addErrorf(
+			"header.preloadable.preload.missing",
+			"No preload directive",
+			"The header must contain the `preload` directive.")
 	}
 
 	return issues
@@ -170,7 +214,10 @@ func preloadableHeaderPreload(hstsHeader HSTSHeader) (issues Issues) {
 
 func preloadableHeaderSubDomains(hstsHeader HSTSHeader) (issues Issues) {
 	if !hstsHeader.IncludeSubDomains {
-		issues = issues.addErrorf("Header requirement error: Header must contain the `includeSubDomains` directive.")
+		issues = issues.addErrorf(
+			"header.preloadable.include_sub_domains.missing",
+			"No includeSubDomains directive",
+			"The header must contain the `includeSubDomains` directive.")
 	}
 
 	return issues
@@ -179,25 +226,42 @@ func preloadableHeaderSubDomains(hstsHeader HSTSHeader) (issues Issues) {
 func preloadableHeaderMaxAge(hstsHeader HSTSHeader) (issues Issues) {
 	switch {
 	case hstsHeader.MaxAge == MaxAgeNotPresent:
-		issues = issues.addErrorf("Header requirement error: Header must contain a valid `max-age` directive.")
+		issues = issues.addErrorf(
+			"header.preloadable.max_age.missing",
+			"No max-age directice",
+			"Header requirement error: Header must contain a valid `max-age` directive.")
 
 	case hstsHeader.MaxAge < 0:
-		issues = issues.addErrorf("Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge)
+		issues = issues.addErrorf(
+			"internal.header.preloadable.max_age.negative",
+			"Negative max-age",
+			"Encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge)
 
 	case hstsHeader.MaxAge < hstsMinimumMaxAge:
 		errorStr := fmt.Sprintf(
-			"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
+			"The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
 			hstsHeader.MaxAge,
 		)
 		if hstsHeader.MaxAge == 0 {
 			errorStr += " If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"
+			issues = issues.addErrorf(
+				"header.preloadable.max_age.zero",
+				"Max-age is 0",
+				errorStr,
+			)
+		} else {
+			issues = issues.addErrorf(
+				"header.preloadable.max_age.too_low",
+				"Max-age too low",
+				errorStr,
+			)
 		}
-
-		issues = issues.addErrorf(errorStr)
 
 	case hstsHeader.MaxAge > tenYears:
 		issues = issues.addWarningf(
-			"Header FYI: The max-age (%d seconds) is longer than 10 years, which is an unusually long value.",
+			"header.preloadable.max_age.over_10_years",
+			"Max-age > 10 years",
+			"FYI: The max-age (%d seconds) is longer than 10 years, which is an unusually long value.",
 			hstsHeader.MaxAge,
 		)
 
@@ -222,11 +286,17 @@ func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
 
 func RemovableHeader(hstsHeader HSTSHeader) (issues Issues) {
 	if hstsHeader.Preload {
-		issues = issues.addErrorf("Header requirement error: For preload list removal, the header must not contain the `preload` directive.")
+		issues = issues.addErrorf(
+			"header.removable.contains.preload",
+			"Contains preload directive",
+			"Header requirement error: For preload list removal, the header must not contain the `preload` directive.")
 	}
 
 	if hstsHeader.MaxAge == MaxAgeNotPresent {
-		issues = issues.addErrorf("Header requirement error: Header must contain a valid `max-age` directive.")
+		issues = issues.addErrorf(
+			"header.removable.missing.max_age",
+			"No max-age directive",
+			"Header requirement error: Header must contain a valid `max-age` directive.")
 	}
 
 	return issues

@@ -141,58 +141,58 @@ var parseHeaderStringTests = []struct {
 	{
 		"empty",
 		"",
-		Issues{Warnings: []string{"Syntax warning: Header is empty."}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
 	},
 	{
 		"case-insensitive",
 		"inCLUDESUBDomaINs; max-AGe=12345678",
-		Issues{Warnings: []string{"Syntax warning: Header contains the token `inCLUDESUBDomaINs`. The recommended capitalization is `includeSubDomains`."}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.spelling.include_sub_domains"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"repeated preload",
 		"preload; includeSubDomains; preload; max-age=12345678; preload",
-		Issues{Warnings: []string{"Syntax warning: Header contains a repeated directive: `preload`"}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.repeated.preload"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"single extra directive",
 		"includeSubDomains; max-age=12345678; preload; extraDirective",
-		Issues{Warnings: []string{"Syntax warning: Header contains an unknown directive: `extraDirective`"}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.unknown_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"multiple extra directives",
 		"max-age=12345678; extra; includeSubDomains; directives; preload",
-		Issues{Warnings: []string{
-			"Syntax warning: Header contains an unknown directive: `extra`",
-			"Syntax warning: Header contains an unknown directive: `directives`",
+		Issues{Warnings: []Issue{
+			Issue{Code: "header.parse.unknown_directive"},
+			Issue{Code: "header.parse.unknown_directive"},
 		}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
 	},
 	{
 		"semicolon only",
 		";",
-		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
 	},
 	{
 		"trailing semicolon",
 		"max-age=10886400; includeSubDomains; preload;",
-		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
 	},
 	{
 		"prefixed by semicolon",
 		"; max-age=10886400; includeSubDomains; preload",
-		Issues{Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
 	},
 	{
 		"bad max-age: leading 0",
 		"max-age=01234",
-		Issues{Warnings: []string{"Syntax warning: max-age value contains a leading 0: `max-age=01234`"}},
+		Issues{Warnings: []Issue{Issue{Code: "header.parse.max_age.leading_zero"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: 1234},
 	},
 }
@@ -200,8 +200,8 @@ var parseHeaderStringTests = []struct {
 func TestParseHeaderString(t *testing.T) {
 	for _, tt := range parseHeaderStringTests {
 		hstsHeader, issues := ParseHeaderString(tt.header)
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 		if !headersEqual(hstsHeader, tt.expectedHSTSHeader) {
 			t.Errorf("[%s] "+headersShouldBeEqual, tt.description, hstsHeader, tt.expectedHSTSHeader)
@@ -220,22 +220,28 @@ var parseHeaderStringWithErrorsTests = []struct {
 	{
 		"bad max-age: empty value",
 		"max-age=",
-		Issues{Errors: []string{"Syntax error: Could not parse max-age value ``."}},
+		Issues{Errors: []Issue{Issue{Code: "header.parse.max_age.parse_int_error"}}},
 	},
 	{
 		"bad max-age: no value",
 		"max-age",
-		Issues{Errors: []string{"Syntax error: A max-age directive name is present without an associated value."}},
+		Issues{Errors: []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}}},
 	},
 	{
-		" max-age: minus", // Motivated by https://crbug.com/596561
-		"max-age=-101",    // Motivated by https://crbug.com/596561
-		Issues{Errors: []string{"Syntax error: max-age value contains characters that are not digits: `max-age=-101`"}},
+		"max-age: minus", // Motivated by https://crbug.com/596561
+		"max-age=-101",   // Motivated by https://crbug.com/596561
+		Issues{Errors: []Issue{Issue{
+			Code:    "header.parse.max_age.non_digit_characters",
+			Message: "The header's max-age value contains characters that are not digits: `max-age=-101`",
+		}}},
 	},
 	{
-		" max-age: plus", // Motivated by https://crbug.com/596561
+		"max-age: plus", // Motivated by https://crbug.com/596561
 		"max-age=+101",
-		Issues{Errors: []string{"Syntax error: max-age value contains characters that are not digits: `max-age=+101`"}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "header.parse.max_age.non_digit_characters",
+			Message: "The header's max-age value contains characters that are not digits: `max-age=+101`",
+		}}},
 	},
 
 	/******** errors and warnings ********/
@@ -244,18 +250,18 @@ var parseHeaderStringWithErrorsTests = []struct {
 		"error and warning: no max-age value, trailing semicolon", // Motivated by https://crbug.com/596561
 		"max-age;",
 		Issues{
-			Errors:   []string{"Syntax error: A max-age directive name is present without an associated value."},
-			Warnings: []string{"Syntax warning: Header includes an empty directive or extra semicolon."},
+			Errors:   []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}},
+			Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}},
 		},
 	},
 	{
 		"error and warnings: no max-age value, unknown directive, trailing semicolon", // Motivated by https://crbug.com/596561
 		"includeDomains; max-age;",
 		Issues{
-			Errors: []string{"Syntax error: A max-age directive name is present without an associated value."},
-			Warnings: []string{
-				"Syntax warning: Header contains an unknown directive: `includeDomains`",
-				"Syntax warning: Header includes an empty directive or extra semicolon.",
+			Errors: []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}},
+			Warnings: []Issue{
+				Issue{Code: "header.parse.unknown_directive"},
+				Issue{Code: "header.parse.empty_directive"},
 			},
 		},
 	},
@@ -264,8 +270,8 @@ var parseHeaderStringWithErrorsTests = []struct {
 func TestParseHeaderStringWithErrors(t *testing.T) {
 	for _, tt := range parseHeaderStringWithErrorsTests {
 		_, issues := ParseHeaderString(tt.header)
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
 }
@@ -282,11 +288,14 @@ func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 		MaxAge:            315360001,
 	})
 	expected := Issues{
-		Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
-		Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
+		Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}},
+		Warnings: []Issue{Issue{
+			Code:    "header.preloadable.max_age.over_10_years",
+			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
+		}},
 	}
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEqual, issues, expected)
+	if !issuesMatchExpected(issues, expected) {
+		t.Errorf(issuesShouldMatch, issues, expected)
 	}
 }
 
@@ -296,9 +305,9 @@ func TestPreloadableHeaderMaxAgeNotPresent(t *testing.T) {
 		IncludeSubDomains: true,
 		MaxAge:            -2,
 	})
-	expected := Issues{Errors: []string{"Internal error: encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: -2"}}
-	if !issuesEqual(issues, expected) {
-		t.Errorf(issuesShouldBeEqual, issues, expected)
+	expected := Issues{Errors: []Issue{Issue{Code: "internal.header.preloadable.max_age.negative"}}}
+	if !issuesMatchExpected(issues, expected) {
+		t.Errorf(issuesShouldMatch, issues, expected)
 	}
 }
 
@@ -321,7 +330,10 @@ var preloadableHeaderStringTests = []struct {
 	{
 		"max-age > 10 years",
 		"max-age=315360001; preload; includeSubDomains",
-		Issues{Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."}},
+		Issues{Warnings: []Issue{Issue{
+			Code:    "header.preloadable.max_age.over_10_years",
+			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
+		}}},
 	},
 
 	/******** errors only, no warnings ********/
@@ -330,36 +342,36 @@ var preloadableHeaderStringTests = []struct {
 		"empty",
 		"",
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `includeSubDomains` directive.",
-				"Header requirement error: Header must contain the `preload` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.include_sub_domains.missing"},
+				Issue{Code: "header.preloadable.preload.missing"},
+				Issue{Code: "header.preloadable.max_age.missing"},
 			},
-			Warnings: []string{"Syntax warning: Header is empty."},
+			Warnings: []Issue{Issue{Code: "header.parse.empty"}},
 		},
 	},
 	{
 		"missing preload",
 		"includeSubDomains; max-age=10886400",
-		Issues{Errors: []string{"Header requirement error: Header must contain the `preload` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}}},
 	},
 	{
 		"missing includeSubdomains",
 		"preload; max-age=10886400",
-		Issues{Errors: []string{"Header requirement error: Header must contain the `includeSubDomains` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.include_sub_domains.missing"}}},
 	},
 	{
 		"missing max-age",
 		"includeSubDomains; preload",
-		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.max_age.missing"}}},
 	},
 	{
 		"only preload",
 		"preload",
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `includeSubDomains` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.include_sub_domains.missing"},
+				Issue{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
@@ -367,9 +379,9 @@ var preloadableHeaderStringTests = []struct {
 		"only includeSubdomains",
 		"includeSubDomains",
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `preload` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.preload.missing"},
+				Issue{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
@@ -377,31 +389,34 @@ var preloadableHeaderStringTests = []struct {
 		"only max-age",
 		"max-age=12345678",
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `includeSubDomains` directive.",
-				"Header requirement error: Header must contain the `preload` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.include_sub_domains.missing"},
+				Issue{Code: "header.preloadable.preload.missing"},
 			},
 		},
 	},
 	{
-		"max-age without vale",
+		"max-age without value",
 		"includeSubDomains; preload; max-age",
 		Issues{
-			Errors: []string{
-				"Syntax error: A max-age directive name is present without an associated value.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.parse.invalid.max_age.no_value"},
+				Issue{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
 	{
 		"maxAge=0", // Give information about what to do if you want to remove HSTS.
 		"includeSubDomains; preload; max-age=0",
-		Issues{Errors: []string{"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=0. If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.max_age.zero"}}},
 	},
 	{
 		"maxAge=100",
 		"includeSubDomains; preload; max-age=100",
-		Issues{Errors: []string{"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100."}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "header.preloadable.max_age.too_low",
+			Message: "The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
+		}}},
 	},
 
 	/******** errors and warnings ********/
@@ -410,8 +425,11 @@ var preloadableHeaderStringTests = []struct {
 		"missing preload, >10 years",
 		"max-age=315360001; includeSubDomains",
 		Issues{
-			Errors:   []string{"Header requirement error: Header must contain the `preload` directive."},
-			Warnings: []string{"Header FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value."},
+			Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}},
+			Warnings: []Issue{Issue{
+				Code:    "header.preloadable.max_age.over_10_years",
+				Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
+			}},
 		},
 	},
 }
@@ -419,8 +437,8 @@ var preloadableHeaderStringTests = []struct {
 func TestPreloadableHeaderString(t *testing.T) {
 	for _, tt := range preloadableHeaderStringTests {
 		issues := PreloadableHeaderString(tt.header)
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
 }
@@ -454,30 +472,30 @@ var removableHeaderStringTests = []struct {
 	{
 		"includeSubDomains only",
 		"includeSubDomains",
-		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"max-age missing",
 		"includeSubDomains",
-		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"empty header",
 		"includeSubDomains",
-		Issues{Errors: []string{"Header requirement error: Header must contain a valid `max-age` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"preload present",
 		"max-age=315360001; includeSubDomains; preload",
-		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.removable.contains.preload"}}},
 	},
 	{
 		"preload only",
 		"preload",
 		Issues{
-			Errors: []string{
-				"Header requirement error: For preload list removal, the header must not contain the `preload` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.removable.contains.preload"},
+				Issue{Code: "header.removable.missing.max_age"},
 			},
 		},
 	},
@@ -486,8 +504,8 @@ var removableHeaderStringTests = []struct {
 func TestRemovableHeaderString(t *testing.T) {
 	for _, tt := range removableHeaderStringTests {
 		issues := RemovableHeaderString(tt.header)
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
 }

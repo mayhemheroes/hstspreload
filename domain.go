@@ -155,7 +155,9 @@ func getResponse(domain string) (resp *http.Response, issues Issues) {
 	if err != nil {
 		if urlError, ok := err.(*url.Error); !ok || urlError.Err != redirectPrevented {
 			return resp, issues.addErrorf(
-				"TLS Error: We cannot connect to https://%s using TLS (%q). This "+
+				IssueCode("domain.tls.cannot_connect"),
+				"Cannot connect using TLS",
+				"We cannot connect to https://%s using TLS (%q). This "+
 					"might be caused by an incomplete certificate chain, which causes "+
 					"issues on mobile devices. Check out your site at "+
 					"https://www.ssllabs.com/ssltest/",
@@ -170,16 +172,29 @@ func getResponse(domain string) (resp *http.Response, issues Issues) {
 
 func checkDomainFormat(domain string) (issues Issues) {
 	if strings.HasPrefix(domain, ".") {
-		return issues.addErrorf("Domain name error: begins with `.`")
+		return issues.addErrorf(
+			IssueCode("domain.format.begins_with_dot"),
+			"Invalid domain name",
+			"Please provide a domain that does not begin with `.`")
 	}
 	if strings.HasSuffix(domain, ".") {
-		return issues.addErrorf("Domain name error: ends with `.`")
+		return issues.addErrorf(
+			IssueCode("domain.format.ends_with_dot"),
+			"Invalid domain name",
+			"Please provide a domain that does not begin with `.`")
 	}
 	if strings.Index(domain, "..") != -1 {
-		return issues.addErrorf("Domain name error: contains `..`")
+		return issues.addErrorf(
+			IssueCode("domain.format.contains_double_dot"),
+			"Invalid domain name",
+			"Please provide a domain that does not contain `..`")
 	}
 	if strings.Count(domain, ".") < 1 {
-		return issues.addErrorf("Domain name error: must have at least two labels.")
+		return issues.addErrorf(
+			IssueCode("domain.format.only_one_label"),
+			"Invalid domain name",
+			"Please provide a domain with least two labels "+
+				"(e.g. `example.com` rather than `example` or `com`).")
 	}
 
 	domain = strings.ToLower(domain)
@@ -188,7 +203,7 @@ func checkDomainFormat(domain string) (issues Issues) {
 			continue
 		}
 
-		return issues.addErrorf("Domain name error: contains invalid characters.")
+		return issues.addErrorf("domain.format.invalid_characters", "Invalid domain name", "Please provide a domain using valid characters (letters, numbers, dashes, dots).")
 	}
 
 	return issues
@@ -197,14 +212,16 @@ func checkDomainFormat(domain string) (issues Issues) {
 func preloadableDomainLevel(domain string) (issues Issues) {
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
-		return issues.addErrorf("Internal error: could not compute eTLD+1.")
+		return issues.addErrorf("internal.domain.name.cannot_compute_etld1", "Internal Error", "Could not compute eTLD+1.")
 	}
 	if canon != domain {
 		return issues.addErrorf(
-			"Domain error: `%s` is a subdomain. Please preload `%s` instead. "+
-				"The interaction of cookies, HSTS and user behaviour is complex; "+
-				"we believe that only accepting whole domains is simple enough to "+
-				"have clear security semantics.",
+			IssueCode("domain.is_subdomain"),
+			"Subdomain",
+			"`%s` is a subdomain. Please preload `%s` instead. "+
+				"(Due to the size of the preload list and the behaviour of "+
+				"cookies across subdomains, we only accept automated preload list "+
+				"submissions of whole registered domains.)",
 			domain,
 			canon,
 		)
@@ -216,7 +233,9 @@ func preloadableDomainLevel(domain string) (issues Issues) {
 func checkSHA1(chain []*x509.Certificate) (issues Issues) {
 	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
 		issues = issues.addErrorf(
-			"TLS error: One or more of the certificates in your certificate chain "+
+			IssueCode("domain.tls.sha1"),
+			"SHA-1 Certificate",
+			"One or more of the certificates in your certificate chain "+
 				"is signed using SHA-1. This needs to be replaced. "+
 				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. "+
 				"(The first SHA-1 certificate found has a common-name of %q.)",
@@ -238,7 +257,9 @@ func checkWWW(host string) (issues Issues) {
 		wwwConn, err := tls.DialWithDialer(&dialer, "tcp", "www."+host+":443", nil)
 		if err != nil {
 			return issues.addErrorf(
-				"Domain error: The www subdomain exists, but we couldn't connect to it (%q). "+
+				IssueCode("domain.www.no_tls"),
+				"www subdomain does not support HTTPS",
+				"Domain error: The www subdomain exists, but we couldn't connect to it using HTTPS (%q). "+
 					"Since many people type this by habit, HSTS preloading would likely "+
 					"cause issues for your site.",
 				err,

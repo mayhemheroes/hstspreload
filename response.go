@@ -10,11 +10,17 @@ func checkSingleHeader(resp *http.Response) (header *string, issues Issues) {
 
 	switch {
 	case len(hstsHeaders) == 0:
-		return nil, issues.addErrorf("Response error: No HSTS header is present on the response.")
+		return nil, issues.addErrorf(
+			"response.no_header",
+			"No HSTS header",
+			"Response error: No HSTS header is present on the response.")
 
 	case len(hstsHeaders) > 1:
 		// TODO: Give feedback on the first(last?) HSTS header?
-		return nil, issues.addErrorf("Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders))
+		return nil, issues.addErrorf(
+			"response.multiple_headers",
+			"Multiple HSTS headers",
+			"Response error: Multiple HSTS headers (number of HSTS headers: %d).", len(hstsHeaders))
 	}
 
 	return &hstsHeaders[0], issues

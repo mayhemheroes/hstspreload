@@ -46,22 +46,25 @@ var responseTests = []struct {
 		PreloadableResponse,
 		"missing preload",
 		[]string{"max-age=10886400; includeSubDomains"},
-		Issues{Errors: []string{"Header requirement error: Header must contain the `preload` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}}},
 	},
 	{
 		PreloadableResponse,
 		"missing includeSubDomains",
 		[]string{"preload; max-age=10886400"},
-		Issues{Errors: []string{"Header requirement error: Header must contain the `includeSubDomains` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.preloadable.include_sub_domains.missing"}}},
 	},
 	{
 		PreloadableResponse,
 		"single header, multiple errors",
 		[]string{"includeSubDomains; max-age=100"},
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `preload` directive.",
-				"Header requirement error: The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.preload.missing"},
+				Issue{
+					Code:    "header.preloadable.max_age.too_low",
+					Message: "The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
+				},
 			},
 		},
 	},
@@ -70,25 +73,25 @@ var responseTests = []struct {
 		"empty header",
 		[]string{""},
 		Issues{
-			Errors: []string{
-				"Header requirement error: Header must contain the `includeSubDomains` directive.",
-				"Header requirement error: Header must contain the `preload` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.preloadable.include_sub_domains.missing"},
+				Issue{Code: "header.preloadable.preload.missing"},
+				Issue{Code: "header.preloadable.max_age.missing"},
 			},
-			Warnings: []string{"Syntax warning: Header is empty."},
+			Warnings: []Issue{Issue{Code: "header.parse.empty"}},
 		},
 	},
 	{
 		PreloadableResponse,
 		"missing header",
 		[]string{},
-		Issues{Errors: []string{"Response error: No HSTS header is present on the response."}},
+		Issues{Errors: []Issue{Issue{Code: "response.no_header"}}},
 	},
 	{
 		PreloadableResponse,
 		"multiple headers",
 		[]string{"max-age=10", "max-age=20", "max-age=30"},
-		Issues{Errors: []string{"Response error: Multiple HSTS headers (number of HSTS headers: 3)."}},
+		Issues{Errors: []Issue{Issue{Code: "response.multiple_headers"}}},
 	},
 
 	/******** RemovableResponse() ********/
@@ -103,16 +106,16 @@ var responseTests = []struct {
 		RemovableResponse,
 		"preload present",
 		[]string{"max-age=15768000; includeSubDomains; preload"},
-		Issues{Errors: []string{"Header requirement error: For preload list removal, the header must not contain the `preload` directive."}},
+		Issues{Errors: []Issue{Issue{Code: "header.removable.contains.preload"}}},
 	},
 	{
 		RemovableResponse,
 		"preload only",
 		[]string{"preload"},
 		Issues{
-			Errors: []string{
-				"Header requirement error: For preload list removal, the header must not contain the `preload` directive.",
-				"Header requirement error: Header must contain a valid `max-age` directive.",
+			Errors: []Issue{
+				Issue{Code: "header.removable.contains.preload"},
+				Issue{Code: "header.removable.missing.max_age"},
 			},
 		},
 	},
@@ -143,8 +146,8 @@ func TestPreloabableResponseAndRemovableResponse(t *testing.T) {
 			}
 		}
 
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
 }

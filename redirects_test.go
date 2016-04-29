@@ -34,7 +34,10 @@ var tooManyRedirectsTests = []struct {
 		"too many redirects",
 		"https://httpbin.org/redirect/4",
 		[]string{"https://httpbin.org/relative-redirect/3", "https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"},
-		Issues{Errors: []string{"Redirect error: More than 3 redirects from `https://httpbin.org/redirect/4`."}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "redirects.too_many",
+			Message: "There are more than 3 redirects starting from `https://httpbin.org/redirect/4`.",
+		}}},
 	},
 }
 
@@ -46,8 +49,8 @@ func TestTooManyRedirects(t *testing.T) {
 			t.Errorf("[%s] Unexpected chain: %v", tt.description, chain)
 		}
 
-		if !issuesEqual(issues, tt.expectedIssues) {
-			t.Errorf("[%s] "+issuesShouldBeEqual, tt.description, issues, tt.expectedIssues)
+		if !issuesMatchExpected(issues, tt.expectedIssues) {
+			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
 }
@@ -65,9 +68,12 @@ func TestInsecureRedirect(t *testing.T) {
 	}
 
 	httpsIssues := preloadableHTTPSRedirectsURL(u)
-	expected := Issues{Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`"}}
-	if !issuesEqual(httpsIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, httpsIssues, expected)
+	expected := Issues{Errors: []Issue{Issue{
+		Code:    "redirects.insecure.initial",
+		Message: "`https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`",
+	}}}
+	if !issuesMatchExpected(httpsIssues, expected) {
+		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
 
@@ -84,9 +90,12 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	}
 
 	httpsIssues := preloadableHTTPSRedirectsURL(u)
-	expected := Issues{Errors: []string{"Redirect error: `https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`"}}
-	if !issuesEqual(httpsIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, httpsIssues, expected)
+	expected := Issues{Errors: []Issue{Issue{
+		Code:    "redirects.insecure.subsequent",
+		Message: "`https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`",
+	}}}
+	if !issuesMatchExpected(httpsIssues, expected) {
+		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
 
@@ -105,9 +114,12 @@ func TestHTTPNoRedirect(t *testing.T) {
 	}
 
 	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirectsURL(u, domain)
-	expected := Issues{Errors: []string{"Redirect error: `http://httpbin.org` does not redirect to `https://httpbin.org`."}}
-	if !issuesEqual(mainIssues, expected) {
-		t.Errorf(issuesShouldBeEqual, mainIssues, expected)
+	expected := Issues{Errors: []Issue{Issue{
+		Code:    "redirects.http.no_redirect",
+		Message: "`http://httpbin.org` does not redirect to `https://httpbin.org`.",
+	}}}
+	if !issuesMatchExpected(mainIssues, expected) {
+		t.Errorf(issuesShouldMatch, mainIssues, expected)
 	}
 
 	if !issuesEmpty(firstRedirectHSTSIssues) {
@@ -124,22 +136,34 @@ var preloadableHTTPRedirectsTests = []struct {
 	{
 		"different host",
 		"bofa.com", // http://bofa.com redirects to https://www.bankofamerica.com
-		Issues{Errors: []string{"Redirect error: `http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`)."}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "redirects.http.first_redirect.insecure",
+			Message: "`http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`).",
+		}}},
 		Issues{},
 	},
 	{
 		"same origin",
 		"www.wikia.com", // http://www.wikia.com redirects to http://www.wikia.com/fandom
-		Issues{Errors: []string{"Redirect error: `http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`)."}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "redirects.http.first_redirect.insecure",
+			Message: "`http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`).",
+		}}},
 		Issues{},
 	},
 	{
 		"www first and > 3 redirects",
 		"blogger.com",
 		Issues{
-			Errors: []string{
-				"Redirect error: More than 3 redirects from `http://blogger.com`.",
-				"Redirect error: `http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+			Errors: []Issue{
+				Issue{
+					Code:    "redirects.too_many",
+					Message: "There are more than 3 redirects starting from `http://blogger.com`.",
+				},
+				Issue{
+					Code:    "redirects.http.www_first",
+					Message: "`http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+				},
 			},
 		},
 		Issues{},
@@ -148,7 +172,10 @@ var preloadableHTTPRedirectsTests = []struct {
 		"correct origin but not HSTS",
 		"sha256.badssl.com",
 		Issues{},
-		Issues{Errors: []string{"Redirect error: `http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: Response error: No HSTS header is present on the response."}},
+		Issues{Errors: []Issue{Issue{
+			Code:    "redirects.http.first_redirect.no_hsts",
+			Message: "`http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: No HSTS header",
+		}}},
 	},
 }
 
@@ -157,12 +184,12 @@ func TestPreloadableHTTPRedirects(t *testing.T) {
 	for _, tt := range preloadableHTTPRedirectsTests {
 		mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
 
-		if !issuesEqual(mainIssues, tt.expectedMainIssues) {
-			t.Errorf("[%s] main issues for %s: "+issuesShouldBeEqual, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
+		if !issuesMatchExpected(mainIssues, tt.expectedMainIssues) {
+			t.Errorf("[%s] main issues for %s: "+issuesShouldMatch, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
 		}
 
-		if !issuesEqual(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
-			t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldBeEqual, tt.description, tt.domain, issuesShouldBeEmpty, tt.expectedFirstRedirectHSTSIssues)
+		if !issuesMatchExpected(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
+			t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldMatch, tt.description, tt.domain, firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues)
 		}
 	}
 }

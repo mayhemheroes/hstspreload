@@ -5,6 +5,17 @@ import (
 	"fmt"
 )
 
+type IssueCode string
+
+type Issue struct {
+	// An error code.
+	Code IssueCode `json:"code"`
+	// A short summary (≈2-5 words) of the issue.
+	Summary string `json:"summary"`
+	// A detailed explanation with instructions for fixing.
+	Message string `json:"message"`
+}
+
 // The Issues struct encapsulates a set of errors and warnings.
 // By convention:
 //
@@ -23,50 +34,42 @@ import (
 // server") may bring another error to light (e.g. "HSTS header was
 // not found").
 type Issues struct {
-	Errors   []string `json:"errors"`
-	Warnings []string `json:"warnings"`
+	Errors   []Issue `json:"errors"`
+	Warnings []Issue `json:"warnings"`
 }
 
-func (iss Issues) addErrorf(format string, args ...interface{}) Issues {
+func (iss Issues) addErrorf(code IssueCode, summary string, format string, args ...interface{}) Issues {
 	formattedError := fmt.Sprintf(format, args...)
 	return Issues{
-		Errors:   append(iss.Errors, formattedError),
+		Errors:   append(iss.Errors, Issue{code, summary, formattedError}),
 		Warnings: iss.Warnings,
 	}
 }
 
-func (iss Issues) addWarningf(format string, args ...interface{}) Issues {
+func (iss Issues) addWarningf(code IssueCode, summary string, format string, args ...interface{}) Issues {
 	formattedWarning := fmt.Sprintf(format, args...)
 	return Issues{
 		Errors:   iss.Errors,
-		Warnings: append(iss.Warnings, formattedWarning),
+		Warnings: append(iss.Warnings, Issue{code, summary, formattedWarning}),
 	}
 }
 
-func (iss Issues) addUniqueErrorf(format string, args ...interface{}) Issues {
-	formattedError := fmt.Sprintf(format, args...)
+func (iss Issues) addUniqueErrorf(code IssueCode, summary string, format string, args ...interface{}) Issues {
 	for _, err := range iss.Errors {
-		if err == formattedError {
+		if err.Code == code {
 			return iss
 		}
 	}
-	return Issues{
-		Errors:   append(iss.Errors, formattedError),
-		Warnings: iss.Warnings,
-	}
+	return iss.addErrorf(code, summary, format, args...)
 }
 
-func (iss Issues) addUniqueWarningf(format string, args ...interface{}) Issues {
-	formattedWarning := fmt.Sprintf(format, args...)
+func (iss Issues) addUniqueWarningf(code IssueCode, summary string, format string, args ...interface{}) Issues {
 	for _, warning := range iss.Warnings {
-		if warning == formattedWarning {
+		if warning.Code == code {
 			return iss
 		}
 	}
-	return Issues{
-		Errors:   iss.Errors,
-		Warnings: append(iss.Warnings, formattedWarning),
-	}
+	return iss.addWarningf(code, summary, format, args...)
 }
 
 func combineIssues(issues1 Issues, issues2 Issues) Issues {
@@ -76,13 +79,13 @@ func combineIssues(issues1 Issues, issues2 Issues) Issues {
 	}
 }
 
-func formatIssueListForString(list []string) string {
+func formatIssueListForString(list []Issue) string {
 	output := ""
 	if len(list) > 1 {
-		for _, s := range list {
+		for _, l := range list {
 			output += fmt.Sprintf(
 				"\n		%#v,",
-				s,
+				l,
 			)
 		}
 		output += "\n	"
@@ -110,10 +113,10 @@ func (iss Issues) MarshalJSON() ([]byte, error) {
 	// We explicitly fill out the fields with slices so that they are
 	// marshalled to `[]` rather than `null` when they are empty.
 	if len(iss.Errors) == 0 {
-		iss.Errors = make([]string, 0)
+		iss.Errors = make([]Issue, 0)
 	}
 	if len(iss.Warnings) == 0 {
-		iss.Warnings = make([]string, 0)
+		iss.Warnings = make([]Issue, 0)
 	}
 
 	// We use a type alias to call the "default" implementation of

@@ -3,7 +3,7 @@ package hstspreload
 import "testing"
 
 const (
-	issuesShouldBeEqual = `Issues should be equal.
+	issuesShouldMatch = `Issues should match expected.
 ## Actual
 
 %#v
@@ -21,28 +21,41 @@ const (
 `
 )
 
-// Includes ordering of errors and warnings.
-func issuesEqual(i1, i2 Issues) bool {
-	// reflect.DeepEqual distinguishes between nil slices and 0-length slices, but
-	// we consider these to be the same (e.g. "no errors" == "0 errors"), so we
-	// implement our own comparison.
-
-	if len(i1.Errors) != len(i2.Errors) {
+// issuesMatchExpected checks that the `actual` issues match the
+// `expected` ones. This function always checks that both the lists of
+// Errors and Warnings have the same number of `Issue`s with the same
+// `IssuesCode`s codes in the same order. If any issues in `expected`
+// have the Summary or Message field set, the field is also compared
+// against the field from the corresponding issue in `actual`.
+func issuesMatchExpected(actual, expected Issues) bool {
+	if len(actual.Errors) != len(expected.Errors) {
 		return false
 	}
 
-	if len(i1.Warnings) != len(i2.Warnings) {
+	if len(actual.Warnings) != len(expected.Warnings) {
 		return false
 	}
 
-	for e := range i1.Errors {
-		if i1.Errors[e] != i2.Errors[e] {
+	for e := range actual.Errors {
+		if actual.Errors[e].Code != expected.Errors[e].Code {
+			return false
+		}
+		if expected.Errors[e].Summary != "" && actual.Errors[e].Summary != expected.Errors[e].Summary {
+			return false
+		}
+		if expected.Errors[e].Message != "" && actual.Errors[e].Message != expected.Errors[e].Message {
 			return false
 		}
 	}
 
-	for w := range i1.Warnings {
-		if i1.Warnings[w] != i2.Warnings[w] {
+	for w := range actual.Warnings {
+		if actual.Warnings[w].Code != expected.Warnings[w].Code {
+			return false
+		}
+		if expected.Warnings[w].Summary != "" && actual.Warnings[w].Summary != expected.Warnings[w].Summary {
+			return false
+		}
+		if expected.Warnings[w].Message != "" && actual.Warnings[w].Message != expected.Warnings[w].Message {
 			return false
 		}
 	}
@@ -51,54 +64,79 @@ func issuesEqual(i1, i2 Issues) bool {
 }
 
 func issuesEmpty(iss Issues) bool {
-	return issuesEqual(iss, Issues{})
+	return issuesMatchExpected(iss, Issues{})
 }
 
-var issuesEqualTests = []struct {
+var issuesMatchExpectedTests = []struct {
 	actual   Issues
 	expected Issues
 }{
 	{Issues{
-		Errors:   []string{},
-		Warnings: []string{},
+		Errors:   []Issue{},
+		Warnings: []Issue{},
 	}, Issues{
-		Errors:   []string{},
-		Warnings: []string{},
+		Errors:   []Issue{},
+		Warnings: []Issue{},
 	}},
 	{Issues{
-		Errors:   []string{},
-		Warnings: []string{},
+		Errors:   []Issue{},
+		Warnings: []Issue{},
 	}, Issues{}},
-	{Issues{
-		Errors:   []string{"Single Error"},
-		Warnings: []string{},
-	}, Issues{}.addErrorf("Single Error")},
-	{Issues{
-		Errors:   []string{"First Error", "Second Error"},
-		Warnings: []string{},
-	}, Issues{}.addErrorf("First Error").addErrorf("Second Error")},
-	{Issues{
-		Errors:   []string{},
-		Warnings: []string{"Single Warning"},
-	}, Issues{}.addWarningf("Single Warning")},
-	{Issues{
-		Errors:   []string{},
-		Warnings: []string{"First Warning", "Second Warning"},
-	}, Issues{}.addWarningf("First Warning").addWarningf("Second Warning")},
-	{Issues{
-		Errors:   []string{"Single Error"},
-		Warnings: []string{"Single Warning"},
-	}, Issues{}.addErrorf("Single Error").addWarningf("Single Warning")},
-	{Issues{
-		Errors:   []string{"First Error", "Second Error"},
-		Warnings: []string{"First Warning", "Second Warning"},
-	}, Issues{}.addWarningf("First Warning").addErrorf("First Error").addWarningf("Second Warning").addErrorf("Second Error")},
+	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
+		Issues{
+			Errors: []Issue{Issue{
+				Code:    "error1",
+				Summary: "Summary 1",
+				Message: "Single Error",
+			}},
+		}},
+	{Issues{}.addErrorf("error1", "", ""),
+		Issues{
+			Errors: []Issue{Issue{
+				Code: "error1",
+			}},
+		}},
+	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
+		Issues{
+			Errors: []Issue{Issue{
+				Code:    "error1",
+				Summary: "Summary 1",
+			}},
+		}},
+	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
+		Issues{
+			Errors: []Issue{Issue{
+				Code: "error1",
+			}},
+		}},
+	{Issues{}.addErrorf("error1", "", "Single Error").addErrorf("error2", "", "Second Error"),
+		Issues{
+			Errors: []Issue{
+				Issue{Code: "error1"},
+				Issue{Code: "error2", Message: "Second Error"},
+			},
+		}},
+	{Issues{}.addWarningf("warning1", "Summary 1", "Single warning"),
+		Issues{
+			Warnings: []Issue{Issue{
+				Code: "warning1",
+			}},
+		}},
+	{Issues{}.addErrorf("error1", "Summary 1", "Single Error").addWarningf("warning1", "Summary 1", "Single warning"),
+		Issues{
+			Errors: []Issue{Issue{
+				Code: "error1",
+			}},
+			Warnings: []Issue{Issue{
+				Code: "warning1",
+			}},
+		}},
 }
 
-func TestIssuesEqual(t *testing.T) {
-	for _, tt := range issuesEqualTests {
-		if !issuesEqual(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldBeEqual, tt.actual, tt.expected)
+func TestIssuesMatchExpected(t *testing.T) {
+	for _, tt := range issuesMatchExpectedTests {
+		if !issuesMatchExpected(tt.actual, tt.expected) {
+			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
 		}
 	}
 }
@@ -107,58 +145,116 @@ var issuesNotEqualTests = []struct {
 	actual   Issues
 	expected Issues
 }{
-	{Issues{}.addWarningf("test"),
-		Issues{}.addErrorf("test")},
-	{Issues{}.addErrorf("first").addErrorf("second"),
-		Issues{}.addErrorf("first")},
-	{Issues{}.addErrorf("pie").addErrorf("cake").addErrorf("anything you bake"),
-		Issues{}.addErrorf("cake").addErrorf("pie").addErrorf("anything you bake")},
+	{
+		Issues{Errors: []Issue{Issue{Code: "test1"}}},
+		Issues{Warnings: []Issue{Issue{Code: "test1"}}},
+	},
+	{
+		Issues{Errors: []Issue{Issue{Code: "test1"}, Issue{Code: "test2"}}},
+		Issues{Errors: []Issue{Issue{Code: "test1"}}},
+	},
+	{
+		Issues{Errors: []Issue{Issue{Code: "pie"}, Issue{Code: "cake"}, Issue{Code: "anything you bake"}}},
+		Issues{Errors: []Issue{Issue{Code: "cake"}, Issue{Code: "pie"}, Issue{Code: "anything you bake"}}},
+	},
 }
 
 func TestIssuesNotEqual(t *testing.T) {
 	for _, tt := range issuesNotEqualTests {
-		if issuesEqual(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldBeEqual, tt.actual, tt.expected)
+		if issuesMatchExpected(tt.actual, tt.expected) {
+			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
 		}
 	}
 }
 
 func TestAddUniqueErrorf(t *testing.T) {
 	iss := Issues{
-		Errors: []string{"error 1", "error 2"},
+		Errors: []Issue{
+			Issue{Code: "error1"},
+			Issue{Code: "error2"},
+		},
 	}
 
 	var expected Issues
 
-	iss.addUniqueErrorf("error 2")
-	expected = Issues{Errors: []string{"error 1", "error 2"}}
-	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldBeEqual, iss, expected)
+	iss = iss.addUniqueErrorf("error2", "", "")
+	expected = Issues{
+		Errors: []Issue{
+			Issue{Code: "error1"},
+			Issue{Code: "error2"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
-	iss.addUniqueErrorf("error 1")
-	expected = Issues{Errors: []string{"error 1", "error 2"}}
-	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldBeEqual, iss, expected)
+	iss = iss.addUniqueErrorf("error3", "", "")
+	expected = Issues{
+		Errors: []Issue{
+			Issue{Code: "error1"},
+			Issue{Code: "error2"},
+			Issue{Code: "error3"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
+	}
+
+	iss = iss.addUniqueErrorf("error1", "", "")
+	expected = Issues{
+		Errors: []Issue{
+			Issue{Code: "error1"},
+			Issue{Code: "error2"},
+			Issue{Code: "error3"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 }
 
 func TestAddUniqueWarningf(t *testing.T) {
 	iss := Issues{
-		Warnings: []string{"warning 1", "warning 2"},
+		Warnings: []Issue{
+			Issue{Code: "warning1"},
+			Issue{Code: "warning2"},
+		},
 	}
 
 	var expected Issues
 
-	iss.addUniqueWarningf("warning 2")
-	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
-	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldBeEqual, iss, expected)
+	iss = iss.addUniqueWarningf("warning2", "", "")
+	expected = Issues{
+		Warnings: []Issue{
+			Issue{Code: "warning1"},
+			Issue{Code: "warning2"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
-	iss.addUniqueWarningf("warning 1")
-	expected = Issues{Warnings: []string{"warning 1", "warning 2"}}
-	if !issuesEqual(iss, expected) {
-		t.Errorf(issuesShouldBeEqual, iss, expected)
+	iss = iss.addUniqueWarningf("warning3", "", "")
+	expected = Issues{
+		Warnings: []Issue{
+			Issue{Code: "warning1"},
+			Issue{Code: "warning2"},
+			Issue{Code: "warning3"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
+	}
+
+	iss = iss.addUniqueWarningf("warning1", "", "")
+	expected = Issues{
+		Warnings: []Issue{
+			Issue{Code: "warning1"},
+			Issue{Code: "warning2"},
+			Issue{Code: "warning3"},
+		},
+	}
+	if !issuesMatchExpected(iss, expected) {
+		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 }

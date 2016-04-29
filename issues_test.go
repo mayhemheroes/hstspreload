@@ -8,7 +8,7 @@ const (
 
 %#v
 
-## (Not) Expected
+## Expected
 
 %#v
 

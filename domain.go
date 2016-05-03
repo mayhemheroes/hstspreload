@@ -97,8 +97,9 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 			// Skip the WWW check if the domain is not eTLD+1.
 			if len(levelIssues.Errors) == 0 {
 				www <- checkWWW(domain)
+			} else {
+				www <- Issues{}
 			}
-			www <- Issues{}
 		}()
 
 		// Combine the issues in deterministic order.

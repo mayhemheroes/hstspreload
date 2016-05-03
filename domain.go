@@ -142,7 +142,9 @@ func RemovableDomain(domain string) (header *string, issues Issues) {
 	return header, issues
 }
 
-func getResponse(domain string) (resp *http.Response, issues Issues) {
+func getResponse(domain string) (*http.Response, Issues) {
+	issues := Issues{}
+
 	redirectPrevented := errors.New("REDIRECT_PREVENTED")
 
 	client := http.Client{
@@ -171,7 +173,9 @@ func getResponse(domain string) (resp *http.Response, issues Issues) {
 	return resp, issues
 }
 
-func checkDomainFormat(domain string) (issues Issues) {
+func checkDomainFormat(domain string) Issues {
+	issues := Issues{}
+
 	if strings.HasPrefix(domain, ".") {
 		return issues.addErrorf(
 			IssueCode("domain.format.begins_with_dot"),
@@ -210,7 +214,9 @@ func checkDomainFormat(domain string) (issues Issues) {
 	return issues
 }
 
-func preloadableDomainLevel(domain string) (issues Issues) {
+func preloadableDomainLevel(domain string) Issues {
+	issues := Issues{}
+
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
 		return issues.addErrorf("internal.domain.name.cannot_compute_etld1", "Internal Error", "Could not compute eTLD+1.")
@@ -231,9 +237,11 @@ func preloadableDomainLevel(domain string) (issues Issues) {
 	return issues
 }
 
-func checkSHA1(chain []*x509.Certificate) (issues Issues) {
+func checkSHA1(chain []*x509.Certificate) Issues {
+	issues := Issues{}
+
 	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
-		issues = issues.addErrorf(
+		return issues.addErrorf(
 			IssueCode("domain.tls.sha1"),
 			"SHA-1 Certificate",
 			"One or more of the certificates in your certificate chain "+
@@ -247,7 +255,9 @@ func checkSHA1(chain []*x509.Certificate) (issues Issues) {
 	return issues
 }
 
-func checkWWW(host string) (issues Issues) {
+func checkWWW(host string) Issues {
+	issues := Issues{}
+
 	hasWWW := false
 	if conn, err := net.DialTimeout("tcp", "www."+host+":443", dialTimeout); err == nil {
 		hasWWW = true

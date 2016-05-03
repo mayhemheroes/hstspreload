@@ -75,7 +75,7 @@ func skipIfShort(t *testing.T) {
 }
 
 var preloadableDomainTests = []struct {
-	function       func(domain string) (header *string, issues Issues)
+	function       func(domain string) (*string, Issues)
 	description    string
 	domain         string
 	expectHeader   bool

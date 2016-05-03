@@ -15,7 +15,9 @@ func preloadableHTTPSRedirects(domain string) Issues {
 	return preloadableHTTPSRedirectsURL("https://" + domain)
 }
 
-func preloadableRedirectChain(initialURL string, chain []*url.URL) (issues Issues) {
+func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
+	issues := Issues{}
+
 	for i, u := range chain {
 		if u.Scheme != httpsScheme {
 			if i == 0 {

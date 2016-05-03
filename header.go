@@ -48,7 +48,8 @@ func NewHSTSHeader() HSTSHeader {
 }
 
 // Iff Issues has no errors, the output integer is the max-age in seconds.
-func parseMaxAge(directive string) (maxAge int64, issues Issues) {
+func parseMaxAge(directive string) (int64, Issues) {
+	issues := Issues{}
 	maxAgeNumericalString := directive[8:]
 
 	// TODO: Use more concise validation code to parse a digit string to a signed int.
@@ -93,8 +94,9 @@ func parseMaxAge(directive string) (maxAge int64, issues Issues) {
 //
 // To interpret the Issues that are returned, see the list of
 // conventions in the documentation for Issues.
-func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issues) {
-	hstsHeader = NewHSTSHeader()
+func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
+	hstsHeader := NewHSTSHeader()
+	issues := Issues{}
 
 	directives := strings.Split(headerString, ";")
 	for i, directive := range directives {
@@ -201,7 +203,9 @@ func ParseHeaderString(headerString string) (hstsHeader HSTSHeader, issues Issue
 	return hstsHeader, issues
 }
 
-func preloadableHeaderPreload(hstsHeader HSTSHeader) (issues Issues) {
+func preloadableHeaderPreload(hstsHeader HSTSHeader) Issues {
+	issues := Issues{}
+
 	if !hstsHeader.Preload {
 		issues = issues.addErrorf(
 			"header.preloadable.preload.missing",
@@ -212,7 +216,9 @@ func preloadableHeaderPreload(hstsHeader HSTSHeader) (issues Issues) {
 	return issues
 }
 
-func preloadableHeaderSubDomains(hstsHeader HSTSHeader) (issues Issues) {
+func preloadableHeaderSubDomains(hstsHeader HSTSHeader) Issues {
+	issues := Issues{}
+
 	if !hstsHeader.IncludeSubDomains {
 		issues = issues.addErrorf(
 			"header.preloadable.include_sub_domains.missing",
@@ -223,7 +229,9 @@ func preloadableHeaderSubDomains(hstsHeader HSTSHeader) (issues Issues) {
 	return issues
 }
 
-func preloadableHeaderMaxAge(hstsHeader HSTSHeader) (issues Issues) {
+func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
+	issues := Issues{}
+
 	switch {
 	case hstsHeader.MaxAge == MaxAgeNotPresent:
 		issues = issues.addErrorf(
@@ -277,14 +285,18 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) (issues Issues) {
 // documentation for Issues.
 //
 // Most of the time, you'll probably want to use PreloadableHeaderString() instead.
-func PreloadableHeader(hstsHeader HSTSHeader) (issues Issues) {
+func PreloadableHeader(hstsHeader HSTSHeader) Issues {
+	issues := Issues{}
+
 	issues = combineIssues(issues, preloadableHeaderSubDomains(hstsHeader))
 	issues = combineIssues(issues, preloadableHeaderPreload(hstsHeader))
 	issues = combineIssues(issues, preloadableHeaderMaxAge(hstsHeader))
 	return issues
 }
 
-func RemovableHeader(hstsHeader HSTSHeader) (issues Issues) {
+func RemovableHeader(hstsHeader HSTSHeader) Issues {
+	issues := Issues{}
+
 	if hstsHeader.Preload {
 		issues = issues.addErrorf(
 			"header.removable.contains.preload",

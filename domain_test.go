@@ -49,6 +49,12 @@ var testPreloadableDomainLevel = []struct {
 	domain   string
 	expected Issues
 }{
+	{"example.com",
+		Issues{},
+	},
+	{"example.co.uk",
+		Issues{},
+	},
 	{"subdomain.example.com",
 		Issues{Errors: []Issue{Issue{
 			Code:    "domain.is_subdomain",

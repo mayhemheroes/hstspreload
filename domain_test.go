@@ -16,39 +16,40 @@ func ExamplePreloadableDomain() {
 /******** Utility functions tests. ********/
 
 var testCheckDomainFormatTests = []struct {
-	actual   Issues
+	domain   string
 	expected Issues
 }{
-	{checkDomainFormat(".example.com"),
+	{".example.com",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.begins_with_dot"}}},
 	},
-	{checkDomainFormat("example.com."),
+	{"example.com.",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.ends_with_dot"}}},
 	},
-	{checkDomainFormat("example..com"),
+	{"example..com",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.contains_double_dot"}}},
 	},
-	{checkDomainFormat("example"),
+	{"example",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.only_one_label"}}},
 	},
-	{checkDomainFormat("example&co.com"),
+	{"example&co.com",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.invalid_characters"}}},
 	},
 }
 
 func TestCheckDomainFormat(t *testing.T) {
 	for _, tt := range testCheckDomainFormatTests {
-		if !issuesMatchExpected(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
+		issues := checkDomainFormat(tt.domain)
+		if !issuesMatchExpected(issues, tt.expected) {
+			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
 }
 
 var testPreloadableDomainLevel = []struct {
-	actual   Issues
+	domain   string
 	expected Issues
 }{
-	{preloadableDomainLevel("subdomain.example.com"),
+	{"subdomain.example.com",
 		Issues{Errors: []Issue{Issue{
 			Code:    "domain.is_subdomain",
 			Message: "`subdomain.example.com` is a subdomain. Please preload `example.com` instead. (Due to the size of the preload list and the behaviour of cookies across subdomains, we only accept automated preload list submissions of whole registered domains.)",
@@ -58,8 +59,9 @@ var testPreloadableDomainLevel = []struct {
 
 func TestPreloadableDomainLevel(t *testing.T) {
 	for _, tt := range testPreloadableDomainLevel {
-		if !issuesMatchExpected(tt.actual, tt.expected) {
-			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
+		issues := preloadableDomainLevel(tt.domain)
+		if !issuesMatchExpected(issues, tt.expected) {
+			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
 }

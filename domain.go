@@ -67,52 +67,52 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	if len(respIssues.Errors) == 0 {
 		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
 
-		chanPreloadableResponse := make(chan Issues)
-		chanHTTPRedirects := make(chan Issues)
-		chanHTTPFirstRedirectsHSTS := make(chan Issues)
-		chanHTTPSRedirects := make(chan Issues)
-		chanWWW := make(chan Issues)
+		preloadableResponse := make(chan Issues)
+		httpRedirects := make(chan Issues)
+		httpFirstRedirectsHSTS := make(chan Issues)
+		httpsRedirects := make(chan Issues)
+		www := make(chan Issues)
 
 		// PreloadableResponse
 		go func() {
 			var preloadableIssues Issues
 			header, preloadableIssues = PreloadableResponse(resp)
-			chanPreloadableResponse <- preloadableIssues
+			preloadableResponse <- preloadableIssues
 		}()
 
 		// checkHTTPRedirects
 		go func() {
 			mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(domain)
-			chanHTTPRedirects <- mainIssues
-			chanHTTPFirstRedirectsHSTS <- firstRedirectHSTSIssues
+			httpRedirects <- mainIssues
+			httpFirstRedirectsHSTS <- firstRedirectHSTSIssues
 		}()
 
 		// checkHTTPSRedirects
 		go func() {
-			chanHTTPSRedirects <- preloadableHTTPSRedirects(domain)
+			httpsRedirects <- preloadableHTTPSRedirects(domain)
 		}()
 
 		// checkWWW
 		go func() {
 			// Skip the WWW check if the domain is not eTLD+1.
 			if len(levelIssues.Errors) == 0 {
-				chanWWW <- checkWWW(domain)
+				www <- checkWWW(domain)
 			}
-			chanWWW <- Issues{}
+			www <- Issues{}
 		}()
 
 		// Combine the issues in deterministic order.
-		preloadableResponseIssues := <-chanPreloadableResponse
+		preloadableResponseIssues := <-preloadableResponse
 		issues = combineIssues(issues, preloadableResponseIssues)
-		issues = combineIssues(issues, <-chanHTTPRedirects)
+		issues = combineIssues(issues, <-httpRedirects)
 		// If there are issues with the HSTS header in the main
 		// PreloadableResponse() check, it is redundant to report
 		// them in the response after redirecting from HTTP.
 		if len(preloadableResponseIssues.Errors) == 0 {
-			issues = combineIssues(issues, <-chanHTTPFirstRedirectsHSTS)
+			issues = combineIssues(issues, <-httpFirstRedirectsHSTS)
 		}
-		issues = combineIssues(issues, <-chanHTTPSRedirects)
-		issues = combineIssues(issues, <-chanWWW)
+		issues = combineIssues(issues, <-httpsRedirects)
+		issues = combineIssues(issues, <-www)
 	}
 
 	return header, issues

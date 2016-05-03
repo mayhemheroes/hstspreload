@@ -65,7 +65,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	resp, respIssues := getResponse(domain)
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
-		issues = combineIssues(issues, checkSHA1(certChain(*resp.TLS)))
+		issues = combineIssues(issues, checkChain(*resp.TLS))
 
 		preloadableResponse := make(chan Issues)
 		httpRedirects := make(chan Issues)
@@ -237,19 +237,27 @@ func preloadableDomainLevel(domain string) Issues {
 	return issues
 }
 
+func checkChain(connState tls.ConnectionState) Issues {
+	fullChain := connState.VerifiedChains[0]
+	chain := fullChain[:len(fullChain)-1] // Ignore the root CA
+	return checkSHA1(chain)
+}
+
 func checkSHA1(chain []*x509.Certificate) Issues {
 	issues := Issues{}
 
-	if firstSHA1, found := findPropertyInChain(isSHA1, chain); found {
-		return issues.addErrorf(
-			IssueCode("domain.tls.sha1"),
-			"SHA-1 Certificate",
-			"One or more of the certificates in your certificate chain "+
-				"is signed using SHA-1. This needs to be replaced. "+
-				"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. "+
-				"(The first SHA-1 certificate found has a common-name of %q.)",
-			firstSHA1.Subject.CommonName,
-		)
+	for _, cert := range chain {
+		if cert.SignatureAlgorithm == x509.SHA1WithRSA || cert.SignatureAlgorithm == x509.ECDSAWithSHA1 {
+			return issues.addErrorf(
+				IssueCode("domain.tls.sha1"),
+				"SHA-1 Certificate",
+				"One or more of the certificates in your certificate chain "+
+					"is signed using SHA-1. This needs to be replaced. "+
+					"See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. "+
+					"(The first SHA-1 certificate found has a common-name of %q.)",
+				cert.Subject.CommonName,
+			)
+		}
 	}
 
 	return issues
@@ -280,28 +288,4 @@ func checkWWW(host string) Issues {
 	}
 
 	return issues
-}
-
-func certChain(connState tls.ConnectionState) []*x509.Certificate {
-	chain := connState.VerifiedChains[0]
-	return chain[:len(chain)-1]
-}
-
-func findPropertyInChain(pred func(*x509.Certificate) bool, chain []*x509.Certificate) (*x509.Certificate, bool) {
-	for _, cert := range chain {
-		if pred(cert) {
-			return cert, true
-		}
-	}
-
-	return nil, false
-}
-
-func isSHA1(cert *x509.Certificate) bool {
-	switch cert.SignatureAlgorithm {
-	case x509.SHA1WithRSA, x509.ECDSAWithSHA1:
-		return true
-	default:
-		return false
-	}
 }

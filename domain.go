@@ -119,8 +119,8 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	return header, issues
 }
 
-// PreloadableDomain checks whether the domain passes HSTS preload
-// requirements for Chromium. This includes:
+// RemovableDomain checks whether the domain satisfies the requirements
+// for being removed from the Chromium preload list:
 //
 // - Serving a single valid HSTS header.
 //

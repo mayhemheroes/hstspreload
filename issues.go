@@ -122,6 +122,6 @@ func (iss Issues) MarshalJSON() ([]byte, error) {
 	// We use a type alias to call the "default" implementation of
 	// json.Marshal on Issues.
 	// See http://choly.ca/post/go-json-marshalling/
-	type IssuesAlias Issues
-	return json.Marshal(IssuesAlias(iss))
+	type issuesData Issues
+	return json.Marshal(issuesData(iss))
 }

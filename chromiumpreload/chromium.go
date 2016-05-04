@@ -73,13 +73,13 @@ func GetLatest() (PreloadList, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return list, fmt.Errorf("Status code %d", resp.StatusCode)
+		return list, fmt.Errorf("status code %d", resp.StatusCode)
 	}
 
 	body := base64.NewDecoder(base64.StdEncoding, resp.Body)
 	jsonBytes, err := removeComments(body)
 	if err != nil {
-		return list, errors.New("Could not decode body.")
+		return list, errors.New("could not decode body.")
 	}
 
 	if err := json.Unmarshal(jsonBytes, &list); err != nil {

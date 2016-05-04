@@ -9,12 +9,12 @@ func TestGetLatest(t *testing.T) {
 		t.Skip("Skipping test to avoid preload list download.")
 	}
 
-	preloadList, err := GetLatest()
+	list, err := GetLatest()
 	if err != nil {
 		t.Errorf("Could not retrieve preload list.")
 	}
 
-	firstEntry := preloadList.Entries[0]
+	firstEntry := list.Entries[0]
 	if firstEntry.Name != "pinningtest.appspot.com" {
 		t.Errorf("First entry of preload list does not have the expected name.")
 	}

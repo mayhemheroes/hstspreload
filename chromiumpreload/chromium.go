@@ -61,7 +61,7 @@ const (
 // by the current stable version of Chrome. See
 // https://www.chromium.org/developers/calendar for a calendar of releases.
 func GetLatest() (PreloadList, error) {
-	var preloadList PreloadList
+	var list PreloadList
 
 	client := http.Client{
 		Timeout: time.Second * 10,
@@ -69,31 +69,31 @@ func GetLatest() (PreloadList, error) {
 
 	resp, err := client.Get(latestChromiumListURL)
 	if err != nil {
-		return preloadList, err
+		return list, err
 	}
 
 	if resp.StatusCode != 200 {
-		return preloadList, fmt.Errorf("Status code %d", resp.StatusCode)
+		return list, fmt.Errorf("Status code %d", resp.StatusCode)
 	}
 
 	body := base64.NewDecoder(base64.StdEncoding, resp.Body)
 	jsonBytes, err := removeComments(body)
 	if err != nil {
-		return preloadList, errors.New("Could not decode body.")
+		return list, errors.New("Could not decode body.")
 	}
 
-	if err := json.Unmarshal(jsonBytes, &preloadList); err != nil {
-		return preloadList, err
+	if err := json.Unmarshal(jsonBytes, &list); err != nil {
+		return list, err
 	}
 
-	return preloadList, nil
+	return list, nil
 }
 
 // PreloadEntriesToMap creates an indexed map (Domain -> PreloadEntry) of
 // the entries from the given PreloadList.
-func PreloadEntriesToMap(preloadList PreloadList) map[Domain]PreloadEntry {
+func PreloadEntriesToMap(list PreloadList) map[Domain]PreloadEntry {
 	m := make(map[Domain]PreloadEntry)
-	for _, entry := range preloadList.Entries {
+	for _, entry := range list.Entries {
 		m[entry.Name] = entry
 	}
 	return m

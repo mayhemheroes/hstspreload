@@ -25,12 +25,12 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
 					IssueCode("redirects.insecure.initial"),
 					"Insecure redirect",
 					"`%s` redirects to an insecure page: `%s`", initialURL, u)
-			} else {
-				return issues.addErrorf(
-					IssueCode("redirects.insecure.subsequent"),
-					"Insecure redirect",
-					"`%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, i+1, u)
 			}
+
+			return issues.addErrorf(
+				IssueCode("redirects.insecure.subsequent"),
+				"Insecure redirect",
+				"`%s` redirects to an insecure page on redirect #%d: `%s`", initialURL, i+1, u)
 		}
 	}
 	return issues
@@ -64,23 +64,24 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 				chain[0],
 				err,
 			)
-		} else {
-			_, redirectHSTSIssues := PreloadableResponse(resp)
-			if len(redirectHSTSIssues.Errors) > 0 {
-				firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
-					IssueCode("redirects.http.first_redirect.no_hsts"),
-					"HTTP redirects to a page without HSTS",
-					"`%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
-					initialURL,
-					chain[0],
-					redirectHSTSIssues.Errors[0].Summary,
-				)
-			}
+		}
+		_, redirectHSTSIssues := PreloadableResponse(resp)
+		if len(redirectHSTSIssues.Errors) > 0 {
+			firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
+				IssueCode("redirects.http.first_redirect.no_hsts"),
+				"HTTP redirects to a page without HSTS",
+				"`%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
+				initialURL,
+				chain[0],
+				redirectHSTSIssues.Errors[0].Summary,
+			)
 		}
 
 		mainIssues = combineIssues(mainIssues, preloadableRedirectChain(initialURL, chain))
 		return mainIssues, firstRedirectHSTSIssues
-	} else if chain[0].Host == "www."+domain {
+	}
+
+	if chain[0].Host == "www."+domain {
 		// For simplicity, we use the same message for two cases:
 		// - http://example.com -> http://www.example.com
 		// - http://example.com -> https://www.example.com
@@ -93,18 +94,18 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			"https://"+domain,
 			chain[0],
 		), firstRedirectHSTSIssues
-	} else {
-		return issues.addErrorf(
-			IssueCode("redirects.http.first_redirect.insecure"),
-			"HTTP does not redirect to HTTPS",
-			"`%s` (HTTP) redirects to `%s`. The first redirect "+
-				"from `%s` should be to a secure page on the same host (`%s`).",
-			initialURL,
-			chain[0],
-			initialURL,
-			"https://"+domain,
-		), firstRedirectHSTSIssues
 	}
+
+	return issues.addErrorf(
+		IssueCode("redirects.http.first_redirect.insecure"),
+		"HTTP does not redirect to HTTPS",
+		"`%s` (HTTP) redirects to `%s`. The first redirect "+
+			"from `%s` should be to a secure page on the same host (`%s`).",
+		initialURL,
+		chain[0],
+		initialURL,
+		"https://"+domain,
+	), firstRedirectHSTSIssues
 }
 
 // Taking a URL allows us to test more easily. Use preloadableHTTPSRedirects()

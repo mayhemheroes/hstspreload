@@ -156,7 +156,6 @@ var preloadableDomainTests = []struct {
 			},
 		},
 	},
-	// Don't run this test like normal. See TestPreloadableDomainBogusDomain().
 	{
 		PreloadableDomain,
 		"bogus domain",
@@ -213,23 +212,3 @@ func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 		}
 	}
 }
-
-// func TestPreloadableDomainBogusDomain(t *testing.T) {
-// 	skipIfShort(t)
-
-// 	// The error message contains a local IP in Travis CI. Since this is the only
-// 	// such test, we work around it with more crude checks.
-// 	header, issues := PreloadableDomain("example.notadomain")
-// 	if header != nil {
-// 		t.Errorf("Did not expect a header, but received `%s`", *header)
-// 	}
-// 	if len(issues.Errors) != 1 || len(issues.Warnings) != 0 {
-// 		t.Errorf("Expected one error and no warnings.")
-// 	}
-// 	if !strings.HasPrefix(issues.Errors[0], "TLS Error: We cannot connect to https://example.notadomain using TLS (\"Get https://example.notadomain: dial tcp: lookup example.notadomain") {
-// 		t.Errorf("Expected one issues.")
-// 	}
-// 	if !strings.HasSuffix(issues.Errors[0], "no such host\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/") {
-// 		t.Errorf("Expected one issues.")
-// 	}
-// }

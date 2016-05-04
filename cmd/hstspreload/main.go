@@ -89,10 +89,7 @@ Return code:
 	// Wrap this in a function to (statically) enforce a return code.
 	showResult := func() int {
 		if header != nil {
-			fmt.Printf("Observed header: ")
-			format(bold)
-			fmt.Printf("%s\n", *header)
-			format(reset)
+			fmt.Printf("Observed header: %s%s%s\n", bold, *header, reset)
 		}
 
 		fmt.Printf("\n")
@@ -104,9 +101,7 @@ Return code:
 			return 2
 
 		default:
-			format(green)
-			fmt.Printf("Satisfies requirements.\n\n")
-			format(reset)
+			fmt.Printf("%sSatisfies requirements.%s\n\n", green, reset)
 			return 0
 		}
 	}
@@ -121,11 +116,9 @@ Return code:
 func preloadableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
 
-	fmt.Printf("Checking header \"")
-	format(bold)
-	fmt.Printf("%s", header)
-	format(reset)
-	fmt.Printf("\" for preload requirements...\n")
+	fmt.Printf(
+		"Checking header \"%s%s%s\" for preload requirements...\n",
+		bold, header, reset)
 
 	return hstspreload.PreloadableHeaderString(header)
 }
@@ -133,11 +126,9 @@ func preloadableHeader(header string) (issues hstspreload.Issues) {
 func removableHeader(header string) (issues hstspreload.Issues) {
 	expectHeaderOrWarn(header)
 
-	fmt.Printf("Checking header \"")
-	format(bold)
-	fmt.Printf("%s", header)
-	format(reset)
-	fmt.Printf("\" for removal requirements...\n")
+	fmt.Printf(
+		"Checking header \"%s%s%s\" for removal requirements...\n",
+		bold, header, reset)
 
 	return hstspreload.RemovableHeaderString(header)
 }
@@ -145,11 +136,9 @@ func removableHeader(header string) (issues hstspreload.Issues) {
 func preloadableDomain(domain string) (header *string, issues hstspreload.Issues) {
 	expectDomainOrExit(domain)
 
-	fmt.Printf("Checking domain ")
-	format(underline)
-	fmt.Printf("%s", domain)
-	format(reset)
-	fmt.Printf(" for preload requirements...\n")
+	fmt.Printf(
+		"Checking domain %s%s%s for preload requirements...\n",
+		underline, domain, reset)
 
 	return hstspreload.PreloadableDomain(domain)
 }
@@ -157,11 +146,9 @@ func preloadableDomain(domain string) (header *string, issues hstspreload.Issues
 func removableDomain(domain string) (header *string, issues hstspreload.Issues) {
 	expectDomainOrExit(domain)
 
-	fmt.Printf("Checking domain ")
-	format(underline)
-	fmt.Printf("%s", domain)
-	format(reset)
-	fmt.Printf(" for removal requirements...\n")
+	fmt.Printf(
+		"Checking domain %s%s%s for removal requirements...\n",
+		underline, domain, reset)
 
 	return hstspreload.RemovableDomain(domain)
 }
@@ -212,16 +199,12 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 	if len(list) != 1 {
 		titlePluralized += "s"
 	}
-	format(fs)
-	fmt.Printf("%s:\n", titlePluralized)
-	format(reset)
+	fmt.Printf("%s%s:%s\n", fs, titlePluralized, reset)
 
 	for i, is := range list {
-		fmt.Printf("\n%d. ", i+1)
-		format(fs)
-		fmt.Printf("%s", is.Summary)
-		format(reset)
-		fmt.Printf(" [%s]\n%s\n", is.Code, is.Message)
+		fmt.Printf(
+			"\n%d. %s%s%s [%s]\n%s\n",
+			i+1, fs, is.Summary, reset, is.Code, is.Message)
 	}
 
 	fmt.Printf("\n")

@@ -20,7 +20,7 @@ var testCheckDomainFormatTests = []struct {
 	expected Issues
 }{
 	{".example.com",
-		Issues{Errors: []Issue{Issue{Code: "domain.format.begins_with_dot"}}},
+		Issues{Errors: []Issue{{Code: "domain.format.begins_with_dot"}}},
 	},
 	{"example.com.",
 		Issues{Errors: []Issue{Issue{Code: "domain.format.ends_with_dot"}}},

@@ -106,7 +106,7 @@ Return code:
 }
 
 func preloadableHeader(header string) (issues hstspreload.Issues) {
-	expectHeaderOrWarn(header)
+	warnIfNotHeader(header)
 
 	fmt.Printf(
 		"Checking header \"%s%s%s\" for preload requirements...\n",
@@ -116,7 +116,7 @@ func preloadableHeader(header string) (issues hstspreload.Issues) {
 }
 
 func removableHeader(header string) (issues hstspreload.Issues) {
-	expectHeaderOrWarn(header)
+	warnIfNotHeader(header)
 
 	fmt.Printf(
 		"Checking header \"%s%s%s\" for removal requirements...\n",
@@ -126,7 +126,7 @@ func removableHeader(header string) (issues hstspreload.Issues) {
 }
 
 func preloadableDomain(domain string) (header *string, issues hstspreload.Issues) {
-	expectDomainOrExit(domain)
+	mustBeDomain(domain)
 
 	fmt.Printf(
 		"Checking domain %s%s%s for preload requirements...\n",
@@ -136,7 +136,7 @@ func preloadableDomain(domain string) (header *string, issues hstspreload.Issues
 }
 
 func removableDomain(domain string) (header *string, issues hstspreload.Issues) {
-	expectDomainOrExit(domain)
+	mustBeDomain(domain)
 
 	fmt.Printf(
 		"Checking domain %s%s%s for removal requirements...\n",
@@ -145,7 +145,7 @@ func removableDomain(domain string) (header *string, issues hstspreload.Issues) 
 	return hstspreload.RemovableDomain(domain)
 }
 
-func expectHeaderOrWarn(str string) {
+func warnIfNotHeader(str string) {
 	if probablyURL(str) {
 		fmt.Fprintf(os.Stderr,
 			"Warning: please supply an HSTS header string (it appears you supplied a URL).\n")
@@ -156,7 +156,7 @@ func expectHeaderOrWarn(str string) {
 	}
 }
 
-func expectDomainOrExit(str string) {
+func mustBeDomain(str string) {
 	if probablyHeader(str) {
 		fmt.Fprintf(os.Stderr,
 			"Invalid argument: please supply a domain (example.com), not a header string.\n")

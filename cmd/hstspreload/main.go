@@ -52,24 +52,16 @@ Return code:
 	var issues hstspreload.Issues
 
 	switch args[0] {
-	case "+h":
-		fallthrough
-	case "preloadableheader":
+	case "+h", "preloadableheader":
 		issues = preloadableHeader(args[1])
 
-	case "-h":
-		fallthrough
-	case "removableheader":
+	case "-h", "removableheader":
 		issues = removableHeader(args[1])
 
-	case "+d":
-		fallthrough
-	case "preloadabledomain":
+	case "+d", "preloadabledomain":
 		header, issues = preloadableDomain(args[1])
 
-	case "-d":
-		fallthrough
-	case "removabledomain":
+	case "-d", "removabledomain":
 		header, issues = removableDomain(args[1])
 
 	case "status":

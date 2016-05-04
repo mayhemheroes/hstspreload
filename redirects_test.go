@@ -1,7 +1,6 @@
 package hstspreload
 
 import (
-	"fmt"
 	"net/url"
 	"testing"
 )
@@ -11,7 +10,7 @@ func chainsEqual(actual []*url.URL, expected []string) bool {
 		return false
 	}
 	for i, u := range actual {
-		if fmt.Sprintf("%s", u) != expected[i] {
+		if u.String() != expected[i] {
 			return false
 		}
 	}

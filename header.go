@@ -294,6 +294,13 @@ func PreloadableHeader(hstsHeader HSTSHeader) Issues {
 	return issues
 }
 
+// RemovableHeader checks whether the header satisfies all requirements
+// for being removed from the Chromium preload list.
+//
+// To interpret the result, see the list of conventions in the
+// documentation for Issues.
+//
+// Most of the time, you'll probably want to use RemovableHeaderString() instead.
 func RemovableHeader(hstsHeader HSTSHeader) Issues {
 	issues := Issues{}
 

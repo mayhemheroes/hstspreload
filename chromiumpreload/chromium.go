@@ -28,7 +28,7 @@ type PreloadList struct {
 	Entries []PreloadEntry `json:"entries"`
 }
 
-// A domain in the Chromium preload list. Note that this corresponds
+// A Domain in the Chromium preload list. Note that this corresponds
 // to "host" in the HSTS spec, and does not contain the scheme or port.
 // We call it a "domain" because this makes the meaning more clear to
 // web developers, and naturally allows us to refer to domains vs.

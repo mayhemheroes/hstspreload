@@ -116,7 +116,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 
 	for _, directive := range directives {
 		directiveEqualsIgnoringCase := func(s string) bool {
-			return strings.ToLower(directive) == strings.ToLower(s)
+			return strings.EqualFold(directive, s)
 		}
 
 		directiveHasPrefixIgnoringCase := func(prefix string) bool {

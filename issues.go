@@ -109,6 +109,8 @@ func (iss Issues) GoString() string {
 	)
 }
 
+// MarshalJSON converts the given Issues to JSON, making sure that
+// empty Errors/Warnings are converted to empty lists rather than null.
 func (iss Issues) MarshalJSON() ([]byte, error) {
 	// We explicitly fill out the fields with slices so that they are
 	// marshalled to `[]` rather than `null` when they are empty.

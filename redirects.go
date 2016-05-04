@@ -133,10 +133,6 @@ func preloadableRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 			redirectChain = append(redirectChain, req.URL)
 
 			if len(redirectChain) > maxRedirects {
-				issues = issues.addErrorf(
-					IssueCode("redirects.too_many"),
-					"Too many redirects",
-					"There are more than %d redirects starting from `%s`.", maxRedirects, initialURL)
 				return tooManyRedirects
 			}
 
@@ -147,7 +143,12 @@ func preloadableRedirects(initialURL string) (chain []*url.URL, issues Issues) {
 
 	_, err := client.Get(initialURL)
 	if err != nil {
-		if !strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
+		if strings.HasSuffix(err.Error(), tooManyRedirects.Error()) {
+			issues = issues.addErrorf(
+				IssueCode("redirects.too_many"),
+				"Too many redirects",
+				"There are more than %d redirects starting from `%s`.", maxRedirects, initialURL)
+		} else {
 			issues = issues.addErrorf(
 				IssueCode("redirects.follow_error"),
 				"Error following redirects",

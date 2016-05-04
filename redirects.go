@@ -7,7 +7,16 @@ import (
 	"strings"
 )
 
-func preloadableHTTPRedirects(domain string) (mainIssues Issues, firstRedirectHSTSIssues Issues) {
+// preloadableHTTPRedirects checks for two kinds of issues:
+//
+// 1. General HTTP redirect issues that should always be reported.
+//
+// 2. Issues where the first redirect does not have HSTS
+//
+// It is often extra noise to report issues related to #2, so we return
+// firstRedirectHSTS separately and allow the caller to decide whether
+// to use or ignore those issues.
+func preloadableHTTPRedirects(domain string) (general Issues, firstRedirectHSTS Issues) {
 	return preloadableHTTPRedirectsURL("http://"+domain, domain)
 }
 
@@ -38,7 +47,7 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
 
 // Taking a URL allows us to test more easily. Use preloadableHTTPRedirects()
 // where possible.
-func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues Issues, firstRedirectHSTSIssues Issues) {
+func preloadableHTTPRedirectsURL(initialURL string, domain string) (general Issues, firstRedirectHSTS Issues) {
 	chain, issues := preloadableRedirects(initialURL)
 	if len(chain) == 0 {
 		return issues.addErrorf(
@@ -47,7 +56,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			"`%s` does not redirect to `%s`.",
 			initialURL,
 			"https://"+domain,
-		), firstRedirectHSTSIssues
+		), firstRedirectHSTS
 	}
 
 	if chain[0].Scheme == httpsScheme && chain[0].Host == domain {
@@ -56,7 +65,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 		if err != nil {
 			// We cannot connect this time. This error has high priority,
 			// so return immediately and allow it to mask other errors.
-			return mainIssues, firstRedirectHSTSIssues.addErrorf(
+			return general, firstRedirectHSTS.addErrorf(
 				IssueCode("redirects.http.first_redirect.invalid"),
 				"Invalid redirect",
 				"`%s` redirects to `%s`, which we could not connect to: %s",
@@ -67,7 +76,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 		}
 		_, redirectHSTSIssues := PreloadableResponse(resp)
 		if len(redirectHSTSIssues.Errors) > 0 {
-			firstRedirectHSTSIssues = firstRedirectHSTSIssues.addErrorf(
+			firstRedirectHSTS = firstRedirectHSTS.addErrorf(
 				IssueCode("redirects.http.first_redirect.no_hsts"),
 				"HTTP redirects to a page without HSTS",
 				"`%s` redirects to `%s`, which does not serve a HSTS header that satisfies preload conditions. First error: %s",
@@ -77,8 +86,8 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			)
 		}
 
-		mainIssues = combineIssues(mainIssues, preloadableRedirectChain(initialURL, chain))
-		return mainIssues, firstRedirectHSTSIssues
+		general = combineIssues(general, preloadableRedirectChain(initialURL, chain))
+		return general, firstRedirectHSTS
 	}
 
 	if chain[0].Host == "www."+domain {
@@ -93,7 +102,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 			initialURL,
 			"https://"+domain,
 			chain[0],
-		), firstRedirectHSTSIssues
+		), firstRedirectHSTS
 	}
 
 	return issues.addErrorf(
@@ -105,7 +114,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (mainIssues I
 		chain[0],
 		initialURL,
 		"https://"+domain,
-	), firstRedirectHSTSIssues
+	), firstRedirectHSTS
 }
 
 // Taking a URL allows us to test more easily. Use preloadableHTTPSRedirects()

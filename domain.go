@@ -68,8 +68,8 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 		issues = combineIssues(issues, checkChain(*resp.TLS))
 
 		preloadableResponse := make(chan Issues)
-		httpRedirects := make(chan Issues)
-		httpFirstRedirectsHSTS := make(chan Issues)
+		httpRedirectsGeneral := make(chan Issues)
+		httpFirstRedirectHSTS := make(chan Issues)
 		httpsRedirects := make(chan Issues)
 		www := make(chan Issues)
 
@@ -82,9 +82,9 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 
 		// checkHTTPRedirects
 		go func() {
-			mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(domain)
-			httpRedirects <- mainIssues
-			httpFirstRedirectsHSTS <- firstRedirectHSTSIssues
+			general, firstRedirectHSTS := preloadableHTTPRedirects(domain)
+			httpRedirectsGeneral <- general
+			httpFirstRedirectHSTS <- firstRedirectHSTS
 		}()
 
 		// checkHTTPSRedirects
@@ -105,12 +105,13 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 		// Combine the issues in deterministic order.
 		preloadableResponseIssues := <-preloadableResponse
 		issues = combineIssues(issues, preloadableResponseIssues)
-		issues = combineIssues(issues, <-httpRedirects)
+		issues = combineIssues(issues, <-httpRedirectsGeneral)
 		// If there are issues with the HSTS header in the main
 		// PreloadableResponse() check, it is redundant to report
 		// them in the response after redirecting from HTTP.
+		firstRedirectHSTS := <-httpFirstRedirectHSTS // always receive the value, to avoid leaking a goroutine
 		if len(preloadableResponseIssues.Errors) == 0 {
-			issues = combineIssues(issues, <-httpFirstRedirectsHSTS)
+			issues = combineIssues(issues, firstRedirectHSTS)
 		}
 		issues = combineIssues(issues, <-httpsRedirects)
 		issues = combineIssues(issues, <-www)

@@ -203,7 +203,7 @@ var parseHeaderStringTests = []struct {
 func TestParseHeaderString(t *testing.T) {
 	for _, tt := range parseHeaderStringTests {
 		hstsHeader, issues := ParseHeaderString(tt.header)
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 		if !headersEqual(hstsHeader, tt.expectedHSTSHeader) {
@@ -273,7 +273,7 @@ var parseHeaderStringWithErrorsTests = []struct {
 func TestParseHeaderStringWithErrors(t *testing.T) {
 	for _, tt := range parseHeaderStringWithErrorsTests {
 		_, issues := ParseHeaderString(tt.header)
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
@@ -297,7 +297,7 @@ func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
 		}},
 	}
-	if !issuesMatchExpected(issues, expected) {
+	if !issuesMatchExpected(issues, &expected) {
 		t.Errorf(issuesShouldMatch, issues, expected)
 	}
 }
@@ -428,7 +428,7 @@ var preloadableHeaderStringTests = []struct {
 func TestPreloadableHeaderString(t *testing.T) {
 	for _, tt := range preloadableHeaderStringTests {
 		issues := PreloadableHeaderString(tt.header)
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
@@ -495,7 +495,7 @@ var removableHeaderStringTests = []struct {
 func TestRemovableHeaderString(t *testing.T) {
 	for _, tt := range removableHeaderStringTests {
 		issues := RemovableHeaderString(tt.header)
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}

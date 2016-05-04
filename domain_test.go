@@ -20,7 +20,7 @@ var testCheckDomainFormatTests = []struct {
 	expected Issues
 }{
 	{".example.com",
-		Issues{Errors: []Issue{{Code: "domain.format.begins_with_dot"}}},
+		Issues{Errors: []Issue{Issue{Code: "domain.format.begins_with_dot"}}},
 	},
 	{"example.com.",
 		Issues{Errors: []Issue{{Code: "domain.format.ends_with_dot"}}},
@@ -39,7 +39,7 @@ var testCheckDomainFormatTests = []struct {
 func TestCheckDomainFormat(t *testing.T) {
 	for _, tt := range testCheckDomainFormatTests {
 		issues := checkDomainFormat(tt.domain)
-		if !issuesMatchExpected(issues, tt.expected) {
+		if !issuesMatchExpected(issues, &tt.expected) {
 			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
@@ -66,7 +66,7 @@ var testPreloadableDomainLevel = []struct {
 func TestPreloadableDomainLevel(t *testing.T) {
 	for _, tt := range testPreloadableDomainLevel {
 		issues := preloadableDomainLevel(tt.domain)
-		if !issuesMatchExpected(issues, tt.expected) {
+		if !issuesMatchExpected(issues, &tt.expected) {
 			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
@@ -83,7 +83,7 @@ func skipIfShort(t *testing.T) {
 }
 
 var preloadableDomainTests = []struct {
-	function       func(domain string) (*string, Issues)
+	function       func(domain string) (*string, *Issues)
 	description    string
 	domain         string
 	expectHeader   bool
@@ -231,7 +231,7 @@ func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 			}
 		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] %s: "+issuesShouldMatch, tt.description, tt.domain, issues, tt.expectedIssues)
 		}
 	}

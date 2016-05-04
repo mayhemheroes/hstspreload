@@ -45,44 +45,38 @@ type Issues struct {
 	Warnings []Issue `json:"warnings"`
 }
 
-func (iss Issues) addErrorf(code IssueCode, summary string, format string, args ...interface{}) Issues {
+func (iss *Issues) addErrorf(code IssueCode, summary string, format string, args ...interface{}) {
 	formattedError := fmt.Sprintf(format, args...)
-	return Issues{
-		Errors:   append(iss.Errors, Issue{code, summary, formattedError}),
-		Warnings: iss.Warnings,
-	}
+	iss.Errors = append(iss.Errors, Issue{code, summary, formattedError})
 }
 
-func (iss Issues) addWarningf(code IssueCode, summary string, format string, args ...interface{}) Issues {
+func (iss *Issues) addWarningf(code IssueCode, summary string, format string, args ...interface{}) {
 	formattedWarning := fmt.Sprintf(format, args...)
-	return Issues{
-		Errors:   iss.Errors,
-		Warnings: append(iss.Warnings, Issue{code, summary, formattedWarning}),
-	}
+	iss.Warnings = append(iss.Warnings, Issue{code, summary, formattedWarning})
 }
 
-func (iss Issues) addUniqueErrorf(code IssueCode, summary string, format string, args ...interface{}) Issues {
+func (iss *Issues) addUniqueErrorf(code IssueCode, summary string, format string, args ...interface{}) {
 	for _, err := range iss.Errors {
 		if err.Code == code {
-			return iss
+			return
 		}
 	}
-	return iss.addErrorf(code, summary, format, args...)
+	iss.addErrorf(code, summary, format, args...)
 }
 
-func (iss Issues) addUniqueWarningf(code IssueCode, summary string, format string, args ...interface{}) Issues {
+func (iss *Issues) addUniqueWarningf(code IssueCode, summary string, format string, args ...interface{}) {
 	for _, warning := range iss.Warnings {
 		if warning.Code == code {
-			return iss
+			return
 		}
 	}
-	return iss.addWarningf(code, summary, format, args...)
+	iss.addWarningf(code, summary, format, args...)
 }
 
-func combineIssues(issues1 Issues, issues2 Issues) Issues {
-	return Issues{
-		Errors:   append(issues1.Errors, issues2.Errors...),
-		Warnings: append(issues1.Warnings, issues2.Warnings...),
+func (iss *Issues) merge(iss2 *Issues) {
+	*iss = Issues{
+		Errors:   append(iss.Errors, iss2.Errors...),
+		Warnings: append(iss.Warnings, iss2.Warnings...),
 	}
 }
 

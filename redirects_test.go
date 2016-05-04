@@ -48,7 +48,7 @@ func TestTooManyRedirects(t *testing.T) {
 			t.Errorf("[%s] Unexpected chain: %v", tt.description, chain)
 		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
@@ -71,7 +71,7 @@ func TestInsecureRedirect(t *testing.T) {
 		Code:    "redirects.insecure.initial",
 		Message: "`https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`",
 	}}}
-	if !issuesMatchExpected(httpsIssues, expected) {
+	if !issuesMatchExpected(httpsIssues, &expected) {
 		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
@@ -93,7 +93,7 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 		Code:    "redirects.insecure.subsequent",
 		Message: "`https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`",
 	}}}
-	if !issuesMatchExpected(httpsIssues, expected) {
+	if !issuesMatchExpected(httpsIssues, &expected) {
 		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
@@ -117,7 +117,7 @@ func TestHTTPNoRedirect(t *testing.T) {
 		Code:    "redirects.http.no_redirect",
 		Message: "`http://httpbin.org` does not redirect to `https://httpbin.org`.",
 	}}}
-	if !issuesMatchExpected(mainIssues, expected) {
+	if !issuesMatchExpected(mainIssues, &expected) {
 		t.Errorf(issuesShouldMatch, mainIssues, expected)
 	}
 
@@ -183,11 +183,11 @@ func TestPreloadableHTTPRedirects(t *testing.T) {
 	for _, tt := range preloadableHTTPRedirectsTests {
 		mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
 
-		if !issuesMatchExpected(mainIssues, tt.expectedMainIssues) {
+		if !issuesMatchExpected(mainIssues, &tt.expectedMainIssues) {
 			t.Errorf("[%s] main issues for %s: "+issuesShouldMatch, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
 		}
 
-		if !issuesMatchExpected(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
+		if !issuesMatchExpected(firstRedirectHSTSIssues, &tt.expectedFirstRedirectHSTSIssues) {
 			t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldMatch, tt.description, tt.domain, firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues)
 		}
 	}

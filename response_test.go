@@ -28,7 +28,7 @@ func ExamplePreloadableResponse() {
 /******** Response tests. ********/
 
 var responseTests = []struct {
-	function       func(resp *http.Response) (header *string, issues Issues)
+	function       func(resp *http.Response) (*string, *Issues)
 	description    string
 	hstsHeaders    []string
 	expectedIssues Issues
@@ -146,7 +146,7 @@ func TestPreloabableResponseAndRemovableResponse(t *testing.T) {
 			}
 		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issuesMatchExpected(issues, &tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}

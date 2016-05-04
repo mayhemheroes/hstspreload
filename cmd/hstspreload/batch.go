@@ -11,7 +11,7 @@ type Result struct {
 	Domain       string                 `json:"domain"`
 	Header       string                 `json:"header,omitempty"`
 	ParsedHeader hstspreload.HSTSHeader `json:"parsed_header,omitempty"`
-	Issues       hstspreload.Issues     `json:"issues"`
+	Issues       *hstspreload.Issues    `json:"issues"`
 }
 
 func worker(in chan string, out chan Result) {

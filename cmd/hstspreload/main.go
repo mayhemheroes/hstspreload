@@ -66,7 +66,7 @@ func main() {
 	}
 
 	var header *string
-	var issues hstspreload.Issues
+	var issues *hstspreload.Issues
 
 	switch args[0] {
 	case "+h", "preloadableheader":
@@ -139,7 +139,7 @@ includeSubDomains: %s%t%s
 	os.Exit(exitCode)
 }
 
-func preloadableHeader(header string) (issues hstspreload.Issues) {
+func preloadableHeader(header string) (issues *hstspreload.Issues) {
 	warnIfNotHeader(header)
 
 	fmt.Printf(
@@ -149,7 +149,7 @@ func preloadableHeader(header string) (issues hstspreload.Issues) {
 	return hstspreload.PreloadableHeaderString(header)
 }
 
-func removableHeader(header string) (issues hstspreload.Issues) {
+func removableHeader(header string) (issues *hstspreload.Issues) {
 	warnIfNotHeader(header)
 
 	fmt.Printf(
@@ -159,7 +159,7 @@ func removableHeader(header string) (issues hstspreload.Issues) {
 	return hstspreload.RemovableHeaderString(header)
 }
 
-func preloadableDomain(domain string) (header *string, issues hstspreload.Issues) {
+func preloadableDomain(domain string) (header *string, issues *hstspreload.Issues) {
 	mustBeDomain(domain)
 
 	fmt.Printf(
@@ -169,7 +169,7 @@ func preloadableDomain(domain string) (header *string, issues hstspreload.Issues
 	return hstspreload.PreloadableDomain(domain)
 }
 
-func removableDomain(domain string) (header *string, issues hstspreload.Issues) {
+func removableDomain(domain string) (header *string, issues *hstspreload.Issues) {
 	mustBeDomain(domain)
 
 	fmt.Printf(

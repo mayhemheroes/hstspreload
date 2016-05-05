@@ -17,9 +17,9 @@ const (
 
 // A Result holds the outcome of PreloadableDomain() for a given Domain.
 type Result struct {
-	Domain string
-	Header *string
-	Issues hstspreload.Issues
+	Domain string             `json:"domain"`
+	Header *string            `json:"header"`
+	Issues hstspreload.Issues `json:"issues"`
 }
 
 // Scan runs hstspreload.PreloadableDomain() over the given domains

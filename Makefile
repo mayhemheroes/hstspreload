@@ -4,6 +4,10 @@ PROJECT = github.com/chromium/hstspreload/...
 test: lint
 	go test ${PROJECT}
 
+.PHONY: test-verbose
+test-verbose: lint
+	go test -v ${PROJECT}
+
 .PHONY: build
 build:
 	go build ${PROJECT}
@@ -17,4 +21,4 @@ lint:
 pre-commit: lint build test
 
 .PHONY: travis
-travis: pre-commit
+travis: lint build test-verbose

@@ -15,12 +15,15 @@ const (
 	parallelism = 10
 )
 
+// A Result holds the outcome of PreloadableDomain() for a given Domain.
 type Result struct {
 	Domain string
 	Header *string
 	Issues hstspreload.Issues
 }
 
+// Scan runs hstspreload.PreloadableDomain() over the given domains
+// in parallel, and returns the results in an arbitrary order.
 func Scan(domains []string) (results []Result) {
 	in := make(chan string)
 	out := make(chan Result)
@@ -65,7 +68,7 @@ func Scan(domains []string) (results []Result) {
 	}
 
 	go func() {
-		for _, _ = range domains {
+		for _ = range domains {
 			results = append(results, <-out)
 		}
 		wg.Done()

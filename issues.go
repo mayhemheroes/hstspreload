@@ -5,8 +5,15 @@ import (
 	"fmt"
 )
 
+// An IssueCode is a string identifier for an Issue.
+// This allows other programs to perform analysis or take actions
+// based on specific issues.
+//
+// Examples: "domain.is_subdomain", "domain.tls.cannot_connect", "header.preloadable.max_age.too_low"
 type IssueCode string
 
+// An Issue is an error or a warning relating to a site's HSTS preload
+// configuration.
 type Issue struct {
 	// An error code.
 	Code IssueCode `json:"code"`

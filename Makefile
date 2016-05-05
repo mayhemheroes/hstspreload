@@ -11,6 +11,7 @@ build:
 .PHONY: lint
 lint:
 	go vet ${PROJECT}
+	golint ${PROJECT}
 
 .PHONY: pre-commit
 pre-commit: lint build test

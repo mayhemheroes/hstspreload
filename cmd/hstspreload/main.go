@@ -81,7 +81,7 @@ Return code:
 	// Wrap this in a function to (statically) enforce a return code.
 	showResult := func() int {
 		if header != nil {
-			fmt.Printf("Observed header: %s%s%s\n", bold, *header, reset)
+			fmt.Printf("Observed header: %s%s%s\n", bold, *header, resetFormat)
 		}
 
 		fmt.Printf("\n")
@@ -93,7 +93,7 @@ Return code:
 			return 2
 
 		default:
-			fmt.Printf("%sSatisfies requirements.%s\n\n", green, reset)
+			fmt.Printf("%sSatisfies requirements.%s\n\n", green, resetFormat)
 			return 0
 		}
 	}
@@ -110,7 +110,7 @@ func preloadableHeader(header string) (issues hstspreload.Issues) {
 
 	fmt.Printf(
 		"Checking header \"%s%s%s\" for preload requirements...\n",
-		bold, header, reset)
+		bold, header, resetFormat)
 
 	return hstspreload.PreloadableHeaderString(header)
 }
@@ -120,7 +120,7 @@ func removableHeader(header string) (issues hstspreload.Issues) {
 
 	fmt.Printf(
 		"Checking header \"%s%s%s\" for removal requirements...\n",
-		bold, header, reset)
+		bold, header, resetFormat)
 
 	return hstspreload.RemovableHeaderString(header)
 }
@@ -130,7 +130,7 @@ func preloadableDomain(domain string) (header *string, issues hstspreload.Issues
 
 	fmt.Printf(
 		"Checking domain %s%s%s for preload requirements...\n",
-		underline, domain, reset)
+		underline, domain, resetFormat)
 
 	return hstspreload.PreloadableDomain(domain)
 }
@@ -140,7 +140,7 @@ func removableDomain(domain string) (header *string, issues hstspreload.Issues) 
 
 	fmt.Printf(
 		"Checking domain %s%s%s for removal requirements...\n",
-		underline, domain, reset)
+		underline, domain, resetFormat)
 
 	return hstspreload.RemovableDomain(domain)
 }
@@ -190,12 +190,12 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 	if len(list) != 1 {
 		title += "s"
 	}
-	fmt.Printf("%s%s:%s\n", fs, title, reset)
+	fmt.Printf("%s%s:%s\n", fs, title, resetFormat)
 
 	for i, is := range list {
 		fmt.Printf(
 			"\n%d. %s%s%s [%s]\n%s\n",
-			i+1, fs, is.Summary, reset, is.Code, is.Message)
+			i+1, fs, is.Summary, resetFormat, is.Code, is.Message)
 	}
 
 	fmt.Printf("\n")

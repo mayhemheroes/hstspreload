@@ -187,11 +187,10 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 		return
 	}
 
-	titlePluralized := title
 	if len(list) != 1 {
-		titlePluralized += "s"
+		title += "s"
 	}
-	fmt.Printf("%s%s:%s\n", fs, titlePluralized, reset)
+	fmt.Printf("%s%s:%s\n", fs, title, reset)
 
 	for i, is := range list {
 		fmt.Printf(

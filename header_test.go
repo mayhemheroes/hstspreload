@@ -27,7 +27,10 @@ func headersEqual(header1 HSTSHeader, header2 HSTSHeader) bool {
 		return false
 	}
 
-	if header1.MaxAge != header2.MaxAge {
+	if (header1.MaxAge == nil) != (header2.MaxAge == nil) {
+		return false
+	}
+	if header1.MaxAge != nil && header2.MaxAge != nil && header1.MaxAge.Seconds != header2.MaxAge.Seconds {
 		return false
 	}
 
@@ -39,12 +42,12 @@ func TestHeadersEqual(t *testing.T) {
 		HSTSHeader{
 			Preload:           false,
 			IncludeSubDomains: true,
-			MaxAge:            12345,
+			MaxAge:            &MaxAge{Seconds: 12345},
 		},
 		HSTSHeader{
 			Preload:           false,
 			IncludeSubDomains: true,
-			MaxAge:            12345,
+			MaxAge:            &MaxAge{Seconds: 12345},
 		},
 	) {
 		t.Errorf("HSTSHeader structs should be considered equal if all values match.")
@@ -54,12 +57,12 @@ func TestHeadersEqual(t *testing.T) {
 		HSTSHeader{
 			Preload:           false,
 			IncludeSubDomains: true,
-			MaxAge:            12345,
+			MaxAge:            &MaxAge{Seconds: 12345},
 		},
 		HSTSHeader{
 			Preload:           true,
 			IncludeSubDomains: true,
-			MaxAge:            12345,
+			MaxAge:            &MaxAge{Seconds: 12345},
 		},
 	) {
 		t.Errorf("HSTSHeader structs should be considered non-equal if preload values don't match.")
@@ -85,55 +88,55 @@ var parseHeaderStringTests = []struct {
 		"without preload",
 		"includeSubDomains; max-age=1337",
 		Issues{},
-		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 1337},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 1337}},
 	},
 	{
 		"without includeSubDomains",
 		"preload; max-age=1337",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: false, MaxAge: 1337},
+		HSTSHeader{Preload: true, IncludeSubDomains: false, MaxAge: &MaxAge{Seconds: 1337}},
 	},
 	{
 		"without max-age",
 		"preload; includeSubDomains",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: MaxAgeNotPresent},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: nil},
 	},
 	{
 		"full",
 		"max-age=10886400; includeSubDomains; preload",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"any order",
 		"includeSubDomains; preload; max-age=4321",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 4321},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 4321}},
 	},
 	{
 		"extra whitespace",
 		"   max-age=10886400  ;     includeSubDomains    ;     preload      ",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"larger max-age",
 		"includeSubDomains; preload; max-age=12345678",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"reordered",
 		"max-age=10886400; preload; includeSubDomains",
 		Issues{},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"reordered, without preload",
 		"max-age=10886400; includeSubDomains",
 		Issues{},
-		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 
 	/******** no errors, warnings only ********/
@@ -142,25 +145,25 @@ var parseHeaderStringTests = []struct {
 		"empty",
 		"",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty"}}},
-		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: nil},
 	},
 	{
 		"case-insensitive",
 		"inCLUDESUBDomaINs; max-AGe=12345678",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.spelling.include_sub_domains"}}},
-		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: 12345678},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"repeated preload",
 		"preload; includeSubDomains; preload; max-age=12345678; preload",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.repeated.preload"}}},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"single extra directive",
 		"includeSubDomains; max-age=12345678; preload; extraDirective",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.unknown_directive"}}},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"multiple extra directives",
@@ -169,31 +172,31 @@ var parseHeaderStringTests = []struct {
 			Issue{Code: "header.parse.unknown_directive"},
 			Issue{Code: "header.parse.unknown_directive"},
 		}},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 12345678},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"semicolon only",
 		";",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
-		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: MaxAgeNotPresent},
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: nil},
 	},
 	{
 		"trailing semicolon",
 		"max-age=10886400; includeSubDomains; preload;",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"prefixed by semicolon",
 		"; max-age=10886400; includeSubDomains; preload",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
-		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: 10886400},
+		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"bad max-age: leading 0",
 		"max-age=01234",
 		Issues{Warnings: []Issue{Issue{Code: "header.parse.max_age.leading_zero"}}},
-		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: 1234},
+		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: &MaxAge{Seconds: 1234}},
 	},
 }
 
@@ -285,7 +288,7 @@ func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 	issues := PreloadableHeader(HSTSHeader{
 		Preload:           false,
 		IncludeSubDomains: true,
-		MaxAge:            315360001,
+		MaxAge:            &MaxAge{Seconds: 315360001},
 	})
 	expected := Issues{
 		Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}},
@@ -294,18 +297,6 @@ func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
 		}},
 	}
-	if !issuesMatchExpected(issues, expected) {
-		t.Errorf(issuesShouldMatch, issues, expected)
-	}
-}
-
-func TestPreloadableHeaderMaxAgeNotPresent(t *testing.T) {
-	issues := PreloadableHeader(HSTSHeader{
-		Preload:           true,
-		IncludeSubDomains: true,
-		MaxAge:            -2,
-	})
-	expected := Issues{Errors: []Issue{Issue{Code: "internal.header.preloadable.max_age.negative"}}}
 	if !issuesMatchExpected(issues, expected) {
 		t.Errorf(issuesShouldMatch, issues, expected)
 	}

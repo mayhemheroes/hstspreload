@@ -7,48 +7,31 @@ import (
 )
 
 const (
-	// MaxAgeNotPresent indicates that a HSTSHeader.MaxAge value is invalid.
-	MaxAgeNotPresent = (-1)
-
 	// 18 weeks
 	hstsMinimumMaxAge = 10886400 // seconds
 
 	tenYears = 86400 * 365 * 10 // seconds
 )
 
-// An HSTSHeader stores the semantics of an HSTS header.
-//
-// Note: Unless all values are known at initialization time, use
-// NewHSTSHeader() instead of constructing an HSTSHeader directly.
-// This ensures that the MaxAge field is initialized to
-// MaxAgeNotPresent.
-type HSTSHeader struct {
-	// MaxAge == MaxAgeNotPresent indicates that this value is invalid.
-	// A valid MaxAge value is a non-negative integer.
-	MaxAge            int64
-	IncludeSubDomains bool
-	Preload           bool
+// MaxAge holds the max-age of an HSTS header in seconds.
+// See https://tools.ietf.org/html/rfc6797#section-6.1.1
+type MaxAge struct {
+	Seconds uint64 `json:"seconds"`
 }
 
-// NewHSTSHeader constructs a new header with all directive values un-set.
+// An HSTSHeader stores the semantics of an HSTS header.
+// https://tools.ietf.org/html/rfc6797#section-6.1
 //
-// It is requivalent to:
-//
-//     HSTSHeader{
-//       Preload:           false,
-//       IncludeSubDomains: false,
-//       MaxAge:            MaxAgeNotPresent,
-//     }
-func NewHSTSHeader() HSTSHeader {
-	return HSTSHeader{
-		Preload:           false,
-		IncludeSubDomains: false,
-		MaxAge:            MaxAgeNotPresent,
-	}
+// Note that the `preload` directive is not standardized yet:  https://crbug.com/591212
+type HSTSHeader struct {
+	// A MaxAge of `nil` indicates "not present".
+	MaxAge            *MaxAge `json:"max_age,omitempty"`
+	IncludeSubDomains bool    `json:"includeSubDomains"`
+	Preload           bool    `json:"preload"`
 }
 
 // Iff Issues has no errors, the output integer is the max-age in seconds.
-func parseMaxAge(directive string) (int64, Issues) {
+func parseMaxAge(directive string) (*MaxAge, Issues) {
 	issues := Issues{}
 	maxAgeNumericalString := directive[8:]
 
@@ -61,30 +44,23 @@ func parseMaxAge(directive string) (int64, Issues) {
 				"The header's max-age value contains a leading 0: `%s`", directive)
 		}
 		if c < '0' || c > '9' {
-			return MaxAgeNotPresent, issues.addErrorf(
+			return nil, issues.addErrorf(
 				"header.parse.max_age.non_digit_characters",
 				"Invalid max-age syntax",
 				"The header's max-age value contains characters that are not digits: `%s`", directive)
 		}
 	}
 
-	maxAge, err := strconv.ParseInt(maxAgeNumericalString, 10, 64)
+	seconds, err := strconv.ParseUint(maxAgeNumericalString, 10, 64)
 
 	if err != nil {
-		return MaxAgeNotPresent, issues.addErrorf(
+		return nil, issues.addErrorf(
 			"header.parse.max_age.parse_int_error",
 			"Invalid max-age syntax",
 			"We could not parse the header's max-age value `%s`.", maxAgeNumericalString)
 	}
 
-	if maxAge < 0 {
-		return MaxAgeNotPresent, issues.addErrorf(
-			"internal.header.parse.max_age.negative",
-			"Invalid max-age syntax",
-			"Parsing the header's max-age resulted in an unexpected negative integer: `%d`", maxAge)
-	}
-
-	return maxAge, issues
+	return &MaxAge{Seconds: seconds}, issues
 }
 
 // ParseHeaderString parses an HSTS header. ParseHeaderString will
@@ -95,7 +71,7 @@ func parseMaxAge(directive string) (int64, Issues) {
 // To interpret the Issues that are returned, see the list of
 // conventions in the documentation for Issues.
 func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
-	hstsHeader := NewHSTSHeader()
+	hstsHeader := HSTSHeader{}
 	issues := Issues{}
 
 	directives := strings.Split(headerString, ";")
@@ -172,7 +148,7 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 				continue
 			}
 
-			if hstsHeader.MaxAge == MaxAgeNotPresent {
+			if hstsHeader.MaxAge == nil {
 				hstsHeader.MaxAge = maxAge
 			} else {
 				issues = issues.addUniqueWarningf(
@@ -233,24 +209,24 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 	issues := Issues{}
 
 	switch {
-	case hstsHeader.MaxAge == MaxAgeNotPresent:
+	case hstsHeader.MaxAge == nil:
 		issues = issues.addErrorf(
 			"header.preloadable.max_age.missing",
 			"No max-age directice",
 			"Header requirement error: Header must contain a valid `max-age` directive.")
 
-	case hstsHeader.MaxAge < 0:
+	case hstsHeader.MaxAge.Seconds < 0:
 		issues = issues.addErrorf(
 			"internal.header.preloadable.max_age.negative",
 			"Negative max-age",
-			"Encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge)
+			"Encountered an HSTSHeader with a negative max-age that does not equal MaxAgeNotPresent: %d", hstsHeader.MaxAge.Seconds)
 
-	case hstsHeader.MaxAge < hstsMinimumMaxAge:
+	case hstsHeader.MaxAge.Seconds < hstsMinimumMaxAge:
 		errorStr := fmt.Sprintf(
 			"The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
-			hstsHeader.MaxAge,
+			hstsHeader.MaxAge.Seconds,
 		)
-		if hstsHeader.MaxAge == 0 {
+		if hstsHeader.MaxAge.Seconds == 0 {
 			errorStr += " If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"
 			issues = issues.addErrorf(
 				"header.preloadable.max_age.zero",
@@ -265,12 +241,12 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 			)
 		}
 
-	case hstsHeader.MaxAge > tenYears:
+	case hstsHeader.MaxAge.Seconds > tenYears:
 		issues = issues.addWarningf(
 			"header.preloadable.max_age.over_10_years",
 			"Max-age > 10 years",
 			"FYI: The max-age (%d seconds) is longer than 10 years, which is an unusually long value.",
-			hstsHeader.MaxAge,
+			hstsHeader.MaxAge.Seconds,
 		)
 
 	}
@@ -311,7 +287,7 @@ func RemovableHeader(hstsHeader HSTSHeader) Issues {
 			"Header requirement error: For preload list removal, the header must not contain the `preload` directive.")
 	}
 
-	if hstsHeader.MaxAge == MaxAgeNotPresent {
+	if hstsHeader.MaxAge == nil {
 		issues = issues.addErrorf(
 			"header.removable.missing.max_age",
 			"No max-age directive",

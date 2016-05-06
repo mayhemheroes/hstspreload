@@ -45,9 +45,13 @@ type Domain string
 // - IncludeSubDomains: If Mode == ForceHTTPS, forces HSTS to apply to
 //   all subdomains.
 type PreloadEntry struct {
-	Name              Domain `json:"name"`
-	Mode              string `json:"mode"`
-	IncludeSubDomains bool   `json:"include_subdomains"`
+	Name                        Domain `json:"name"`
+	IncludeSubDomains           bool   `json:"include_subdomains"`
+	IncludeSubDomainsForPinning bool   `json:"include_subdomains_for_pinning"`
+	Mode                        string `json:"mode"`
+	Pins                        string `json:"pins"`
+	ExpectCT                    bool   `json:"expect_ct"`
+	ExpectCTReportURI           string `json:"expect_ct_report_uri"`
 }
 
 const (

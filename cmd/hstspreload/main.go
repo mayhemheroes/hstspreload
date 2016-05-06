@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+
+	"golang.org/x/net/publicsuffix"
 
 	"github.com/chromium/hstspreload"
 	"github.com/chromium/hstspreload/chromiumpreload"
@@ -65,29 +68,7 @@ Return code:
 		header, issues = removableDomain(args[1])
 
 	case "status":
-		l, err := chromiumpreload.GetLatest()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-		}
-		m := chromiumpreload.PreloadEntriesToMap(l)
-		domain := args[1]
-		state, ok := m[chromiumpreload.Domain(domain)]
-		if ok {
-			fmt.Printf(`%s%s%s is preloaded:
-
-             mode: %s%s%s
-includeSubDomains: %s%t%s
-
-`,
-				underline, domain, resetFormat,
-				bold, state.Mode, resetFormat,
-				bold, state.IncludeSubDomains, resetFormat)
-		} else {
-			fmt.Printf(`%s%s%s is not preloaded.
-
-`,
-				underline, domain, resetFormat)
-		}
+		status(args[1])
 		os.Exit(0)
 
 	default:
@@ -216,4 +197,46 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 	}
 
 	fmt.Printf("\n")
+}
+
+func status(domain string) {
+	l, err := chromiumpreload.GetLatest()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+	}
+	m := chromiumpreload.PreloadEntriesToMap(l)
+	state, ok := m[chromiumpreload.Domain(domain)]
+	if ok {
+		j, err := json.MarshalIndent(state, "", "  ")
+		if err != nil {
+			fmt.Printf("JSON error: %s", err)
+			return
+		}
+
+		fmt.Printf(`%s%s%s is preloaded:
+
+%s
+
+`,
+			underline, domain, resetFormat,
+			j,
+		)
+	} else {
+		fmt.Printf(`%s%s%s is not preloaded.
+
+`,
+			underline, domain, resetFormat)
+	}
+
+	eTLD1, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	if err != nil {
+		fmt.Printf("Could not compute eTLD+1.")
+	}
+	if eTLD1 != domain {
+		parts := strings.Split(domain, ".")
+		if len(parts) > 1 {
+			parts = parts[1:]
+			status(strings.Join(parts, "."))
+		}
+	}
 }

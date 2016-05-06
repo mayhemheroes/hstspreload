@@ -17,9 +17,10 @@ const (
 
 // A Result holds the outcome of PreloadableDomain() for a given Domain.
 type Result struct {
-	Domain string             `json:"domain"`
-	Header *string            `json:"header"`
-	Issues hstspreload.Issues `json:"issues"`
+	Domain       string                 `json:"domain"`
+	Header       string                 `json:"header,omitempty"`
+	ParsedHeader hstspreload.HSTSHeader `json:"parsed_header,omitempty"`
+	Issues       hstspreload.Issues     `json:"issues"`
 }
 
 // Scan runs hstspreload.PreloadableDomain() over the given domains
@@ -48,12 +49,21 @@ func Scan(domains []string) (results []Result) {
 
 				fmt.Printf("[%d] ✅  %s\n", i, d)
 
-				r := Result{d, header, issues}
+				r := Result{
+					Domain: d,
+					Issues: issues,
+				}
+				if header != nil {
+					r.Header = *header
+					ParsedHeader, _ := hstspreload.ParseHeaderString(*header)
+					r.ParsedHeader = ParsedHeader
+				}
 
 				j, err := json.MarshalIndent(r, "", "  ")
 				if err != nil {
 					fmt.Printf("[%d] %s ❌ json %s \n", i, d, err)
 				} else {
+					fmt.Printf("%s", j)
 					err = ioutil.WriteFile("domains/"+d+".json", j, 0644)
 					if err != nil {
 						fmt.Printf("[%d] %s ❌ write %s \n", i, d, err)

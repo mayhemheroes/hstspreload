@@ -70,7 +70,24 @@ Return code:
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 		}
 		m := chromiumpreload.PreloadEntriesToMap(l)
-		fmt.Printf("Status: %v", m[chromiumpreload.Domain(args[1])])
+		domain := args[1]
+		state, ok := m[chromiumpreload.Domain(domain)]
+		if ok {
+			fmt.Printf(`%s%s%s is preloaded:
+
+             mode: %s%s%s
+includeSubDomains: %s%t%s
+
+`,
+				underline, domain, resetFormat,
+				bold, state.Mode, resetFormat,
+				bold, state.IncludeSubDomains, resetFormat)
+		} else {
+			fmt.Printf(`%s%s%s is not preloaded.
+
+`,
+				underline, domain, resetFormat)
+		}
 		os.Exit(0)
 
 	default:

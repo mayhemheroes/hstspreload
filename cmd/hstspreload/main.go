@@ -118,7 +118,7 @@ includeSubDomains: %s%t%s
 			fmt.Printf("Observed header: %s%s%s\n", bold, *header, resetFormat)
 		}
 
-		fmt.Printf("\n")
+		fmt.Println()
 		switch {
 		case len(issues.Errors) > 0:
 			return 1
@@ -181,25 +181,25 @@ func removableDomain(domain string) (header *string, issues hstspreload.Issues) 
 
 func warnIfNotHeader(str string) {
 	if probablyURL(str) {
-		fmt.Fprintf(os.Stderr,
-			"Warning: please supply an HSTS header string (it appears you supplied a URL).\n")
+		fmt.Fprintln(os.Stderr,
+			"Warning: please supply an HSTS header string (it appears you supplied a URL).")
 	}
 	if probablyDomain(str) {
-		fmt.Fprintf(os.Stderr,
-			"Warning: please supply an HSTS header string (it appears you supplied a domain).\n")
+		fmt.Fprintln(os.Stderr,
+			"Warning: please supply an HSTS header string (it appears you supplied a domain).")
 	}
 }
 
 func mustBeDomain(str string) {
 	if probablyHeader(str) {
-		fmt.Fprintf(os.Stderr,
-			"Invalid argument: please supply a domain (example.com), not a header string.\n")
+		fmt.Fprintln(os.Stderr,
+			"Invalid argument: please supply a domain (example.com), not a header string.")
 		os.Exit(3)
 	}
 
 	if probablyURL(str) {
-		fmt.Fprintf(os.Stderr,
-			"Invalid argument: please supply a domain (example.com) rather than a URL (https://example.com/index.html).\n")
+		fmt.Fprintln(os.Stderr,
+			"Invalid argument: please supply a domain (example.com) rather than a URL (https://example.com/index.html).")
 		os.Exit(3)
 	}
 }
@@ -232,7 +232,7 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 			i+1, fs, is.Summary, resetFormat, is.Code, is.Message)
 	}
 
-	fmt.Printf("\n")
+	fmt.Println()
 }
 
 func batch() {

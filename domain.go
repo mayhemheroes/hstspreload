@@ -155,23 +155,38 @@ func getResponse(domain string) (*http.Response, Issues) {
 		Timeout: dialTimeout,
 	}
 
-	resp, err := client.Get("https://" + domain)
-	if err != nil {
-		if urlError, ok := err.(*url.Error); !ok || urlError.Err != redirectPrevented {
-			return resp, issues.addErrorf(
-				IssueCode("domain.tls.cannot_connect"),
-				"Cannot connect using TLS",
-				"We cannot connect to https://%s using TLS (%q). This "+
-					"might be caused by an incomplete certificate chain, which causes "+
-					"issues on mobile devices. Check out your site at "+
-					"https://www.ssllabs.com/ssltest/",
-				domain,
-				err,
-			)
-		}
+	isRedirectPrevented := func(err error) bool {
+		urlError, ok := err.(*url.Error)
+		return ok && urlError.Err == redirectPrevented
 	}
 
-	return resp, issues
+	// Try #1
+	resp, err := client.Get("https://" + domain)
+	if err == nil || isRedirectPrevented(err) {
+		return resp, issues
+	}
+
+	// Check if ignoring cert issues works.
+	client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	resp, err = client.Get("https://" + domain)
+	if err == nil || isRedirectPrevented(err) {
+		return resp, issues.addErrorf(
+			IssueCode("domain.tls.invalid_cert_chain"),
+			"Invalid Certificate Chain",
+			"https://%s uses an incomplete or "+
+				"invalid certificate chain. Check out your site at "+
+				"https://www.ssllabs.com/ssltest/",
+			domain,
+		)
+	}
+
+	return resp, issues.addErrorf(
+		IssueCode("domain.tls.cannot_connect"),
+		"Cannot connect using TLS",
+		"We cannot connect to https://%s using TLS (%q).",
+		domain,
+		err,
+	)
 }
 
 func checkDomainFormat(domain string) Issues {

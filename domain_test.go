@@ -102,6 +102,15 @@ var preloadableDomainTests = []struct {
 	},
 	{
 		PreloadableDomain,
+		"no TLS",
+		"cnn.com",
+		false, "",
+		Issues{
+			Errors: []Issue{Issue{Code: "domain.tls.cannot_connect"}},
+		},
+	},
+	{
+		PreloadableDomain,
 		"incomplete chain",
 		"incomplete-chain.badssl.com",
 		false, "",
@@ -109,8 +118,23 @@ var preloadableDomainTests = []struct {
 			Errors: []Issue{
 				Issue{Code: "domain.is_subdomain"},
 				Issue{
-					Code:    "domain.tls.cannot_connect",
-					Message: "We cannot connect to https://incomplete-chain.badssl.com using TLS (\"Get https://incomplete-chain.badssl.com: x509: certificate signed by unknown authority\"). This might be caused by an incomplete certificate chain, which causes issues on mobile devices. Check out your site at https://www.ssllabs.com/ssltest/",
+					Code:    "domain.tls.invalid_cert_chain",
+					Message: "https://incomplete-chain.badssl.com uses an incomplete or invalid certificate chain. Check out your site at https://www.ssllabs.com/ssltest/",
+				},
+			},
+		},
+	},
+	{
+		PreloadableDomain,
+		"self-signed",
+		"self-signed.badssl.com",
+		false, "",
+		Issues{
+			Errors: []Issue{
+				Issue{Code: "domain.is_subdomain"},
+				Issue{
+					Code:    "domain.tls.invalid_cert_chain",
+					Message: "https://self-signed.badssl.com uses an incomplete or invalid certificate chain. Check out your site at https://www.ssllabs.com/ssltest/",
 				},
 			},
 		},

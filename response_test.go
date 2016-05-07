@@ -6,12 +6,6 @@ import (
 	"testing"
 )
 
-const (
-	headerStringsShouldBeEqual = `Did not receive expected header.
-			Actual: "%v"
-			Expected: "%v"`
-)
-
 /******** Examples. ********/
 
 func ExamplePreloadableResponse() {
@@ -138,7 +132,9 @@ func TestPreloabableResponseAndRemovableResponse(t *testing.T) {
 			if header == nil {
 				t.Errorf("[%s] Did not receive exactly one HSTS header", tt.description)
 			} else if *header != tt.hstsHeaders[0] {
-				t.Errorf("[%s] "+headerStringsShouldBeEqual, tt.description, *header, tt.hstsHeaders[0])
+				t.Errorf(`[%s] Did not receive expected header.
+			Actual: "%v"
+			Expected: "%v"`, tt.description, *header, tt.hstsHeaders[0])
 			}
 		} else {
 			if header != nil {

@@ -223,7 +223,9 @@ func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 			if header == nil {
 				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
 			} else if *header != tt.expectedHeader {
-				t.Errorf("[%s] %s: "+headerStringsShouldBeEqual, tt.description, tt.domain, *header, tt.expectedHeader)
+				t.Errorf(`[%s] %s: Did not receive expected header.
+			Actual: "%v"
+			Expected: "%v"`, tt.description, tt.domain, *header, tt.expectedHeader)
 			}
 		} else {
 			if header != nil {

@@ -90,10 +90,7 @@ func formatIssueListForString(list []Issue) string {
 	output := ""
 	if len(list) > 1 {
 		for _, l := range list {
-			output += fmt.Sprintf(
-				"\n		%#v,",
-				l,
-			)
+			output += fmt.Sprintf("\n		%#v,", l)
 		}
 		output += "\n	"
 	} else if len(list) == 1 {

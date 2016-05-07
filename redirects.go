@@ -16,7 +16,7 @@ import (
 // It is often extra noise to report issues related to #2, so we return
 // firstRedirectHSTS separately and allow the caller to decide whether
 // to use or ignore those issues.
-func preloadableHTTPRedirects(domain string) (general Issues, firstRedirectHSTS Issues) {
+func preloadableHTTPRedirects(domain string) (general, firstRedirectHSTS Issues) {
 	return preloadableHTTPRedirectsURL("http://"+domain, domain)
 }
 
@@ -47,7 +47,7 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
 
 // Taking a URL allows us to test more easily. Use preloadableHTTPRedirects()
 // where possible.
-func preloadableHTTPRedirectsURL(initialURL string, domain string) (general Issues, firstRedirectHSTS Issues) {
+func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, firstRedirectHSTS Issues) {
 	chain, issues := preloadableRedirects(initialURL)
 	if len(chain) == 0 {
 		return issues.addErrorf(

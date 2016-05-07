@@ -23,12 +23,12 @@ func TestGetLatest(t *testing.T) {
 func TestPreloadEntriesToMap(t *testing.T) {
 	list := PreloadList{
 		Entries: []PreloadEntry{
-			PreloadEntry{
+			{
 				Name:              "garron.NET",
 				Mode:              "ForceHTTPS",
 				IncludeSubDomains: true,
 			},
-			PreloadEntry{
+			{
 				Name:              "example.com",
 				Mode:              "",
 				IncludeSubDomains: false,

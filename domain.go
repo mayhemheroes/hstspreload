@@ -166,6 +166,12 @@ func getResponse(domain string) (*http.Response, Issues) {
 		return resp, issues
 	}
 
+	// Try #2
+	resp, err = client.Get("https://" + domain)
+	if err == nil || isRedirectPrevented(err) {
+		return resp, issues
+	}
+
 	// Check if ignoring cert issues works.
 	client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	resp, err = client.Get("https://" + domain)
@@ -285,7 +291,15 @@ func checkWWW(host string) Issues {
 	hasWWW := false
 	if conn, err := net.DialTimeout("tcp", "www."+host+":443", dialTimeout); err == nil {
 		hasWWW = true
-		conn.Close()
+		if err = conn.Close(); err != nil {
+			return issues.addErrorf(
+				"internal.domain.www.first_dial.no_close",
+				"Internal error",
+				"Error while closing a connection to %s: %s",
+				"www."+host,
+				err,
+			)
+		}
 	}
 
 	if hasWWW {
@@ -300,7 +314,15 @@ func checkWWW(host string) Issues {
 				err,
 			)
 		}
-		wwwConn.Close()
+		if err = wwwConn.Close(); err != nil {
+			return issues.addErrorf(
+				"internal.domain.www.second_dial.no_close",
+				"Internal error",
+				"Error while closing a connection to %s: %s",
+				"www."+host,
+				err,
+			)
+		}
 	}
 
 	return issues

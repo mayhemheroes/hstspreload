@@ -45,6 +45,34 @@ type Issues struct {
 	Warnings []Issue `json:"warnings"`
 }
 
+type issuesBuilder struct {
+	iss      Issues
+	finished bool
+}
+
+func (ib *issuesBuilder) addErrorf(code IssueCode, summary string, format string, args ...interface{}) {
+	formattedError := fmt.Sprintf(format, args...)
+	ib.iss.Errors = append(ib.iss.Errors, Issue{code, summary, formattedError})
+}
+
+func (ib *issuesBuilder) addWarningf(code IssueCode, summary string, format string, args ...interface{}) {
+	formattedWarning := fmt.Sprintf(format, args...)
+	ib.iss.Warnings = append(ib.iss.Warnings, Issue{code, summary, formattedWarning})
+}
+
+func (ib *issuesBuilder) addIssues(iss Issues) {
+	ib.iss.Errors = append(ib.iss.Errors, iss.Errors...)
+	ib.iss.Warnings = append(ib.iss.Warnings, iss.Warnings...)
+}
+
+func (ib *issuesBuilder) issues() Issues {
+	if ib.finished {
+		panic("fsdf")
+	}
+	ib.finished = true
+	return ib.iss
+}
+
 func (iss Issues) addErrorf(code IssueCode, summary string, format string, args ...interface{}) Issues {
 	formattedError := fmt.Sprintf(format, args...)
 	return Issues{
@@ -105,8 +133,8 @@ func formatIssueListForString(list []Issue) string {
 // that can be pasted back into the relevant unit tess.
 func (iss Issues) GoString() string {
 	return fmt.Sprintf(`Issues{
-	Errors:   []string{%s},
-	Warnings: []string{%s},
+	Errors:   []Issue{%s},
+	Warnings: []Issue{%s},
 }`,
 		formatIssueListForString(iss.Errors),
 		formatIssueListForString(iss.Warnings),

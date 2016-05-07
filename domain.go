@@ -49,23 +49,26 @@ var clientWithTimeout = http.Client{
 // To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
 func PreloadableDomain(domain string) (header *string, issues Issues) {
+	ib := &issuesBuilder{}
+
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
-	issues = combineIssues(issues, checkDomainFormat(domain))
+	domainFormatIssues := checkDomainFormat(domain)
+	ib.addIssues(domainFormatIssues)
 	if len(issues.Errors) > 0 {
-		return header, issues
+		return header, ib.issues()
 	}
 
 	// We don't currently allow automatic submissions of subdomains.
 	levelIssues := preloadableDomainLevel(domain)
-	issues = combineIssues(issues, levelIssues)
+	ib.addIssues(levelIssues)
 
 	// Start with an initial probe, and don't do the follow-up checks if
 	// we can't connect.
 	resp, respIssues := getResponse(domain)
-	issues = combineIssues(issues, respIssues)
+	ib.addIssues(respIssues)
 	if len(respIssues.Errors) == 0 {
-		issues = combineIssues(issues, checkChain(*resp.TLS))
+		ib.addIssues(checkChain(*resp.TLS))
 
 		preloadableResponse := make(chan Issues)
 		httpRedirectsGeneral := make(chan Issues)
@@ -104,20 +107,20 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 
 		// Combine the issues in deterministic order.
 		preloadableResponseIssues := <-preloadableResponse
-		issues = combineIssues(issues, preloadableResponseIssues)
-		issues = combineIssues(issues, <-httpRedirectsGeneral)
+		ib.addIssues(preloadableResponseIssues)
+		ib.addIssues(<-httpRedirectsGeneral)
 		// If there are issues with the HSTS header in the main
 		// PreloadableResponse() check, it is redundant to report
 		// them in the response after redirecting from HTTP.
 		firstRedirectHSTS := <-httpFirstRedirectHSTS // always receive the value, to avoid leaking a goroutine
 		if len(preloadableResponseIssues.Errors) == 0 {
-			issues = combineIssues(issues, firstRedirectHSTS)
+			ib.addIssues(firstRedirectHSTS)
 		}
-		issues = combineIssues(issues, <-httpsRedirects)
-		issues = combineIssues(issues, <-www)
+		ib.addIssues(<-httpsRedirects)
+		ib.addIssues(<-www)
 	}
 
-	return header, issues
+	return header, ib.issues()
 }
 
 // RemovableDomain checks whether the domain satisfies the requirements
@@ -132,19 +135,21 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 // To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
 func RemovableDomain(domain string) (header *string, issues Issues) {
+	ib := &issuesBuilder{}
+
 	resp, respIssues := getResponse(domain)
-	issues = combineIssues(issues, respIssues)
+	ib.addIssues(respIssues)
 	if len(respIssues.Errors) == 0 {
 		var removableIssues Issues
 		header, removableIssues = RemovableResponse(resp)
-		issues = combineIssues(issues, removableIssues)
+		ib.addIssues(removableIssues)
 	}
 
-	return header, issues
+	return header, ib.issues()
 }
 
 func getResponse(domain string) (*http.Response, Issues) {
-	issues := Issues{}
+	ib := issuesBuilder{}
 
 	redirectPrevented := errors.New("REDIRECT_PREVENTED")
 
@@ -163,20 +168,20 @@ func getResponse(domain string) (*http.Response, Issues) {
 	// Try #1
 	resp, err := client.Get("https://" + domain)
 	if err == nil || isRedirectPrevented(err) {
-		return resp, issues
+		return resp, ib.issues()
 	}
 
 	// Try #2
 	resp, err = client.Get("https://" + domain)
 	if err == nil || isRedirectPrevented(err) {
-		return resp, issues
+		return resp, ib.issues()
 	}
 
 	// Check if ignoring cert issues works.
 	client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	resp, err = client.Get("https://" + domain)
 	if err == nil || isRedirectPrevented(err) {
-		return resp, issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.tls.invalid_cert_chain"),
 			"Invalid Certificate Chain",
 			"https://%s uses an incomplete or "+
@@ -184,44 +189,50 @@ func getResponse(domain string) (*http.Response, Issues) {
 				"https://www.ssllabs.com/ssltest/",
 			domain,
 		)
+		return resp, ib.issues()
 	}
 
-	return resp, issues.addErrorf(
+	ib.addErrorf(
 		IssueCode("domain.tls.cannot_connect"),
 		"Cannot connect using TLS",
 		"We cannot connect to https://%s using TLS (%q).",
 		domain,
 		err,
 	)
+	return resp, ib.issues()
 }
 
 func checkDomainFormat(domain string) Issues {
-	issues := Issues{}
+	ib := issuesBuilder{}
 
 	if strings.HasPrefix(domain, ".") {
-		return issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.format.begins_with_dot"),
 			"Invalid domain name",
 			"Please provide a domain that does not begin with `.`")
+		return ib.issues()
 	}
 	if strings.HasSuffix(domain, ".") {
-		return issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.format.ends_with_dot"),
 			"Invalid domain name",
 			"Please provide a domain that does not begin with `.`")
+		return ib.issues()
 	}
 	if strings.Index(domain, "..") != -1 {
-		return issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.format.contains_double_dot"),
 			"Invalid domain name",
 			"Please provide a domain that does not contain `..`")
+		return ib.issues()
 	}
 	if strings.Count(domain, ".") < 1 {
-		return issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.format.only_one_label"),
 			"Invalid domain name",
 			"Please provide a domain with least two labels "+
 				"(e.g. `example.com` rather than `example` or `com`).")
+		return ib.issues()
 	}
 
 	domain = strings.ToLower(domain)
@@ -230,21 +241,23 @@ func checkDomainFormat(domain string) Issues {
 			continue
 		}
 
-		return issues.addErrorf("domain.format.invalid_characters", "Invalid domain name", "Please provide a domain using valid characters (letters, numbers, dashes, dots).")
+		ib.addErrorf("domain.format.invalid_characters", "Invalid domain name", "Please provide a domain using valid characters (letters, numbers, dashes, dots).")
+		return ib.issues()
 	}
 
-	return issues
+	return ib.issues()
 }
 
 func preloadableDomainLevel(domain string) Issues {
-	issues := Issues{}
+	ib := issuesBuilder{}
 
 	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
-		return issues.addErrorf("internal.domain.name.cannot_compute_etld1", "Internal Error", "Could not compute eTLD+1.")
+		ib.addErrorf("internal.domain.name.cannot_compute_etld1", "Internal Error", "Could not compute eTLD+1.")
+		return ib.issues()
 	}
 	if canon != domain {
-		return issues.addErrorf(
+		ib.addErrorf(
 			IssueCode("domain.is_subdomain"),
 			"Subdomain",
 			"`%s` is a subdomain. Please preload `%s` instead. "+
@@ -254,9 +267,10 @@ func preloadableDomainLevel(domain string) Issues {
 			domain,
 			canon,
 		)
+		return ib.issues()
 	}
 
-	return issues
+	return ib.issues()
 }
 
 func checkChain(connState tls.ConnectionState) Issues {
@@ -266,11 +280,11 @@ func checkChain(connState tls.ConnectionState) Issues {
 }
 
 func checkSHA1(chain []*x509.Certificate) Issues {
-	issues := Issues{}
+	ib := issuesBuilder{}
 
 	for _, cert := range chain {
 		if cert.SignatureAlgorithm == x509.SHA1WithRSA || cert.SignatureAlgorithm == x509.ECDSAWithSHA1 {
-			return issues.addErrorf(
+			ib.addErrorf(
 				IssueCode("domain.tls.sha1"),
 				"SHA-1 Certificate",
 				"One or more of the certificates in your certificate chain "+
@@ -279,33 +293,35 @@ func checkSHA1(chain []*x509.Certificate) Issues {
 					"(The first SHA-1 certificate found has a common-name of %q.)",
 				cert.Subject.CommonName,
 			)
+			return ib.issues()
 		}
 	}
 
-	return issues
+	return ib.issues()
 }
 
 func checkWWW(host string) Issues {
-	issues := Issues{}
+	ib := issuesBuilder{}
 
 	hasWWW := false
 	if conn, err := net.DialTimeout("tcp", "www."+host+":443", dialTimeout); err == nil {
 		hasWWW = true
 		if err = conn.Close(); err != nil {
-			return issues.addErrorf(
+			ib.addErrorf(
 				"internal.domain.www.first_dial.no_close",
 				"Internal error",
 				"Error while closing a connection to %s: %s",
 				"www."+host,
 				err,
 			)
+			return ib.issues()
 		}
 	}
 
 	if hasWWW {
 		wwwConn, err := tls.DialWithDialer(&dialer, "tcp", "www."+host+":443", nil)
 		if err != nil {
-			return issues.addErrorf(
+			ib.addErrorf(
 				IssueCode("domain.www.no_tls"),
 				"www subdomain does not support HTTPS",
 				"Domain error: The www subdomain exists, but we couldn't connect to it using HTTPS (%q). "+
@@ -313,17 +329,19 @@ func checkWWW(host string) Issues {
 					"cause issues for your site.",
 				err,
 			)
+			return ib.issues()
 		}
 		if err = wwwConn.Close(); err != nil {
-			return issues.addErrorf(
+			ib.addErrorf(
 				"internal.domain.www.second_dial.no_close",
 				"Internal error",
 				"Error while closing a connection to %s: %s",
 				"www."+host,
 				err,
 			)
+			return ib.issues()
 		}
 	}
 
-	return issues
+	return ib.issues()
 }

@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"sync"
 
 	"github.com/chromium/hstspreload"
 )
@@ -23,80 +21,55 @@ type Result struct {
 	Issues       hstspreload.Issues     `json:"issues"`
 }
 
+func worker(in chan string, out chan Result) {
+	for d := range in {
+
+		header, issues := hstspreload.PreloadableDomain(d)
+
+		r := Result{
+			Domain: d,
+			Issues: issues,
+		}
+		if header != nil {
+			r.Header = *header
+			ParsedHeader, _ := hstspreload.ParseHeaderString(*header)
+			r.ParsedHeader = ParsedHeader
+		}
+
+		out <- r
+	}
+}
+
 // Scan runs hstspreload.PreloadableDomain() over the given domains
 // in parallel, and returns the results in an arbitrary order.
-func Scan(domains []string) (results []Result) {
+func Scan(domains []string) chan Result {
 	in := make(chan string)
 	out := make(chan Result)
-
-	var wg sync.WaitGroup
-	wg.Add(parallelism + 1)
 	for i := 0; i < parallelism; i++ {
-		go func(i int) {
-			for true {
-				d := <-in
-				if d == "" {
-					break
-				}
-				fmt.Printf("[%d] %s...\n", i, d)
-				header, issues := hstspreload.PreloadableDomain(d)
-
-				// Retry once.
-				if len(issues.Errors) != 0 {
-					fmt.Printf("[%d] retrying %s\n", i, d)
-					header, issues = hstspreload.PreloadableDomain(d)
-				}
-
-				fmt.Printf("[%d] ✅  %s\n", i, d)
-
-				r := Result{
-					Domain: d,
-					Issues: issues,
-				}
-				if header != nil {
-					r.Header = *header
-					ParsedHeader, _ := hstspreload.ParseHeaderString(*header)
-					r.ParsedHeader = ParsedHeader
-				}
-
-				j, err := json.MarshalIndent(r, "", "  ")
-				if err != nil {
-					fmt.Printf("[%d] %s ❌ json %s \n", i, d, err)
-				} else {
-					fmt.Printf("%s", j)
-					err = ioutil.WriteFile("domains/"+d+".json", j, 0644)
-					if err != nil {
-						fmt.Printf("[%d] %s ❌ write %s \n", i, d, err)
-					}
-				}
-
-				out <- r
-			}
-			fmt.Printf("[%d] done\n", i)
-			wg.Done()
-		}(i)
+		go worker(in, out)
 	}
 
 	go func() {
-		for _ = range domains {
-			results = append(results, <-out)
+		for _, d := range domains {
+			in <- d
 		}
-		wg.Done()
 	}()
 
-	for _, d := range domains {
-		in <- d
-	}
-	for i := 0; i < parallelism; i++ {
-		in <- ""
-	}
-
-	wg.Wait()
+	results := make(chan Result)
+	go func() {
+		for range domains {
+			results <- (<-out)
+		}
+		close(in)
+		close(out)
+		close(results)
+	}()
 
 	return results
 }
 
 func main() {
+	exitCode := 0
 
 	var domains []string
 	sc := bufio.NewScanner(os.Stdin)
@@ -108,11 +81,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	j, err := json.MarshalIndent(Scan(domains), "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s", err)
-		os.Exit(1)
+	fmt.Println("[")
+	results := Scan(domains)
+	for i := range domains {
+		r := <-results
+		j, err := json.MarshalIndent(r, "  ", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "// JSON error: %s \n", err)
+			exitCode = 1
+		} else {
+			comma := ""
+			if i != len(domains)-1 {
+				comma = ","
+			}
+			fmt.Printf("  %s%s\n", j, comma)
+		}
 	}
-	fmt.Printf("%s", j)
-	err = ioutil.WriteFile("output.json", j, 0644)
+	fmt.Println("]")
+
+	os.Exit(exitCode)
 }

@@ -50,6 +50,32 @@ type PreloadEntry struct {
 	IncludeSubDomains bool   `json:"include_subdomains"`
 }
 
+// IndexedPreloadEntries is case-insensitive index of
+// the entries from the given PreloadList.
+type IndexedPreloadEntries struct {
+	index map[string]PreloadEntry
+}
+
+// Index creates an index out of the given list.
+func (p PreloadList) Index() (idx IndexedPreloadEntries) {
+	m := make(map[string]PreloadEntry)
+	for _, entry := range p.Entries {
+		d := strings.ToLower(string(entry.Name))
+		m[d] = entry
+	}
+	return IndexedPreloadEntries{
+		index: m,
+	}
+}
+
+// Get acts similar to map access: it returns an entry from the index preload
+// list (if it is present), along with a boolean indicating if the entry is
+// present.
+func (idx IndexedPreloadEntries) Get(domain string) (PreloadEntry, bool) {
+	entry, ok := idx.index[strings.ToLower(domain)]
+	return entry, ok
+}
+
 const (
 	latestChromiumListURL = "https://chromium.googlesource.com/chromium/src/+/master/net/http/transport_security_state_static.json?format=TEXT"
 )
@@ -87,16 +113,6 @@ func GetLatest() (PreloadList, error) {
 	}
 
 	return list, nil
-}
-
-// PreloadEntriesToMap creates an indexed map (Domain -> PreloadEntry) of
-// the entries from the given PreloadList.
-func PreloadEntriesToMap(list PreloadList) map[Domain]PreloadEntry {
-	m := make(map[Domain]PreloadEntry)
-	for _, entry := range list.Entries {
-		m[entry.Name] = entry
-	}
-	return m
 }
 
 // removeComments reads the contents of |r| and removes any lines beginning

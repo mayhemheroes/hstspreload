@@ -69,9 +69,9 @@ Return code:
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 		}
-		m := chromiumpreload.PreloadEntriesToMap(l)
+		idx := l.Index()
 		domain := args[1]
-		state, ok := m[chromiumpreload.Domain(domain)]
+		state, ok := idx.Get(domain)
 		if ok {
 			fmt.Printf(`%s%s%s is preloaded:
 

@@ -21,10 +21,10 @@ func TestGetLatest(t *testing.T) {
 }
 
 func TestPreloadEntriesToMap(t *testing.T) {
-	m := PreloadEntriesToMap(PreloadList{
+	list := PreloadList{
 		Entries: []PreloadEntry{
 			PreloadEntry{
-				Name:              "garron.net",
+				Name:              "garron.NET",
 				Mode:              "ForceHTTPS",
 				IncludeSubDomains: true,
 			},
@@ -34,13 +34,24 @@ func TestPreloadEntriesToMap(t *testing.T) {
 				IncludeSubDomains: false,
 			},
 		},
-	})
+	}
 
-	if len(m) != 2 {
+	idx := list.Index()
+
+	if len(idx.index) != 2 {
 		t.Errorf("Map has the wrong number of entries.")
 	}
 
-	if m["garron.net"].Mode != "ForceHTTPS" {
-		t.Errorf("Map has invalid entries.")
+	_, ok := idx.Get("example")
+	if ok {
+		t.Errorf("Entry should not be present.")
+	}
+
+	entry, ok := idx.Get("GARRON.net")
+	if !ok {
+		t.Errorf("Entry should be present.")
+	}
+	if entry.Mode != "ForceHTTPS" {
+		t.Errorf("Map has invalid entry.")
 	}
 }

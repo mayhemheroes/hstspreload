@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -9,11 +11,8 @@ import (
 	"github.com/chromium/hstspreload/chromiumpreload"
 )
 
-func main() {
-	args := os.Args[1:]
-
-	if len(args) < 2 {
-		fmt.Printf(`hstspreload is a tool for checking conditions to be added to Chromium 's
+func printHelp() {
+	fmt.Printf(`hstspreload is a tool for checking conditions to be added to Chromium 's
 HSTS preload list. See hstspreload.appspot.com for more details.
 
 Usage:
@@ -23,10 +22,13 @@ Usage:
 The commands are:
 
   preloadabledomain (+d) Check the TLS configuration and headers of a domain for
-                         preload requirements.
+                           preload requirements.
   removabledomain   (-d) Check the headers of a domain for removal requirements.
   preloadableheader (+h) Check an HSTS header for preload requirements
   removableheader   (-h) Check an HSTS header for removal requirements
+  batch                  Check a batch of domains for preload requirements.
+                           Reads one domain per line from stdin, and outputs
+                           JSON in non-deterministic domain order.
   status                 Check the preload status of a domain
 
 Examples:
@@ -34,6 +36,9 @@ Examples:
   hstspreload +d wikipedia.org
   hstspreload +h "max-age=10886400; includeSubDomains; preload"
   hstspreload -h "max-age=10886400; includeSubDomains"
+  
+  echo -e "wikipedia.org\nexample.com" > domains.txt
+  cat domains.txt | hstspreload batch
 
 Return code:
 
@@ -44,8 +49,20 @@ Return code:
   4    Displayed help
 
 `)
-		os.Exit(4)
-		return
+	os.Exit(4)
+}
+
+func main() {
+	args := os.Args[1:]
+
+	if len(args) < 1 {
+		printHelp()
+	}
+	if args[0] == "batch" {
+		batch()
+	}
+	if len(args) < 2 {
+		printHelp()
 	}
 
 	var header *string
@@ -216,4 +233,38 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 	}
 
 	fmt.Printf("\n")
+}
+
+func batch() {
+	exitCode := 0
+
+	var domains []string
+	sc := bufio.NewScanner(os.Stdin)
+	for sc.Scan() {
+		domains = append(domains, sc.Text())
+	}
+	if err := sc.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("[")
+	results := BatchPreloadable(domains)
+	for i := range domains {
+		r := <-results
+		j, err := json.MarshalIndent(r, "  ", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "// JSON error: %s \n", err)
+			exitCode = 1
+		} else {
+			comma := ""
+			if i != len(domains)-1 {
+				comma = ","
+			}
+			fmt.Printf("  %s%s\n", j, comma)
+		}
+	}
+	fmt.Println("]")
+
+	os.Exit(exitCode)
 }

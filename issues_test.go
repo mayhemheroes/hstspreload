@@ -84,7 +84,7 @@ var issuesMatchExpectedTests = []struct {
 	}, Issues{}},
 	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
 		Issues{
-			Errors: []Issue{Issue{
+			Errors: []Issue{{
 				Code:    "error1",
 				Summary: "Summary 1",
 				Message: "Single Error",
@@ -92,42 +92,42 @@ var issuesMatchExpectedTests = []struct {
 		}},
 	{Issues{}.addErrorf("error1", "", ""),
 		Issues{
-			Errors: []Issue{Issue{
+			Errors: []Issue{{
 				Code: "error1",
 			}},
 		}},
 	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
 		Issues{
-			Errors: []Issue{Issue{
+			Errors: []Issue{{
 				Code:    "error1",
 				Summary: "Summary 1",
 			}},
 		}},
 	{Issues{}.addErrorf("error1", "Summary 1", "Single Error"),
 		Issues{
-			Errors: []Issue{Issue{
+			Errors: []Issue{{
 				Code: "error1",
 			}},
 		}},
 	{Issues{}.addErrorf("error1", "", "Single Error").addErrorf("error2", "", "Second Error"),
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "error1"},
-				Issue{Code: "error2", Message: "Second Error"},
+				{Code: "error1"},
+				{Code: "error2", Message: "Second Error"},
 			},
 		}},
 	{Issues{}.addWarningf("warning1", "Summary 1", "Single warning"),
 		Issues{
-			Warnings: []Issue{Issue{
+			Warnings: []Issue{{
 				Code: "warning1",
 			}},
 		}},
 	{Issues{}.addErrorf("error1", "Summary 1", "Single Error").addWarningf("warning1", "Summary 1", "Single warning"),
 		Issues{
-			Errors: []Issue{Issue{
+			Errors: []Issue{{
 				Code: "error1",
 			}},
-			Warnings: []Issue{Issue{
+			Warnings: []Issue{{
 				Code: "warning1",
 			}},
 		}},
@@ -146,16 +146,16 @@ var issuesNotEqualTests = []struct {
 	expected Issues
 }{
 	{
-		Issues{Errors: []Issue{Issue{Code: "test1"}}},
-		Issues{Warnings: []Issue{Issue{Code: "test1"}}},
+		Issues{Errors: []Issue{{Code: "test1"}}},
+		Issues{Warnings: []Issue{{Code: "test1"}}},
 	},
 	{
-		Issues{Errors: []Issue{Issue{Code: "test1"}, Issue{Code: "test2"}}},
-		Issues{Errors: []Issue{Issue{Code: "test1"}}},
+		Issues{Errors: []Issue{{Code: "test1"}, {Code: "test2"}}},
+		Issues{Errors: []Issue{{Code: "test1"}}},
 	},
 	{
-		Issues{Errors: []Issue{Issue{Code: "pie"}, Issue{Code: "cake"}, Issue{Code: "anything you bake"}}},
-		Issues{Errors: []Issue{Issue{Code: "cake"}, Issue{Code: "pie"}, Issue{Code: "anything you bake"}}},
+		Issues{Errors: []Issue{{Code: "pie"}, {Code: "cake"}, {Code: "anything you bake"}}},
+		Issues{Errors: []Issue{{Code: "cake"}, {Code: "pie"}, {Code: "anything you bake"}}},
 	},
 }
 
@@ -170,8 +170,8 @@ func TestIssuesNotEqual(t *testing.T) {
 func TestAddUniqueErrorf(t *testing.T) {
 	iss := Issues{
 		Errors: []Issue{
-			Issue{Code: "error1"},
-			Issue{Code: "error2"},
+			{Code: "error1"},
+			{Code: "error2"},
 		},
 	}
 
@@ -180,8 +180,8 @@ func TestAddUniqueErrorf(t *testing.T) {
 	iss = iss.addUniqueErrorf("error2", "", "")
 	expected = Issues{
 		Errors: []Issue{
-			Issue{Code: "error1"},
-			Issue{Code: "error2"},
+			{Code: "error1"},
+			{Code: "error2"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {
@@ -191,9 +191,9 @@ func TestAddUniqueErrorf(t *testing.T) {
 	iss = iss.addUniqueErrorf("error3", "", "")
 	expected = Issues{
 		Errors: []Issue{
-			Issue{Code: "error1"},
-			Issue{Code: "error2"},
-			Issue{Code: "error3"},
+			{Code: "error1"},
+			{Code: "error2"},
+			{Code: "error3"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {
@@ -203,9 +203,9 @@ func TestAddUniqueErrorf(t *testing.T) {
 	iss = iss.addUniqueErrorf("error1", "", "")
 	expected = Issues{
 		Errors: []Issue{
-			Issue{Code: "error1"},
-			Issue{Code: "error2"},
-			Issue{Code: "error3"},
+			{Code: "error1"},
+			{Code: "error2"},
+			{Code: "error3"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {
@@ -216,8 +216,8 @@ func TestAddUniqueErrorf(t *testing.T) {
 func TestAddUniqueWarningf(t *testing.T) {
 	iss := Issues{
 		Warnings: []Issue{
-			Issue{Code: "warning1"},
-			Issue{Code: "warning2"},
+			{Code: "warning1"},
+			{Code: "warning2"},
 		},
 	}
 
@@ -226,8 +226,8 @@ func TestAddUniqueWarningf(t *testing.T) {
 	iss = iss.addUniqueWarningf("warning2", "", "")
 	expected = Issues{
 		Warnings: []Issue{
-			Issue{Code: "warning1"},
-			Issue{Code: "warning2"},
+			{Code: "warning1"},
+			{Code: "warning2"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {
@@ -237,9 +237,9 @@ func TestAddUniqueWarningf(t *testing.T) {
 	iss = iss.addUniqueWarningf("warning3", "", "")
 	expected = Issues{
 		Warnings: []Issue{
-			Issue{Code: "warning1"},
-			Issue{Code: "warning2"},
-			Issue{Code: "warning3"},
+			{Code: "warning1"},
+			{Code: "warning2"},
+			{Code: "warning3"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {
@@ -249,9 +249,9 @@ func TestAddUniqueWarningf(t *testing.T) {
 	iss = iss.addUniqueWarningf("warning1", "", "")
 	expected = Issues{
 		Warnings: []Issue{
-			Issue{Code: "warning1"},
-			Issue{Code: "warning2"},
-			Issue{Code: "warning3"},
+			{Code: "warning1"},
+			{Code: "warning2"},
+			{Code: "warning3"},
 		},
 	}
 	if !issuesMatchExpected(iss, expected) {

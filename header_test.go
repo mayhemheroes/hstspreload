@@ -144,58 +144,58 @@ var parseHeaderStringTests = []struct {
 	{
 		"empty",
 		"",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.empty"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: nil},
 	},
 	{
 		"case-insensitive",
 		"inCLUDESUBDomaINs; max-AGe=12345678",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.spelling.include_sub_domains"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.spelling.include_sub_domains"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"repeated preload",
 		"preload; includeSubDomains; preload; max-age=12345678; preload",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.repeated.preload"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.repeated.preload"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"single extra directive",
 		"includeSubDomains; max-age=12345678; preload; extraDirective",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.unknown_directive"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.unknown_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"multiple extra directives",
 		"max-age=12345678; extra; includeSubDomains; directives; preload",
 		Issues{Warnings: []Issue{
-			Issue{Code: "header.parse.unknown_directive"},
-			Issue{Code: "header.parse.unknown_directive"},
+			{Code: "header.parse.unknown_directive"},
+			{Code: "header.parse.unknown_directive"},
 		}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"semicolon only",
 		";",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: nil},
 	},
 	{
 		"trailing semicolon",
 		"max-age=10886400; includeSubDomains; preload;",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"prefixed by semicolon",
 		"; max-age=10886400; includeSubDomains; preload",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.empty_directive"}}},
 		HSTSHeader{Preload: true, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
 	{
 		"bad max-age: leading 0",
 		"max-age=01234",
-		Issues{Warnings: []Issue{Issue{Code: "header.parse.max_age.leading_zero"}}},
+		Issues{Warnings: []Issue{{Code: "header.parse.max_age.leading_zero"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: &MaxAge{Seconds: 1234}},
 	},
 }
@@ -223,17 +223,17 @@ var parseHeaderStringWithErrorsTests = []struct {
 	{
 		"bad max-age: empty value",
 		"max-age=",
-		Issues{Errors: []Issue{Issue{Code: "header.parse.max_age.parse_int_error"}}},
+		Issues{Errors: []Issue{{Code: "header.parse.max_age.parse_int_error"}}},
 	},
 	{
 		"bad max-age: no value",
 		"max-age",
-		Issues{Errors: []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}}},
+		Issues{Errors: []Issue{{Code: "header.parse.invalid.max_age.no_value"}}},
 	},
 	{
 		"max-age: minus", // Motivated by https://crbug.com/596561
 		"max-age=-101",   // Motivated by https://crbug.com/596561
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "header.parse.max_age.non_digit_characters",
 			Message: "The header's max-age value contains characters that are not digits: `max-age=-101`",
 		}}},
@@ -241,7 +241,7 @@ var parseHeaderStringWithErrorsTests = []struct {
 	{
 		"max-age: plus", // Motivated by https://crbug.com/596561
 		"max-age=+101",
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "header.parse.max_age.non_digit_characters",
 			Message: "The header's max-age value contains characters that are not digits: `max-age=+101`",
 		}}},
@@ -253,18 +253,18 @@ var parseHeaderStringWithErrorsTests = []struct {
 		"error and warning: no max-age value, trailing semicolon", // Motivated by https://crbug.com/596561
 		"max-age;",
 		Issues{
-			Errors:   []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}},
-			Warnings: []Issue{Issue{Code: "header.parse.empty_directive"}},
+			Errors:   []Issue{{Code: "header.parse.invalid.max_age.no_value"}},
+			Warnings: []Issue{{Code: "header.parse.empty_directive"}},
 		},
 	},
 	{
 		"error and warnings: no max-age value, unknown directive, trailing semicolon", // Motivated by https://crbug.com/596561
 		"includeDomains; max-age;",
 		Issues{
-			Errors: []Issue{Issue{Code: "header.parse.invalid.max_age.no_value"}},
+			Errors: []Issue{{Code: "header.parse.invalid.max_age.no_value"}},
 			Warnings: []Issue{
-				Issue{Code: "header.parse.unknown_directive"},
-				Issue{Code: "header.parse.empty_directive"},
+				{Code: "header.parse.unknown_directive"},
+				{Code: "header.parse.empty_directive"},
 			},
 		},
 	},
@@ -291,8 +291,8 @@ func TestPreloadableHeaderMissingPreloadAndMoreThanTenYears(t *testing.T) {
 		MaxAge:            &MaxAge{Seconds: 315360001},
 	})
 	expected := Issues{
-		Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}},
-		Warnings: []Issue{Issue{
+		Errors: []Issue{{Code: "header.preloadable.preload.missing"}},
+		Warnings: []Issue{{
 			Code:    "header.preloadable.max_age.over_10_years",
 			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
 		}},
@@ -321,7 +321,7 @@ var preloadableHeaderStringTests = []struct {
 	{
 		"max-age > 10 years",
 		"max-age=315360001; preload; includeSubDomains",
-		Issues{Warnings: []Issue{Issue{
+		Issues{Warnings: []Issue{{
 			Code:    "header.preloadable.max_age.over_10_years",
 			Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
 		}}},
@@ -334,35 +334,35 @@ var preloadableHeaderStringTests = []struct {
 		"",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.preloadable.include_sub_domains.missing"},
-				Issue{Code: "header.preloadable.preload.missing"},
-				Issue{Code: "header.preloadable.max_age.missing"},
+				{Code: "header.preloadable.include_sub_domains.missing"},
+				{Code: "header.preloadable.preload.missing"},
+				{Code: "header.preloadable.max_age.missing"},
 			},
-			Warnings: []Issue{Issue{Code: "header.parse.empty"}},
+			Warnings: []Issue{{Code: "header.parse.empty"}},
 		},
 	},
 	{
 		"missing preload",
 		"includeSubDomains; max-age=10886400",
-		Issues{Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}}},
+		Issues{Errors: []Issue{{Code: "header.preloadable.preload.missing"}}},
 	},
 	{
 		"missing includeSubdomains",
 		"preload; max-age=10886400",
-		Issues{Errors: []Issue{Issue{Code: "header.preloadable.include_sub_domains.missing"}}},
+		Issues{Errors: []Issue{{Code: "header.preloadable.include_sub_domains.missing"}}},
 	},
 	{
 		"missing max-age",
 		"includeSubDomains; preload",
-		Issues{Errors: []Issue{Issue{Code: "header.preloadable.max_age.missing"}}},
+		Issues{Errors: []Issue{{Code: "header.preloadable.max_age.missing"}}},
 	},
 	{
 		"only preload",
 		"preload",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.preloadable.include_sub_domains.missing"},
-				Issue{Code: "header.preloadable.max_age.missing"},
+				{Code: "header.preloadable.include_sub_domains.missing"},
+				{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
@@ -371,8 +371,8 @@ var preloadableHeaderStringTests = []struct {
 		"includeSubDomains",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.preloadable.preload.missing"},
-				Issue{Code: "header.preloadable.max_age.missing"},
+				{Code: "header.preloadable.preload.missing"},
+				{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
@@ -381,8 +381,8 @@ var preloadableHeaderStringTests = []struct {
 		"max-age=12345678",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.preloadable.include_sub_domains.missing"},
-				Issue{Code: "header.preloadable.preload.missing"},
+				{Code: "header.preloadable.include_sub_domains.missing"},
+				{Code: "header.preloadable.preload.missing"},
 			},
 		},
 	},
@@ -391,20 +391,20 @@ var preloadableHeaderStringTests = []struct {
 		"includeSubDomains; preload; max-age",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.parse.invalid.max_age.no_value"},
-				Issue{Code: "header.preloadable.max_age.missing"},
+				{Code: "header.parse.invalid.max_age.no_value"},
+				{Code: "header.preloadable.max_age.missing"},
 			},
 		},
 	},
 	{
 		"maxAge=0", // Give information about what to do if you want to remove HSTS.
 		"includeSubDomains; preload; max-age=0",
-		Issues{Errors: []Issue{Issue{Code: "header.preloadable.max_age.zero"}}},
+		Issues{Errors: []Issue{{Code: "header.preloadable.max_age.zero"}}},
 	},
 	{
 		"maxAge=100",
 		"includeSubDomains; preload; max-age=100",
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "header.preloadable.max_age.too_low",
 			Message: "The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
 		}}},
@@ -416,8 +416,8 @@ var preloadableHeaderStringTests = []struct {
 		"missing preload, >10 years",
 		"max-age=315360001; includeSubDomains",
 		Issues{
-			Errors: []Issue{Issue{Code: "header.preloadable.preload.missing"}},
-			Warnings: []Issue{Issue{
+			Errors: []Issue{{Code: "header.preloadable.preload.missing"}},
+			Warnings: []Issue{{
 				Code:    "header.preloadable.max_age.over_10_years",
 				Message: "FYI: The max-age (315360001 seconds) is longer than 10 years, which is an unusually long value.",
 			}},
@@ -463,30 +463,30 @@ var removableHeaderStringTests = []struct {
 	{
 		"includeSubDomains only",
 		"includeSubDomains",
-		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
+		Issues{Errors: []Issue{{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"max-age missing",
 		"includeSubDomains",
-		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
+		Issues{Errors: []Issue{{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"empty header",
 		"includeSubDomains",
-		Issues{Errors: []Issue{Issue{Code: "header.removable.missing.max_age"}}},
+		Issues{Errors: []Issue{{Code: "header.removable.missing.max_age"}}},
 	},
 	{
 		"preload present",
 		"max-age=315360001; includeSubDomains; preload",
-		Issues{Errors: []Issue{Issue{Code: "header.removable.contains.preload"}}},
+		Issues{Errors: []Issue{{Code: "header.removable.contains.preload"}}},
 	},
 	{
 		"preload only",
 		"preload",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "header.removable.contains.preload"},
-				Issue{Code: "header.removable.missing.max_age"},
+				{Code: "header.removable.contains.preload"},
+				{Code: "header.removable.missing.max_age"},
 			},
 		},
 	},

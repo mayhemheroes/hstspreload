@@ -23,16 +23,16 @@ var testCheckDomainFormatTests = []struct {
 		Issues{Errors: []Issue{{Code: "domain.format.begins_with_dot"}}},
 	},
 	{"example.com.",
-		Issues{Errors: []Issue{Issue{Code: "domain.format.ends_with_dot"}}},
+		Issues{Errors: []Issue{{Code: "domain.format.ends_with_dot"}}},
 	},
 	{"example..com",
-		Issues{Errors: []Issue{Issue{Code: "domain.format.contains_double_dot"}}},
+		Issues{Errors: []Issue{{Code: "domain.format.contains_double_dot"}}},
 	},
 	{"example",
-		Issues{Errors: []Issue{Issue{Code: "domain.format.only_one_label"}}},
+		Issues{Errors: []Issue{{Code: "domain.format.only_one_label"}}},
 	},
 	{"example&co.com",
-		Issues{Errors: []Issue{Issue{Code: "domain.format.invalid_characters"}}},
+		Issues{Errors: []Issue{{Code: "domain.format.invalid_characters"}}},
 	},
 }
 
@@ -56,7 +56,7 @@ var testPreloadableDomainLevel = []struct {
 		Issues{},
 	},
 	{"subdomain.example.com",
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "domain.is_subdomain",
 			Message: "`subdomain.example.com` is a subdomain. Please preload `example.com` instead. (Due to the size of the preload list and the behaviour of cookies across subdomains, we only accept automated preload list submissions of whole registered domains.)",
 		}}},
@@ -106,7 +106,7 @@ var preloadableDomainTests = []struct {
 		"cnn.com",
 		false, "",
 		Issues{
-			Errors: []Issue{Issue{Code: "domain.tls.cannot_connect"}},
+			Errors: []Issue{{Code: "domain.tls.cannot_connect"}},
 		},
 	},
 	{
@@ -116,8 +116,8 @@ var preloadableDomainTests = []struct {
 		false, "",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "domain.is_subdomain"},
-				Issue{
+				{Code: "domain.is_subdomain"},
+				{
 					Code:    "domain.tls.invalid_cert_chain",
 					Message: "https://incomplete-chain.badssl.com uses an incomplete or invalid certificate chain. Check out your site at https://www.ssllabs.com/ssltest/",
 				},
@@ -131,8 +131,8 @@ var preloadableDomainTests = []struct {
 		false, "",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "domain.is_subdomain"},
-				Issue{
+				{Code: "domain.is_subdomain"},
+				{
 					Code:    "domain.tls.invalid_cert_chain",
 					Message: "https://self-signed.badssl.com uses an incomplete or invalid certificate chain. Check out your site at https://www.ssllabs.com/ssltest/",
 				},
@@ -146,12 +146,12 @@ var preloadableDomainTests = []struct {
 		false, "",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "domain.is_subdomain"},
-				Issue{
+				{Code: "domain.is_subdomain"},
+				{
 					Code:    "domain.tls.sha1",
 					Message: "One or more of the certificates in your certificate chain is signed using SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of \"*.badssl.com\".)",
 				},
-				Issue{Code: "response.no_header"},
+				{Code: "response.no_header"},
 			},
 		},
 	},
@@ -160,7 +160,7 @@ var preloadableDomainTests = []struct {
 		"subdomain",
 		"en.wikipedia.org",
 		true, "max-age=31536000; includeSubDomains; preload",
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "domain.is_subdomain",
 			Message: "`en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. (Due to the size of the preload list and the behaviour of cookies across subdomains, we only accept automated preload list submissions of whole registered domains.)",
 		}}},
@@ -172,8 +172,8 @@ var preloadableDomainTests = []struct {
 		false, "",
 		Issues{
 			Errors: []Issue{
-				Issue{Code: "response.no_header"},
-				Issue{
+				{Code: "response.no_header"},
+				{
 					Code:    "redirects.http.no_redirect",
 					Message: "`http://example.com` does not redirect to `https://example.com`.",
 				},
@@ -185,7 +185,7 @@ var preloadableDomainTests = []struct {
 		"bogus domain",
 		"example.notadomain",
 		false, "",
-		Issues{Errors: []Issue{Issue{Code: "domain.tls.cannot_connect"}}},
+		Issues{Errors: []Issue{{Code: "domain.tls.cannot_connect"}}},
 	},
 
 	/******** RemovableDomain() ********/
@@ -195,7 +195,7 @@ var preloadableDomainTests = []struct {
 		"no header",
 		"example.com",
 		false, "",
-		Issues{Errors: []Issue{Issue{Code: "response.no_header"}}},
+		Issues{Errors: []Issue{{Code: "response.no_header"}}},
 	},
 	{
 		RemovableDomain,
@@ -209,7 +209,7 @@ var preloadableDomainTests = []struct {
 		"preloaded",
 		"preloaded-hsts.badssl.com",
 		true, "max-age=15768000; includeSubDomains; preload",
-		Issues{Errors: []Issue{Issue{Code: "header.removable.contains.preload"}}},
+		Issues{Errors: []Issue{{Code: "header.removable.contains.preload"}}},
 	},
 }
 

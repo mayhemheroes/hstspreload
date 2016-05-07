@@ -33,7 +33,7 @@ var tooManyRedirectsTests = []struct {
 		"too many redirects",
 		"https://httpbin.org/redirect/4",
 		[]string{"https://httpbin.org/relative-redirect/3", "https://httpbin.org/relative-redirect/2", "https://httpbin.org/relative-redirect/1", "https://httpbin.org/get"},
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "redirects.too_many",
 			Message: "There are more than 3 redirects starting from `https://httpbin.org/redirect/4`.",
 		}}},
@@ -67,7 +67,7 @@ func TestInsecureRedirect(t *testing.T) {
 	}
 
 	httpsIssues := preloadableHTTPSRedirectsURL(u)
-	expected := Issues{Errors: []Issue{Issue{
+	expected := Issues{Errors: []Issue{{
 		Code:    "redirects.insecure.initial",
 		Message: "`https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`",
 	}}}
@@ -89,7 +89,7 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	}
 
 	httpsIssues := preloadableHTTPSRedirectsURL(u)
-	expected := Issues{Errors: []Issue{Issue{
+	expected := Issues{Errors: []Issue{{
 		Code:    "redirects.insecure.subsequent",
 		Message: "`https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`",
 	}}}
@@ -113,7 +113,7 @@ func TestHTTPNoRedirect(t *testing.T) {
 	}
 
 	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirectsURL(u, domain)
-	expected := Issues{Errors: []Issue{Issue{
+	expected := Issues{Errors: []Issue{{
 		Code:    "redirects.http.no_redirect",
 		Message: "`http://httpbin.org` does not redirect to `https://httpbin.org`.",
 	}}}
@@ -135,7 +135,7 @@ var preloadableHTTPRedirectsTests = []struct {
 	{
 		"different host",
 		"bofa.com", // http://bofa.com redirects to https://www.bankofamerica.com
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "redirects.http.first_redirect.insecure",
 			Message: "`http://bofa.com` (HTTP) redirects to `https://www.bankofamerica.com/vanity/redirect.go?src=/`. The first redirect from `http://bofa.com` should be to a secure page on the same host (`https://bofa.com`).",
 		}}},
@@ -144,7 +144,7 @@ var preloadableHTTPRedirectsTests = []struct {
 	{
 		"same origin",
 		"www.wikia.com", // http://www.wikia.com redirects to http://www.wikia.com/fandom
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "redirects.http.first_redirect.insecure",
 			Message: "`http://www.wikia.com` (HTTP) redirects to `http://www.wikia.com/fandom`. The first redirect from `http://www.wikia.com` should be to a secure page on the same host (`https://www.wikia.com`).",
 		}}},
@@ -155,11 +155,11 @@ var preloadableHTTPRedirectsTests = []struct {
 		"blogger.com",
 		Issues{
 			Errors: []Issue{
-				Issue{
+				{
 					Code:    "redirects.too_many",
 					Message: "There are more than 3 redirects starting from `http://blogger.com`.",
 				},
-				Issue{
+				{
 					Code:    "redirects.http.www_first",
 					Message: "`http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
 				},
@@ -171,7 +171,7 @@ var preloadableHTTPRedirectsTests = []struct {
 		"correct origin but not HSTS",
 		"sha256.badssl.com",
 		Issues{},
-		Issues{Errors: []Issue{Issue{
+		Issues{Errors: []Issue{{
 			Code:    "redirects.http.first_redirect.no_hsts",
 			Message: "`http://sha256.badssl.com` redirects to `https://sha256.badssl.com/`, which does not serve a HSTS header that satisfies preload conditions. First error: No HSTS header",
 		}}},

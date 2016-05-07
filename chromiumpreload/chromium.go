@@ -28,13 +28,6 @@ type PreloadList struct {
 	Entries []PreloadEntry `json:"entries"`
 }
 
-// A Domain in the Chromium preload list. Note that this corresponds
-// to "host" in the HSTS spec, and does not contain the scheme or port.
-// We call it a "domain" because this makes the meaning more clear to
-// web developers, and naturally allows us to refer to domains vs.
-// subdomains.
-type Domain string
-
 // A PreloadEntry contains the data from an entry in the Chromium
 // Preload list.
 //
@@ -45,7 +38,7 @@ type Domain string
 // - IncludeSubDomains: If Mode == ForceHTTPS, forces HSTS to apply to
 //   all subdomains.
 type PreloadEntry struct {
-	Name              Domain `json:"name"`
+	Name              string `json:"name"`
 	Mode              string `json:"mode"`
 	IncludeSubDomains bool   `json:"include_subdomains"`
 }

@@ -2,6 +2,7 @@ package hstspreload
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
@@ -82,14 +83,16 @@ func skipIfShort(t *testing.T) {
 	}
 }
 
-var preloadableDomainTests = []struct {
+type preloadableDomainTest struct {
 	function       func(domain string) (*string, Issues)
 	description    string
 	domain         string
 	expectHeader   bool
 	expectedHeader string
 	expectedIssues Issues
-}{
+}
+
+var preloadableDomainTests = []preloadableDomainTest{
 
 	/********* PreloadableDomain() ********/
 
@@ -215,26 +218,35 @@ var preloadableDomainTests = []struct {
 
 func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(preloadableDomainTests))
 
 	for _, tt := range preloadableDomainTests {
-		header, issues := tt.function(tt.domain)
+		go func(tt preloadableDomainTest) {
+			header, issues := tt.function(tt.domain)
 
-		if tt.expectHeader {
-			if header == nil {
-				t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
-			} else if *header != tt.expectedHeader {
-				t.Errorf(`[%s] %s: Did not receive expected header.
-			Actual: "%v"
-			Expected: "%v"`, tt.description, tt.domain, *header, tt.expectedHeader)
+			if tt.expectHeader {
+				if header == nil {
+					t.Errorf("[%s] %s: Did not receive exactly one HSTS header", tt.description, tt.domain)
+				} else if *header != tt.expectedHeader {
+					t.Errorf(`[%s] %s: Did not receive expected header.
+				Actual: "%v"
+				Expected: "%v"`, tt.description, tt.domain, *header, tt.expectedHeader)
+				}
+			} else {
+				if header != nil {
+					t.Errorf("[%s] %s: Did not expect a header, but received `%s`", tt.description, tt.domain, *header)
+				}
 			}
-		} else {
-			if header != nil {
-				t.Errorf("[%s] %s: Did not expect a header, but received `%s`", tt.description, tt.domain, *header)
-			}
-		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
-			t.Errorf("[%s] %s: "+issuesShouldMatch, tt.description, tt.domain, issues, tt.expectedIssues)
-		}
+			if !issuesMatchExpected(issues, tt.expectedIssues) {
+				t.Errorf("[%s] %s: "+issuesShouldMatch, tt.description, tt.domain, issues, tt.expectedIssues)
+			}
+			wg.Done()
+		}(tt)
 	}
+
+	wg.Wait()
 }

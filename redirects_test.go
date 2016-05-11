@@ -2,6 +2,7 @@ package hstspreload
 
 import (
 	"net/url"
+	"sync"
 	"testing"
 )
 
@@ -42,6 +43,8 @@ var tooManyRedirectsTests = []struct {
 
 func TestTooManyRedirects(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
 	for _, tt := range tooManyRedirectsTests {
 		chain, issues := preloadableRedirects(tt.url)
 		if !chainsEqual(chain, tt.expectedChain) {
@@ -56,6 +59,8 @@ func TestTooManyRedirects(t *testing.T) {
 
 func TestInsecureRedirect(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
 	u := "https://httpbin.org/redirect-to?url=http://httpbin.org"
 
 	chain, issues := preloadableRedirects(u)
@@ -78,6 +83,8 @@ func TestInsecureRedirect(t *testing.T) {
 
 func TestIndirectInsecureRedirect(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
 	u := "https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org"
 
 	chain, issues := preloadableRedirects(u)
@@ -100,6 +107,8 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 
 func TestHTTPNoRedirect(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
 	u := "http://httpbin.org"
 	domain := "httpbin.org"
 
@@ -126,12 +135,14 @@ func TestHTTPNoRedirect(t *testing.T) {
 	}
 }
 
-var preloadableHTTPRedirectsTests = []struct {
+type preloadableHTTPRedirectsTest struct {
 	description                     string
 	domain                          string
 	expectedMainIssues              Issues
 	expectedFirstRedirectHSTSIssues Issues
-}{
+}
+
+var preloadableHTTPRedirectsTests = []preloadableHTTPRedirectsTest{
 	{
 		"different host",
 		"bofa.com", // http://bofa.com redirects to https://www.bankofamerica.com
@@ -180,15 +191,25 @@ var preloadableHTTPRedirectsTests = []struct {
 
 func TestPreloadableHTTPRedirects(t *testing.T) {
 	skipIfShort(t)
+	t.Parallel()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(preloadableHTTPRedirectsTests))
+
 	for _, tt := range preloadableHTTPRedirectsTests {
-		mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
+		go func(tt preloadableHTTPRedirectsTest) {
+			mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
 
-		if !issuesMatchExpected(mainIssues, tt.expectedMainIssues) {
-			t.Errorf("[%s] main issues for %s: "+issuesShouldMatch, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
-		}
+			if !issuesMatchExpected(mainIssues, tt.expectedMainIssues) {
+				t.Errorf("[%s] main issues for %s: "+issuesShouldMatch, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
+			}
 
-		if !issuesMatchExpected(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
-			t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldMatch, tt.description, tt.domain, firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues)
-		}
+			if !issuesMatchExpected(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
+				t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldMatch, tt.description, tt.domain, firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues)
+			}
+			wg.Done()
+		}(tt)
 	}
+
+	wg.Wait()
 }

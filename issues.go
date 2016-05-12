@@ -86,6 +86,48 @@ func combineIssues(issues1 Issues, issues2 Issues) Issues {
 	}
 }
 
+// Match checks that the given issues match the `wanted` ones. This
+// function always checks that both the lists of Errors and Warnings
+// have the same number of `Issue`s with the same `IssuesCode`s codes in
+// the same order. If any issues in `wanted` have the Summary or Message
+// field set, the field is also compared against the field from the
+// corresponding issue in `iss`.
+func (iss Issues) Match(wanted Issues) bool {
+	if len(iss.Errors) != len(wanted.Errors) {
+		return false
+	}
+
+	if len(iss.Warnings) != len(wanted.Warnings) {
+		return false
+	}
+
+	for e := range iss.Errors {
+		if iss.Errors[e].Code != wanted.Errors[e].Code {
+			return false
+		}
+		if wanted.Errors[e].Summary != "" && iss.Errors[e].Summary != wanted.Errors[e].Summary {
+			return false
+		}
+		if wanted.Errors[e].Message != "" && iss.Errors[e].Message != wanted.Errors[e].Message {
+			return false
+		}
+	}
+
+	for w := range iss.Warnings {
+		if iss.Warnings[w].Code != wanted.Warnings[w].Code {
+			return false
+		}
+		if wanted.Warnings[w].Summary != "" && iss.Warnings[w].Summary != wanted.Warnings[w].Summary {
+			return false
+		}
+		if wanted.Warnings[w].Message != "" && iss.Warnings[w].Message != wanted.Warnings[w].Message {
+			return false
+		}
+	}
+
+	return true
+}
+
 func formatIssueListForString(list []Issue) string {
 	output := ""
 	if len(list) > 1 {

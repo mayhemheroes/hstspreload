@@ -142,7 +142,7 @@ func TestPreloabableResponseAndRemovableResponse(t *testing.T) {
 			}
 		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issues.Match(tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}

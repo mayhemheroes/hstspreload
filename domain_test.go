@@ -40,7 +40,7 @@ var testCheckDomainFormatTests = []struct {
 func TestCheckDomainFormat(t *testing.T) {
 	for _, tt := range testCheckDomainFormatTests {
 		issues := checkDomainFormat(tt.domain)
-		if !issuesMatchExpected(issues, tt.expected) {
+		if !issues.Match(tt.expected) {
 			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
@@ -67,7 +67,7 @@ var testPreloadableDomainLevel = []struct {
 func TestPreloadableDomainLevel(t *testing.T) {
 	for _, tt := range testPreloadableDomainLevel {
 		issues := preloadableDomainLevel(tt.domain)
-		if !issuesMatchExpected(issues, tt.expected) {
+		if !issues.Match(tt.expected) {
 			t.Errorf(issuesShouldMatch, issues, tt.expected)
 		}
 	}
@@ -241,7 +241,7 @@ func TestPreloadableDomainAndRemovableDomain(t *testing.T) {
 				}
 			}
 
-			if !issuesMatchExpected(issues, tt.expectedIssues) {
+			if !issues.Match(tt.expectedIssues) {
 				t.Errorf("[%s] %s: "+issuesShouldMatch, tt.description, tt.domain, issues, tt.expectedIssues)
 			}
 			wg.Done()

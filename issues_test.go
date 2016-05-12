@@ -21,52 +21,6 @@ const (
 `
 )
 
-// issuesMatchExpected checks that the `actual` issues match the
-// `expected` ones. This function always checks that both the lists of
-// Errors and Warnings have the same number of `Issue`s with the same
-// `IssuesCode`s codes in the same order. If any issues in `expected`
-// have the Summary or Message field set, the field is also compared
-// against the field from the corresponding issue in `actual`.
-func issuesMatchExpected(actual, expected Issues) bool {
-	if len(actual.Errors) != len(expected.Errors) {
-		return false
-	}
-
-	if len(actual.Warnings) != len(expected.Warnings) {
-		return false
-	}
-
-	for e := range actual.Errors {
-		if actual.Errors[e].Code != expected.Errors[e].Code {
-			return false
-		}
-		if expected.Errors[e].Summary != "" && actual.Errors[e].Summary != expected.Errors[e].Summary {
-			return false
-		}
-		if expected.Errors[e].Message != "" && actual.Errors[e].Message != expected.Errors[e].Message {
-			return false
-		}
-	}
-
-	for w := range actual.Warnings {
-		if actual.Warnings[w].Code != expected.Warnings[w].Code {
-			return false
-		}
-		if expected.Warnings[w].Summary != "" && actual.Warnings[w].Summary != expected.Warnings[w].Summary {
-			return false
-		}
-		if expected.Warnings[w].Message != "" && actual.Warnings[w].Message != expected.Warnings[w].Message {
-			return false
-		}
-	}
-
-	return true
-}
-
-func issuesEmpty(iss Issues) bool {
-	return issuesMatchExpected(iss, Issues{})
-}
-
 var issuesMatchExpectedTests = []struct {
 	actual   Issues
 	expected Issues
@@ -135,7 +89,7 @@ var issuesMatchExpectedTests = []struct {
 
 func TestIssuesMatchExpected(t *testing.T) {
 	for _, tt := range issuesMatchExpectedTests {
-		if !issuesMatchExpected(tt.actual, tt.expected) {
+		if !tt.actual.Match(tt.expected) {
 			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
 		}
 	}
@@ -161,7 +115,7 @@ var issuesNotEqualTests = []struct {
 
 func TestIssuesNotEqual(t *testing.T) {
 	for _, tt := range issuesNotEqualTests {
-		if issuesMatchExpected(tt.actual, tt.expected) {
+		if tt.actual.Match(tt.expected) {
 			t.Errorf(issuesShouldMatch, tt.actual, tt.expected)
 		}
 	}
@@ -184,7 +138,7 @@ func TestAddUniqueErrorf(t *testing.T) {
 			{Code: "error2"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
@@ -196,7 +150,7 @@ func TestAddUniqueErrorf(t *testing.T) {
 			{Code: "error3"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
@@ -208,7 +162,7 @@ func TestAddUniqueErrorf(t *testing.T) {
 			{Code: "error3"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 }
@@ -230,7 +184,7 @@ func TestAddUniqueWarningf(t *testing.T) {
 			{Code: "warning2"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
@@ -242,7 +196,7 @@ func TestAddUniqueWarningf(t *testing.T) {
 			{Code: "warning3"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 
@@ -254,7 +208,7 @@ func TestAddUniqueWarningf(t *testing.T) {
 			{Code: "warning3"},
 		},
 	}
-	if !issuesMatchExpected(iss, expected) {
+	if !iss.Match(expected) {
 		t.Errorf(issuesShouldMatch, iss, expected)
 	}
 }

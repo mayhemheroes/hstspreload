@@ -51,7 +51,7 @@ func TestTooManyRedirects(t *testing.T) {
 			t.Errorf("[%s] Unexpected chain: %v", tt.description, chain)
 		}
 
-		if !issuesMatchExpected(issues, tt.expectedIssues) {
+		if !issues.Match(tt.expectedIssues) {
 			t.Errorf("[%s] "+issuesShouldMatch, tt.description, issues, tt.expectedIssues)
 		}
 	}
@@ -67,7 +67,7 @@ func TestInsecureRedirect(t *testing.T) {
 	if !chainsEqual(chain, []string{"http://httpbin.org"}) {
 		t.Errorf("Unexpected chain: %v", chain)
 	}
-	if !issuesEmpty(issues) {
+	if !issues.Match(Issues{}) {
 		t.Errorf(issuesShouldBeEmpty, issues)
 	}
 
@@ -76,7 +76,7 @@ func TestInsecureRedirect(t *testing.T) {
 		Code:    "redirects.insecure.initial",
 		Message: "`https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page: `http://httpbin.org`",
 	}}}
-	if !issuesMatchExpected(httpsIssues, expected) {
+	if !httpsIssues.Match(expected) {
 		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
@@ -91,7 +91,7 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	if !chainsEqual(chain, []string{"https://httpbin.org/redirect-to?url=http://httpbin.org", "http://httpbin.org"}) {
 		t.Errorf("Unexpected chain: %v", chain)
 	}
-	if !issuesEmpty(issues) {
+	if !issues.Match(Issues{}) {
 		t.Errorf(issuesShouldBeEmpty, issues)
 	}
 
@@ -100,7 +100,7 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 		Code:    "redirects.insecure.subsequent",
 		Message: "`https://httpbin.org/redirect-to?url=https://httpbin.org/redirect-to?url=http://httpbin.org` redirects to an insecure page on redirect #2: `http://httpbin.org`",
 	}}}
-	if !issuesMatchExpected(httpsIssues, expected) {
+	if !httpsIssues.Match(expected) {
 		t.Errorf(issuesShouldMatch, httpsIssues, expected)
 	}
 }
@@ -117,7 +117,7 @@ func TestHTTPNoRedirect(t *testing.T) {
 		t.Errorf("Unexpected chain: %v", chain)
 	}
 
-	if !issuesEmpty(issues) {
+	if !issues.Match(Issues{}) {
 		t.Errorf(issuesShouldBeEmpty, issues)
 	}
 
@@ -126,11 +126,11 @@ func TestHTTPNoRedirect(t *testing.T) {
 		Code:    "redirects.http.no_redirect",
 		Message: "`http://httpbin.org` does not redirect to `https://httpbin.org`.",
 	}}}
-	if !issuesMatchExpected(mainIssues, expected) {
+	if !mainIssues.Match(expected) {
 		t.Errorf(issuesShouldMatch, mainIssues, expected)
 	}
 
-	if !issuesEmpty(firstRedirectHSTSIssues) {
+	if !firstRedirectHSTSIssues.Match(Issues{}) {
 		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
 	}
 }
@@ -200,11 +200,11 @@ func TestPreloadableHTTPRedirects(t *testing.T) {
 		go func(tt preloadableHTTPRedirectsTest) {
 			mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirects(tt.domain)
 
-			if !issuesMatchExpected(mainIssues, tt.expectedMainIssues) {
+			if !mainIssues.Match(tt.expectedMainIssues) {
 				t.Errorf("[%s] main issues for %s: "+issuesShouldMatch, tt.description, tt.domain, mainIssues, tt.expectedMainIssues)
 			}
 
-			if !issuesMatchExpected(firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues) {
+			if !firstRedirectHSTSIssues.Match(tt.expectedFirstRedirectHSTSIssues) {
 				t.Errorf("[%s] first redirect HSTS issues for %s: "+issuesShouldMatch, tt.description, tt.domain, firstRedirectHSTSIssues, tt.expectedFirstRedirectHSTSIssues)
 			}
 			wg.Done()

@@ -2,11 +2,11 @@ PROJECT = github.com/chromium/hstspreload/...
 
 .PHONY: test
 test: lint
-	go test ${PROJECT}
+	go test -cover ${PROJECT}
 
 .PHONY: test-verbose
 test-verbose: lint
-	go test -v ${PROJECT}
+	go test -v -cover ${PROJECT}
 
 .PHONY: build
 build:

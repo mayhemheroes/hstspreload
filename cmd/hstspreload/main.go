@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/chromium/hstspreload"
-	"github.com/chromium/hstspreload/chromiumpreload"
+	"github.com/chromium/hstspreload/chromium/preloadlist"
 )
 
 func printHelp() {
@@ -82,7 +82,7 @@ func main() {
 		header, issues = removableDomain(args[1])
 
 	case "status":
-		l, err := chromiumpreload.GetLatest()
+		l, err := preloadlist.NewFromLatest()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 		}

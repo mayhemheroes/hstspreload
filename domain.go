@@ -3,10 +3,8 @@ package hstspreload
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -146,36 +144,22 @@ func RemovableDomain(domain string) (header *string, issues Issues) {
 func getResponse(domain string) (*http.Response, Issues) {
 	issues := Issues{}
 
-	redirectPrevented := errors.New("REDIRECT_PREVENTED")
-
-	client := http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return redirectPrevented
-		},
-		Timeout: dialTimeout,
-	}
-
-	isRedirectPrevented := func(err error) bool {
-		urlError, ok := err.(*url.Error)
-		return ok && urlError.Err == redirectPrevented
-	}
-
 	// Try #1
-	resp, err := client.Get("https://" + domain)
-	if err == nil || isRedirectPrevented(err) {
+	resp, err := getFirstResponse("https://" + domain)
+	if err == nil {
 		return resp, issues
 	}
 
 	// Try #2
-	resp, err = client.Get("https://" + domain)
-	if err == nil || isRedirectPrevented(err) {
+	resp, err = getFirstResponse("https://" + domain)
+	if err == nil {
 		return resp, issues
 	}
 
 	// Check if ignoring cert issues works.
-	client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	resp, err = client.Get("https://" + domain)
-	if err == nil || isRedirectPrevented(err) {
+	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	resp, err = getFirstResponseWithTransport("https://"+domain, transport)
+	if err == nil {
 		return resp, issues.addErrorf(
 			IssueCode("domain.tls.invalid_cert_chain"),
 			"Invalid Certificate Chain",

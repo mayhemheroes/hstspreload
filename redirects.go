@@ -45,12 +45,41 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
 	return issues
 }
 
+func checkHSTSOverHTTP(initialURL string) Issues {
+	issues := Issues{}
+
+	resp, err := getFirstResponse(initialURL)
+	if err != nil {
+		return issues.addErrorf(
+			IssueCode("internal.redirects.http.first_probe_failed"),
+			"Internal error: HTTP probe failed",
+			"Could not connect to %s",
+			err,
+		)
+	}
+
+	key := http.CanonicalHeaderKey("Strict-Transport-Security")
+	if len(resp.Header[key]) != 0 {
+		return issues.addWarningf(
+			IssueCode("redirects.http.useless_header"),
+			"Unnecessary HSTS header over HTTP",
+			"The HTTP page at %s sends an HSTS header. This has no effect over HTTP, and should be removed.",
+			initialURL,
+		)
+	}
+
+	return issues
+}
+
 // Taking a URL allows us to test more easily. Use preloadableHTTPRedirects()
 // where possible.
 func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, firstRedirectHSTS Issues) {
-	chain, issues := preloadableRedirects(initialURL)
+	general = combineIssues(general, checkHSTSOverHTTP(initialURL))
+
+	chain, preloadableRedirectsIssues := preloadableRedirects(initialURL)
+	general = combineIssues(general, preloadableRedirectsIssues)
 	if len(chain) == 0 {
-		return issues.addErrorf(
+		return general.addErrorf(
 			IssueCode("redirects.http.no_redirect"),
 			"No redirect from HTTP",
 			"`%s` does not redirect to `%s`.",
@@ -94,7 +123,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 		// For simplicity, we use the same message for two cases:
 		// - http://example.com -> http://www.example.com
 		// - http://example.com -> https://www.example.com
-		return issues.addErrorf(
+		return general.addErrorf(
 			IssueCode("redirects.http.www_first"),
 			"HTTP redirects to www first",
 			"`%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
@@ -105,7 +134,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 		), firstRedirectHSTS
 	}
 
-	return issues.addErrorf(
+	return general.addErrorf(
 		IssueCode("redirects.http.first_redirect.insecure"),
 		"HTTP does not redirect to HTTPS",
 		"`%s` (HTTP) redirects to `%s`. The first redirect "+

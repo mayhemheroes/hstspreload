@@ -1,7 +1,9 @@
 package hstspreload
 
 import (
+	"errors"
 	"net/http"
+	"net/url"
 )
 
 func checkSingleHeader(resp *http.Response) (header *string, issues Issues) {
@@ -55,4 +57,36 @@ func PreloadableResponse(resp *http.Response) (header *string, issues Issues) {
 // documentation for Issues.
 func RemovableResponse(resp *http.Response) (header *string, issues Issues) {
 	return checkResponse(resp, RemovableHeaderString)
+}
+
+// getFirstResponse makes a GET request to `initialURL` without redirecting.
+func getFirstResponse(initialURL string) (*http.Response, error) {
+	return getFirstResponseWithTransport(initialURL, nil)
+}
+
+// `transport` can be `nil`.
+func getFirstResponseWithTransport(initialURL string, transport *http.Transport) (*http.Response, error) {
+	redirectPrevented := errors.New("REDIRECT_PREVENTED")
+
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return redirectPrevented
+		},
+		Timeout: dialTimeout,
+	}
+
+	if transport != nil {
+		client.Transport = transport
+	}
+
+	isRedirectPrevented := func(err error) bool {
+		urlError, ok := err.(*url.Error)
+		return ok && urlError.Err == redirectPrevented
+	}
+
+	resp, err := client.Get(initialURL)
+	if isRedirectPrevented(err) {
+		return resp, nil
+	}
+	return resp, err
 }

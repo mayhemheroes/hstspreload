@@ -105,6 +105,43 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	}
 }
 
+func TestHSTSOverHTTP(t *testing.T) {
+	skipIfShort(t)
+	t.Parallel()
+
+	u := "http://history.google.com"
+	domain := "history.google.com"
+
+	_, issues := preloadableRedirects(u)
+	if !issues.Match(Issues{}) {
+		t.Errorf(issuesShouldBeEmpty, issues)
+	}
+
+	// Test the helper
+	issues = checkHSTSOverHTTP(u)
+	expected := Issues{Warnings: []Issue{{
+		Code:    "redirects.http.useless_header",
+		Message: "The HTTP page at http://history.google.com sends an HSTS header. This has no effect over HTTP, and should be removed.",
+	}}}
+	if !issues.Match(expected) {
+		t.Errorf(issuesShouldMatch, issues, expected)
+	}
+
+	// Mini integration test
+	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirectsURL(u, domain)
+	expected = Issues{
+		Errors:   []Issue{{Code: "redirects.http.first_redirect.insecure"}},
+		Warnings: []Issue{{Code: "redirects.http.useless_header"}},
+	}
+	if !mainIssues.Match(expected) {
+		t.Errorf(issuesShouldMatch, mainIssues, expected)
+	}
+
+	if !firstRedirectHSTSIssues.Match(Issues{}) {
+		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
+	}
+}
+
 func TestHTTPNoRedirect(t *testing.T) {
 	skipIfShort(t)
 	t.Parallel()

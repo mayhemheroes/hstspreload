@@ -31,6 +31,11 @@ type HSTSHeader struct {
 }
 
 // Iff Issues has no errors, the output integer is the max-age in seconds.
+// Note that according to the spec, the max-age value may optionally be quoted:
+// https://tools.ietf.org/html/rfc6797#section-6.2
+// However, it seems no one does this in practice, and certainly no one has
+// asked to be preloaded with a quoted max-age value. So to keep things simple,
+// we don't support quoted values.
 func parseMaxAge(directive string) (*MaxAge, Issues) {
 	issues := Issues{}
 	maxAgeNumericalString := directive[8:]

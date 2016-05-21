@@ -90,7 +90,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 
 	if chain[0].Scheme == httpsScheme && chain[0].Host == domain {
 		// Check for HSTS on the first redirect.
-		resp, err := clientWithTimeout.Get(chain[0].String())
+		resp, err := getFirstResponse(chain[0].String())
 		if err != nil {
 			// We cannot connect this time. This error has high priority,
 			// so return immediately and allow it to mask other errors.

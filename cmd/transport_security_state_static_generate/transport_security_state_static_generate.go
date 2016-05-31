@@ -62,13 +62,15 @@ type pinset struct {
 }
 
 type hsts struct {
-	Name                 string `json:"name"`
-	Subdomains           bool   `json:"include_subdomains"`
-	SubdomainsForPinning bool   `json:"include_subdomains_for_pinning"`
-	Mode                 string `json:"mode"`
-	Pins                 string `json:"pins"`
-	ExpectCT             bool   `json:"expect_ct"`
-	ExpectCTReportURI    string `json:"expect_ct_report_uri"`
+	Name                  string `json:"name"`
+	Subdomains            bool   `json:"include_subdomains"`
+	SubdomainsForPinning  bool   `json:"include_subdomains_for_pinning"`
+	Mode                  string `json:"mode"`
+	Pins                  string `json:"pins"`
+	ExpectCT              bool   `json:"expect_ct"`
+	ExpectCTReportURI     string `json:"expect_ct_report_uri"`
+	ExpectStaple          bool   `json:"expect_staple"`
+	ExpectStapleReportURI string `json:"expect_staple_report_uri"`
 }
 
 func main() {
@@ -141,8 +143,8 @@ func process(jsonFileName, certsFileName string) error {
 	writeHeader(out)
 	writeDomainIDs(out, preloaded.DomainIDs)
 	writeCertsOutput(out, pins)
-	expectCTReportURIIds := writeExpectCTReportURIIds(out, preloaded.Entries)
-	writeHSTSOutput(out, preloaded, expectCTReportURIIds)
+	expectCTReportURIIds, expectStapleReportURIIds := writeExpectReportURIIds(out, preloaded.Entries)
+	writeHSTSOutput(out, preloaded, expectCTReportURIIds, expectStapleReportURIIds)
 	writeFooter(out)
 	out.Flush()
 
@@ -520,23 +522,36 @@ func writeDomainIDs(out *bufio.Writer, domainIDs []string) {
 `)
 }
 
-func writeExpectCTReportURIIds(out *bufio.Writer, entries []hsts) map[string]int {
-	result := make(map[string]int)
+func writeExpectReportURIIds(out *bufio.Writer, entries []hsts) (map[string]int, map[string]int) {
+	ct := make(map[string]int)
+	staple := make(map[string]int)
 	i := 0
 
 	out.WriteString("static const char* const kExpectCTReportURIs[] = {\n")
 	for _, e := range entries {
 		if e.ExpectCT {
-			if _, seen := result[e.ExpectCTReportURI]; !seen {
+			if _, seen := ct[e.ExpectCTReportURI]; !seen {
 				out.WriteString("    \"" + e.ExpectCTReportURI + "\",\n")
-				result[e.ExpectCTReportURI] = i
+				ct[e.ExpectCTReportURI] = i
 				i = i + 1
 			}
 		}
 	}
-
 	out.WriteString("};\n")
-	return result
+
+	out.WriteString("static const char* const kExpectStapleReportURIs[] = {\n")
+	for _, e := range entries {
+		if e.ExpectStaple {
+			if _, seen := staple[e.ExpectStapleReportURI]; !seen {
+				out.WriteString("    \"" + e.ExpectStapleReportURI + "\",\n")
+				ct[e.ExpectCTReportURI] = i
+				i = i + 1
+			}
+		}
+	}
+	out.WriteString("};\n")
+
+	return ct, staple
 }
 
 func writeCertsOutput(out *bufio.Writer, pins []pin) {
@@ -623,7 +638,7 @@ type pinsetData struct {
 	acceptPinsVar, rejectPinsVar, reportURIVar string
 }
 
-func writeHSTSOutput(out *bufio.Writer, hsts preloaded, expectCTReportURIIds map[string]int) error {
+func writeHSTSOutput(out *bufio.Writer, hsts preloaded, expectCTReportURIIds, expectStapleReportURIIds map[string]int) error {
 	out.WriteString(`// The following is static data describing the hosts that are hardcoded with
 // certificate pins or HSTS information.
 
@@ -695,11 +710,12 @@ static const struct Pinset kPinsets[] = {
 
 	hstsLiteralWriter := cLiteralWriter{out: ioutil.Discard}
 	hstsBitWriter := trieWriter{
-		w:                    &hstsLiteralWriter,
-		pinsets:              pinsets,
-		domainIDs:            domainIDs,
-		expectCTReportURIIds: expectCTReportURIIds,
-		huffman:              huffmanMap,
+		w:                        &hstsLiteralWriter,
+		pinsets:                  pinsets,
+		domainIDs:                domainIDs,
+		expectCTReportURIIds:     expectCTReportURIIds,
+		expectStapleReportURIIds: expectStapleReportURIIds,
+		huffman:                  huffmanMap,
 	}
 
 	_, err := writeEntries(&hstsBitWriter, hsts.Entries)
@@ -800,15 +816,16 @@ func (clw *cLiteralWriter) WriteByte(b byte) (err error) {
 // It also contains the other information needed for writing out a compressed
 // trie.
 type trieWriter struct {
-	w                    io.ByteWriter
-	pinsets              map[string]pinsetData
-	domainIDs            map[string]int
-	expectCTReportURIIds map[string]int
-	huffman              map[rune]bitsAndLen
-	b                    byte
-	used                 uint
-	position             int
-	huffmanCounts        [129]int
+	w                        io.ByteWriter
+	pinsets                  map[string]pinsetData
+	domainIDs                map[string]int
+	expectCTReportURIIds     map[string]int
+	expectStapleReportURIIds map[string]int
+	huffman                  map[rune]bitsAndLen
+	b                        byte
+	used                     uint
+	position                 int
+	huffmanCounts            [129]int
 }
 
 func (w *trieWriter) WriteBits(bits, numBits uint) error {
@@ -1153,6 +1170,19 @@ func writeDispatchTables(w *trieWriter, ents reversedEntries, depth int) (positi
 					panic("too many expect-CT report URIs")
 				}
 				buf.WriteBits(uint(expectCTReportURIId), 4)
+			} else {
+				buf.WriteBit(0)
+			}
+			if hsts.ExpectStaple {
+				buf.WriteBit(1)
+				expectStapleReportURIId, ok := w.expectStapleReportURIIds[hsts.ExpectStapleReportURI]
+				if !ok {
+					panic("missing expect-staple report URI ID for " + hsts.Name)
+				}
+				if expectStapleReportURIId >= 16 {
+					panic("too many expect staple report URIs")
+				}
+				buf.WriteBits(uint(expectStapleReportURIId), 4)
 			} else {
 				buf.WriteBit(0)
 			}

@@ -449,7 +449,7 @@ func checkCertsInPinsets(pinsets []pinset, pins []pin) error {
 
 func checkNoopEntries(entries []hsts) error {
 	for _, e := range entries {
-		if len(e.Mode) == 0 && len(e.Pins) == 0 && !e.ExpectCT {
+		if len(e.Mode) == 0 && len(e.Pins) == 0 && !e.ExpectCT && !e.ExpectStaple {
 			switch e.Name {
 			// This entry is deliberately used as an exclusion.
 			case "learn.doubleclick.net":
@@ -539,12 +539,13 @@ func writeExpectReportURIIds(out *bufio.Writer, entries []hsts) (map[string]int,
 	}
 	out.WriteString("};\n")
 
+	i = 0
 	out.WriteString("static const char* const kExpectStapleReportURIs[] = {\n")
 	for _, e := range entries {
 		if e.ExpectStaple {
 			if _, seen := staple[e.ExpectStapleReportURI]; !seen {
 				out.WriteString("    \"" + e.ExpectStapleReportURI + "\",\n")
-				ct[e.ExpectCTReportURI] = i
+				staple[e.ExpectStapleReportURI] = i
 				i = i + 1
 			}
 		}
@@ -750,11 +751,12 @@ static const uint8_t kPreloadedHSTSData[] = {
 
 	hstsLiteralWriter = cLiteralWriter{out: out}
 	hstsBitWriter = trieWriter{
-		w:                    &hstsLiteralWriter,
-		pinsets:              pinsets,
-		domainIDs:            domainIDs,
-		expectCTReportURIIds: expectCTReportURIIds,
-		huffman:              huffmanMap,
+		w:                        &hstsLiteralWriter,
+		pinsets:                  pinsets,
+		domainIDs:                domainIDs,
+		expectCTReportURIIds:     expectCTReportURIIds,
+		expectStapleReportURIIds: expectStapleReportURIIds,
+		huffman:                  huffmanMap,
 	}
 
 	rootPosition, err := writeEntries(&hstsBitWriter, hsts.Entries)

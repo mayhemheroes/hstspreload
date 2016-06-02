@@ -62,15 +62,16 @@ type pinset struct {
 }
 
 type hsts struct {
-	Name                  string `json:"name"`
-	Subdomains            bool   `json:"include_subdomains"`
-	SubdomainsForPinning  bool   `json:"include_subdomains_for_pinning"`
-	Mode                  string `json:"mode"`
-	Pins                  string `json:"pins"`
-	ExpectCT              bool   `json:"expect_ct"`
-	ExpectCTReportURI     string `json:"expect_ct_report_uri"`
-	ExpectStaple          bool   `json:"expect_staple"`
-	ExpectStapleReportURI string `json:"expect_staple_report_uri"`
+	Name                   string `json:"name"`
+	Subdomains             bool   `json:"include_subdomains"`
+	SubdomainsForPinning   bool   `json:"include_subdomains_for_pinning"`
+	Mode                   string `json:"mode"`
+	Pins                   string `json:"pins"`
+	ExpectCT               bool   `json:"expect_ct"`
+	ExpectCTReportURI      string `json:"expect_ct_report_uri"`
+	ExpectStaple           bool   `json:"expect_staple"`
+	ExpectStapleSubdomains bool   `json:"include_subdomains_for_expect_staple"`
+	ExpectStapleReportURI  string `json:"expect_staple_report_uri"`
 }
 
 func main() {
@@ -1177,6 +1178,11 @@ func writeDispatchTables(w *trieWriter, ents reversedEntries, depth int) (positi
 			}
 			if hsts.ExpectStaple {
 				buf.WriteBit(1)
+				if hsts.ExpectStapleSubdomains {
+					buf.WriteBit(1)
+				} else {
+					buf.WriteBit(0)
+				}
 				expectStapleReportURIId, ok := w.expectStapleReportURIIds[hsts.ExpectStapleReportURI]
 				if !ok {
 					panic("missing expect-staple report URI ID for " + hsts.Name)

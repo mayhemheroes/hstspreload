@@ -4,12 +4,12 @@
 
 // This program converts the information in
 // transport_security_state_static.json and
-// transport_security_state_static.certs into
+// transport_security_state_static.pins into
 // transport_security_state_static.h. The input files contain information about
 // public key pinning and HTTPS-only sites that is compiled into Chromium.
 
 // Run as:
-// % go run transport_security_state_static_generate.go transport_security_state_static.json transport_security_state_static.certs
+// % go run transport_security_state_static_generate.go transport_security_state_static.json transport_security_state_static.pins
 //
 // It will write transport_security_state_static.h
 
@@ -33,7 +33,7 @@ import (
 	"strings"
 )
 
-// A pin represents an entry in transport_security_state_static.certs. It's a
+// A pin represents an entry in transport_security_state_static.pins. It's a
 // name associated with a SubjectPublicKeyInfo hash and, optionally, a
 // certificate.
 type pin struct {
@@ -76,7 +76,7 @@ type hsts struct {
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <json file> <certificates file>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <json file> <pins file>\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -196,7 +196,7 @@ func removeComments(r io.Reader) ([]byte, error) {
 }
 
 // parseCertsFile parses |inFile|, in the format of
-// transport_security_state_static.certs. See the comments at the top of that
+// transport_security_state_static.pins. See the comments at the top of that
 // file for details of the format.
 func parseCertsFile(inFile io.Reader) ([]pin, error) {
 	const (

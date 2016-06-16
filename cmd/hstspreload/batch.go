@@ -3,7 +3,7 @@ package main
 import "github.com/chromium/hstspreload"
 
 const (
-	parallelism = 10
+	parallelism = 100
 )
 
 // A Result holds the outcome of PreloadableDomain() for a given Domain.

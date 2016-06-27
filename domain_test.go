@@ -50,6 +50,11 @@ var testPreloadableDomainLevel = []struct {
 	domain   string
 	expected Issues
 }{
+	{"github.io",
+		Issues{Errors: []Issue{{
+			Code: "internal.domain.name.cannot_compute_etld1",
+		}}},
+	},
 	{"example.com",
 		Issues{},
 	},

@@ -134,6 +134,25 @@ var preloadableDomainTests = []preloadableDomainTest{
 	},
 	{
 		PreloadableDomain,
+		"www.no_tls (not whitelisted)",
+		"lgarron.github.io",
+		false, "",
+		Issues{
+			Errors: []Issue{
+				Issue{Code: "response.no_header", Summary: "No HSTS header", Message: "Response error: No HSTS header is present on the response."},
+				Issue{Code: "domain.www.no_tls", Summary: "www subdomain does not support HTTPS", Message: "Domain error: The www subdomain exists, but we couldn't connect to it using HTTPS (\"x509: certificate is valid for www.github.com, *.github.com, github.com, *.github.io, github.io, *.githubusercontent.com, githubusercontent.com, not www.lgarron.github.io\"). Since many people type this by habit, HSTS preloading would likely cause issues for your site."},
+			},
+		},
+	},
+	{
+		PreloadableDomain,
+		"www.no_tls whitelisted",
+		"hstspreload.appspot.com",
+		true, "max-age=31536000; includeSubDomains; preload",
+		Issues{},
+	},
+	{
+		PreloadableDomain,
 		"self-signed",
 		"self-signed.badssl.com",
 		false, "",

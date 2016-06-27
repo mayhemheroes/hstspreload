@@ -32,6 +32,15 @@ var clientWithTimeout = http.Client{
 	Timeout: dialTimeout,
 }
 
+// List of eTLDs for which:
+//  - `www` subdomains are commonly available over HTTP, but
+// - but site owners have no way to serve valid HTTPS on the `www` subdomain.
+//
+// We whitelist such eTLDs to waive the `www` subdomain requirement.
+var whitelistedWWWeTLDs = map[string]bool{
+	"appspot.com": true,
+}
+
 // PreloadableDomain checks whether the domain passes HSTS preload
 // requirements for Chromium. This includes:
 //
@@ -92,11 +101,14 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 
 		// checkWWW
 		go func() {
-			// Skip the WWW check if the domain is not eTLD+1.
-			if len(levelIssues.Errors) == 0 {
-				www <- checkWWW(domain)
-			} else {
+			eTLD, _ := publicsuffix.PublicSuffix(domain)
+
+			// Skip the WWW check if the domain is not eTLD+1, or if the
+			// eTLD is whitelisted.
+			if len(levelIssues.Errors) != 0 || whitelistedWWWeTLDs[eTLD] {
 				www <- Issues{}
+			} else {
+				www <- checkWWW(domain)
 			}
 		}()
 
@@ -223,11 +235,12 @@ func checkDomainFormat(domain string) Issues {
 func preloadableDomainLevel(domain string) Issues {
 	issues := Issues{}
 
-	canon, err := publicsuffix.EffectiveTLDPlusOne(domain)
+	eTLD1, err := publicsuffix.EffectiveTLDPlusOne(domain)
 	if err != nil {
 		return issues.addErrorf("internal.domain.name.cannot_compute_etld1", "Internal Error", "Could not compute eTLD+1.")
 	}
-	if canon != domain {
+
+	if eTLD1 != domain {
 		return issues.addErrorf(
 			IssueCode("domain.is_subdomain"),
 			"Subdomain",
@@ -236,7 +249,7 @@ func preloadableDomainLevel(domain string) Issues {
 				"cookies across subdomains, we only accept automated preload list "+
 				"submissions of whole registered domains.)",
 			domain,
-			canon,
+			eTLD1,
 		)
 	}
 

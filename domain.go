@@ -33,7 +33,7 @@ var clientWithTimeout = http.Client{
 }
 
 // List of eTLDs for which:
-//  - `www` subdomains are commonly available over HTTP, but
+// - `www` subdomains are commonly available over HTTP, but
 // - but site owners have no way to serve valid HTTPS on the `www` subdomain.
 //
 // We whitelist such eTLDs to waive the `www` subdomain requirement.

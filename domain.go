@@ -15,11 +15,6 @@ const (
 	// dialTimeout specifies the amount of time that TCP or TLS connections
 	// can take to complete.
 	dialTimeout = 10 * time.Second
-
-	// The maximum number of redirects when you visit the root path of the
-	// domain over HTTP or HTTPS.
-	maxRedirects = 3
-	httpsScheme  = "https"
 )
 
 // dialer is a global net.Dialer that's used whenever making TLS connections in

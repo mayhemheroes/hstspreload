@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+const (
+	// The maximum number of redirects when you visit the root path of the
+	// domain over HTTP or HTTPS.
+	maxRedirects = 3
+	httpsScheme  = "https"
+)
+
 // preloadableHTTPRedirects checks for two kinds of issues:
 //
 // 1. General HTTP redirect issues that should always be reported.

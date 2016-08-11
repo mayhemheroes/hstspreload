@@ -232,7 +232,7 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 			hstsHeader.MaxAge.Seconds,
 		)
 		if hstsHeader.MaxAge.Seconds == 0 {
-			errorStr += " If you are trying to remove this domain from the preload list, please contact Lucas Garron at hstspreload@chromium.org"
+			errorStr += " If you are trying to remove this domain from the preload list, please follow the instructions at https://hstspreload.appspot.com/#removal"
 			issues = issues.addErrorf(
 				"header.preloadable.max_age.zero",
 				"Max-age is 0",

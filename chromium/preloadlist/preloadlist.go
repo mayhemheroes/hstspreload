@@ -116,8 +116,8 @@ func isCommentLine(line string) bool {
 	return !strings.HasPrefix(trimmed, "//")
 }
 
-// NewFromChromiumURL retrieves the latest PreloadList from a URL that returns
-// the list in base 64.
+// NewFromChromiumURL retrieves the PreloadList from a URL that returns the list
+// in base 64.
 func NewFromChromiumURL(u string) (PreloadList, error) {
 	var list PreloadList
 

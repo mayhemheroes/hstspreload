@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -30,6 +29,7 @@ The commands are:
                            Reads one domain per line from stdin, and outputs
                            JSON in non-deterministic domain order.
   status                 Check the preload status of a domain
+  scan-pending           Scan pending domains from hstspreload.appspot.com
 
 Examples:
 
@@ -57,6 +57,14 @@ func main() {
 
 	if len(args) < 1 {
 		printHelp()
+	}
+	if args[0] == "scan-pending" {
+		err := ScanPending()
+		if err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
 	if args[0] == "batch" {
 		batch()
@@ -236,8 +244,6 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 }
 
 func batch() {
-	exitCode := 0
-
 	var domains []string
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
@@ -248,23 +254,10 @@ func batch() {
 		os.Exit(1)
 	}
 
-	fmt.Println("[")
-	results := BatchPreloadable(domains)
-	for i := range domains {
-		r := <-results
-		j, err := json.MarshalIndent(r, "  ", "  ")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "// JSON error: %s \n", err)
-			exitCode = 1
-		} else {
-			comma := ""
-			if i != len(domains)-1 {
-				comma = ","
-			}
-			fmt.Printf("  %s%s\n", j, comma)
-		}
+	err := BatchPrint(domains)
+	if err != nil {
+		os.Exit(1)
 	}
-	fmt.Println("]")
 
-	os.Exit(exitCode)
+	os.Exit(0)
 }

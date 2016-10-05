@@ -1,6 +1,12 @@
 package main
 
-import "github.com/chromium/hstspreload"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/chromium/hstspreload"
+)
 
 const (
 	parallelism = 100
@@ -59,4 +65,27 @@ func BatchPreloadable(domains []string) chan Result {
 	}()
 
 	return results
+}
+
+// BatchPrint runs BatchPreloadable on the given domains and prints the results.
+// Prints and returns an error if one was encountered.
+func BatchPrint(domains []string) error {
+	fmt.Println("[")
+	results := BatchPreloadable(domains)
+	for i := range domains {
+		r := <-results
+		j, err := json.MarshalIndent(r, "  ", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "// JSON error: %s \n", err)
+			return err
+		}
+		comma := ""
+		if i != len(domains)-1 {
+			comma = ","
+		}
+		fmt.Printf("  %s%s\n", j, comma)
+	}
+	fmt.Println("]")
+
+	return nil
 }

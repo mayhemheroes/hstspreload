@@ -111,7 +111,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 	{
 		PreloadableDomain,
 		"no TLS",
-		"cnn.com",
+		"neverssl.com",
 		false, "",
 		Issues{
 			Errors: []Issue{{Code: "domain.tls.cannot_connect"}},

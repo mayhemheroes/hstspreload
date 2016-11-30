@@ -61,6 +61,12 @@ type pinset struct {
 	ReportURI string   `json:"report_uri"`
 }
 
+type PinsetNameSorter []pinset
+
+func (a PinsetNameSorter) Len() int           { return len(a) }
+func (a PinsetNameSorter) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a PinsetNameSorter) Less(i, j int) bool { return a[i].Name < a[j].Name }
+
 type hsts struct {
 	Name                   string `json:"name"`
 	Subdomains             bool   `json:"include_subdomains"`
@@ -659,6 +665,7 @@ static const char kNoReportURI[] = "";
 	pinsets := make(map[string]pinsetData)
 	pinsetNum := 0
 
+	sort.Stable(PinsetNameSorter(hsts.Pinsets))
 	for _, pinset := range hsts.Pinsets {
 		name := uppercaseFirstLetter(pinset.Name)
 		acceptableListName := fmt.Sprintf("k%sAcceptableCerts", name)

@@ -66,6 +66,14 @@ func main() {
 		}
 		os.Exit(0)
 	}
+	if args[0] == "scan-preloaded" {
+		err := ScanPreloaded()
+		if err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
 	if args[0] == "batch" {
 		batch()
 	}

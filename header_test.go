@@ -138,6 +138,12 @@ var parseHeaderStringTests = []struct {
 		Issues{},
 		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 10886400}},
 	},
+	{
+		"case-insensitive",
+		"inCLUDESUBDomaINs; max-AGe=12345678",
+		Issues{},
+		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
+	},
 
 	/******** no errors, warnings only ********/
 
@@ -146,12 +152,6 @@ var parseHeaderStringTests = []struct {
 		"",
 		Issues{Warnings: []Issue{{Code: "header.parse.empty"}}},
 		HSTSHeader{Preload: false, IncludeSubDomains: false, MaxAge: nil},
-	},
-	{
-		"case-insensitive",
-		"inCLUDESUBDomaINs; max-AGe=12345678",
-		Issues{Warnings: []Issue{{Code: "header.parse.spelling.include_sub_domains"}}},
-		HSTSHeader{Preload: false, IncludeSubDomains: true, MaxAge: &MaxAge{Seconds: 12345678}},
 	},
 	{
 		"repeated preload",

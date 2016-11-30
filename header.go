@@ -129,14 +129,6 @@ func ParseHeaderString(headerString string) (HSTSHeader, Issues) {
 					"Header contains a repeated directive: `includeSubDomains`")
 			} else {
 				hstsHeader.IncludeSubDomains = true
-				if directive != "includeSubDomains" {
-					issues = issues.addUniqueWarningf(
-						"header.parse.spelling.include_sub_domains",
-						"Non-standard capitalization of includeSubDomains",
-						"Header contains the token `%s`. The recommended capitalization is `includeSubDomains`.",
-						directive,
-					)
-				}
 			}
 
 		case directiveHasPrefixIgnoringCase("includeSubDomains"):

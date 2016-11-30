@@ -89,29 +89,29 @@ func main() {
 func process(jsonFileName, certsFileName string) error {
 	jsonFile, err := os.Open(jsonFileName)
 	if err != nil {
-		return fmt.Errorf("failed to open input file: %s\n", err.Error())
+		return fmt.Errorf("failed to open input file: %s", err.Error())
 	}
 	defer jsonFile.Close()
 
 	jsonBytes, err := removeComments(jsonFile)
 	if err != nil {
-		return fmt.Errorf("failed to remove comments from JSON: %s\n", err.Error())
+		return fmt.Errorf("failed to remove comments from JSON: %s", err.Error())
 	}
 
 	var preloaded preloaded
 	if err := json.Unmarshal(jsonBytes, &preloaded); err != nil {
-		return fmt.Errorf("failed to parse JSON: %s\n", err.Error())
+		return fmt.Errorf("failed to parse JSON: %s", err.Error())
 	}
 
 	certsFile, err := os.Open(certsFileName)
 	if err != nil {
-		return fmt.Errorf("failed to open input file: %s\n", err.Error())
+		return fmt.Errorf("failed to open input file: %s", err.Error())
 	}
 	defer certsFile.Close()
 
 	pins, err := parseCertsFile(certsFile)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificates file: %s\n", err)
+		return fmt.Errorf("failed to parse certificates file: %s", err)
 	}
 
 	if err := checkDuplicatePins(pins); err != nil {
@@ -219,13 +219,13 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 		lineNo++
 		line, isPrefix, err := in.ReadLine()
 		if isPrefix {
-			return nil, fmt.Errorf("line %d is too long to process\n", lineNo)
+			return nil, fmt.Errorf("line %d is too long to process", lineNo)
 		}
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("error reading from input: %s\n", err.Error())
+			return nil, fmt.Errorf("error reading from input: %s", err.Error())
 		}
 
 		if len(line) == 0 || line[0] == '#' {
@@ -236,7 +236,7 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 		case PRENAME:
 			name = string(line)
 			if !nameRegexp.MatchString(name) {
-				return nil, fmt.Errorf("invalid name on line %d\n", lineNo)
+				return nil, fmt.Errorf("invalid name on line %d", lineNo)
 			}
 			state = POSTNAME
 		case POSTNAME:
@@ -246,10 +246,10 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 			case bytes.HasPrefix(line, startOfSHA256):
 				hash, err := base64.StdEncoding.DecodeString(string(line[len(startOfSHA256):]))
 				if err != nil {
-					return nil, fmt.Errorf("failed to decode hash on line %d: %s\n", lineNo, err)
+					return nil, fmt.Errorf("failed to decode hash on line %d: %s", lineNo, err)
 				}
 				if len(hash) != 32 {
-					return nil, fmt.Errorf("bad SHA256 hash length on line %d: %s\n", lineNo, err)
+					return nil, fmt.Errorf("bad SHA256 hash length on line %d: %s", lineNo, err)
 				}
 				pins = append(pins, pin{
 					name:         name,
@@ -269,7 +269,7 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 				pemPublicKey = append(pemPublicKey, '\n')
 				state = INPUBLICKEY
 			default:
-				return nil, fmt.Errorf("line %d, after a name, is not a hash nor a certificate\n", lineNo)
+				return nil, fmt.Errorf("line %d, after a name, is not a hash nor a certificate", lineNo)
 			}
 		case INCERT:
 			pemCert = append(pemCert, line...)
@@ -280,18 +280,18 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 
 			block, _ := pem.Decode(pemCert)
 			if block == nil {
-				return nil, fmt.Errorf("failed to decode certificate ending on line %d\n", lineNo)
+				return nil, fmt.Errorf("failed to decode certificate ending on line %d", lineNo)
 			}
 			cert, err := x509.ParseCertificate(block.Bytes)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse certificate ending on line %d: %s\n", lineNo, err.Error())
+				return nil, fmt.Errorf("failed to parse certificate ending on line %d: %s", lineNo, err.Error())
 			}
 			certName := cert.Subject.CommonName
 			if len(certName) == 0 {
 				certName = cert.Subject.Organization[0] + " " + cert.Subject.OrganizationalUnit[0]
 			}
 			if err := matchNames(certName, name); err != nil {
-				return nil, fmt.Errorf("name failure on line %d: %s\n%s -> %s\n", lineNo, err, certName, name)
+				return nil, fmt.Errorf("name failure on line %d: %s\n%s -> %s", lineNo, err, certName, name)
 			}
 			h := sha256.New()
 			h.Write(cert.RawSubjectPublicKeyInfo)
@@ -311,7 +311,7 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 
 			rawPublicKey, _ := pem.Decode(pemPublicKey)
 			if rawPublicKey == nil {
-				return nil, fmt.Errorf("failed to decode public key ending on line %d\n", lineNo)
+				return nil, fmt.Errorf("failed to decode public key ending on line %d", lineNo)
 			}
 			h := sha256.New()
 			h.Write(rawPublicKey.Bytes)

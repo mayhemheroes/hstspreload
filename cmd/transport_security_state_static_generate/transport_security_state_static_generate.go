@@ -777,6 +777,9 @@ static const uint8_t kPreloadedHSTSData[] = {
 	fmt.Fprintf(out, "static const unsigned kPreloadedHSTSBits = %d;\n\n", bitLength)
 	fmt.Fprintf(out, "static const unsigned kHSTSRootPosition = %d;\n\n", rootPosition)
 
+	fmt.Printf("Bit length %d\n", bitLength)
+	fmt.Printf("Root position %d\n", rootPosition)
+
 	return nil
 }
 

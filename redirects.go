@@ -62,7 +62,7 @@ func checkHSTSOverHTTP(initialURL string) (issues Issues, cont bool) {
 			"internal.redirects.http.does_not_exist",
 			"Unavailable over HTTP",
 			"The site appears to be unavailable over plain HTTP (%s). "+
-				"This can prevent users from connecting to the site when they "+
+				"This can prevent users without a freshly updated modern browser from connecting to the site when they "+
 				"type/follow a URL with the http:// scheme (or with an unspecified scheme). "+
 				"However, this is okay if the site does not wish to support those users.",
 			initialURL,

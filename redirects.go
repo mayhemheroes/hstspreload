@@ -52,17 +52,21 @@ func preloadableRedirectChain(initialURL string, chain []*url.URL) Issues {
 	return issues
 }
 
-func checkHSTSOverHTTP(initialURL string) Issues {
-	issues := Issues{}
+// `cont` indicates whether the scan should continue.
+func checkHSTSOverHTTP(initialURL string) (issues Issues, cont bool) {
+	issues = Issues{}
 
 	resp, err := getFirstResponse(initialURL)
 	if err != nil {
-		return issues.addErrorf(
-			IssueCode("internal.redirects.http.first_probe_failed"),
-			"Internal error: HTTP probe failed",
-			"Could not connect to %s",
-			err,
-		)
+		return Issues{}.addWarningf(
+			"internal.redirects.http.does_not_exist",
+			"Unavailable over HTTP",
+			"The site appears to be unavailable over plain HTTP (%s). "+
+				"This can prevent users from connecting to the site when they "+
+				"type/follow a URL with the http:// scheme (or with an unspecified scheme). "+
+				"However, this is okay if the site does not wish to support those users.",
+			initialURL,
+		), false
 	}
 
 	key := http.CanonicalHeaderKey("Strict-Transport-Security")
@@ -72,16 +76,19 @@ func checkHSTSOverHTTP(initialURL string) Issues {
 			"Unnecessary HSTS header over HTTP",
 			"The HTTP page at %s sends an HSTS header. This has no effect over HTTP, and should be removed.",
 			initialURL,
-		)
+		), true
 	}
 
-	return issues
+	return issues, true
 }
 
 // Taking a URL allows us to test more easily. Use preloadableHTTPRedirects()
 // where possible.
 func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, firstRedirectHSTS Issues) {
-	general = combineIssues(general, checkHSTSOverHTTP(initialURL))
+	general, cont := checkHSTSOverHTTP(initialURL)
+	if !cont {
+		return general, Issues{}
+	}
 
 	chain, preloadableRedirectsIssues := preloadableRedirects(initialURL)
 	general = combineIssues(general, preloadableRedirectsIssues)

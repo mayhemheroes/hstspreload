@@ -105,6 +105,40 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	}
 }
 
+func TestHTTPUnavailable(t *testing.T) {
+	skipIfShort(t)
+	t.Parallel()
+
+	u := "http://klugemedia.de"
+	domain := "klugemedia.de"
+
+	// Test the helper
+	issues, cont := checkHSTSOverHTTP(u)
+	expected := Issues{Warnings: []Issue{{
+		Code:    "internal.redirects.http.does_not_exist",
+		Message: "The site appears to be unavailable over plain HTTP (http://klugemedia.de). This can prevent users from connecting to the site when they type/follow a URL with the http:// scheme (or with an unspecified scheme). However, this is okay if the site does not wish to support those users.",
+	}}}
+	if !issues.Match(expected) {
+		t.Errorf(issuesShouldMatch, issues, expected)
+	}
+	if cont {
+		t.Errorf("Should continue.")
+	}
+
+	// Mini integration test
+	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirectsURL(u, domain)
+	expected = Issues{
+		Warnings: []Issue{{Code: "internal.redirects.http.does_not_exist"}},
+	}
+	if !mainIssues.Match(expected) {
+		t.Errorf(issuesShouldMatch, mainIssues, expected)
+	}
+
+	if !firstRedirectHSTSIssues.Match(Issues{}) {
+		t.Errorf(issuesShouldBeEmpty, firstRedirectHSTSIssues)
+	}
+}
+
 func TestHSTSOverHTTP(t *testing.T) {
 	skipIfShort(t)
 	t.Parallel()
@@ -118,13 +152,16 @@ func TestHSTSOverHTTP(t *testing.T) {
 	}
 
 	// Test the helper
-	issues = checkHSTSOverHTTP(u)
+	issues, cont := checkHSTSOverHTTP(u)
 	expected := Issues{Warnings: []Issue{{
 		Code:    "redirects.http.useless_header",
 		Message: "The HTTP page at http://history.google.com sends an HSTS header. This has no effect over HTTP, and should be removed.",
 	}}}
 	if !issues.Match(expected) {
 		t.Errorf(issuesShouldMatch, issues, expected)
+	}
+	if !cont {
+		t.Fatalf("Should not continue.")
 	}
 
 	// Mini integration test

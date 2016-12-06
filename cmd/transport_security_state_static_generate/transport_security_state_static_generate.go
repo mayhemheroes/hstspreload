@@ -44,12 +44,26 @@ type pin struct {
 	spkiHashFunc string // i.e. "sha256"
 }
 
+type pins []pin
+
+func (a pins) Len() int {
+	return len(a)
+}
+
+func (a pins) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a pins) Less(i, j int) bool {
+	return a[i].name < a[j].name
+}
+
 // preloaded represents the information contained in the
 // transport_security_state_static.json file. This structure and the two
 // following are used by the "json" package to parse the file. See the comments
 // in transport_security_state_static.json for details.
 type preloaded struct {
-	Pinsets   []pinset `json:"pinsets"`
+	Pinsets   pinsets  `json:"pinsets"`
 	Entries   []hsts   `json:"entries"`
 	DomainIDs []string `json:"domain_ids"`
 }
@@ -59,6 +73,20 @@ type pinset struct {
 	Include   []string `json:"static_spki_hashes"`
 	Exclude   []string `json:"bad_static_spki_hashes"`
 	ReportURI string   `json:"report_uri"`
+}
+
+type pinsets []pinset
+
+func (a pinsets) Len() int {
+	return len(a)
+}
+
+func (a pinsets) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a pinsets) Less(i, j int) bool {
+	return a[i].Name < a[j].Name
 }
 
 type hsts struct {
@@ -198,7 +226,7 @@ func removeComments(r io.Reader) ([]byte, error) {
 // parseCertsFile parses |inFile|, in the format of
 // transport_security_state_static.pins. See the comments at the top of that
 // file for details of the format.
-func parseCertsFile(inFile io.Reader) ([]pin, error) {
+func parseCertsFile(inFile io.Reader) (pins, error) {
 	const (
 		PRENAME = iota
 		POSTNAME
@@ -213,7 +241,7 @@ func parseCertsFile(inFile io.Reader) ([]pin, error) {
 	var pemPublicKey []byte
 	state := PRENAME
 	var name string
-	var pins []pin
+	var pins pins
 
 	for {
 		lineNo++
@@ -388,7 +416,7 @@ func isImportantWordInCertificateName(w string) bool {
 }
 
 // checkDuplicatePins returns an error if any pins have the same name or the same hash.
-func checkDuplicatePins(pins []pin) error {
+func checkDuplicatePins(pins pins) error {
 	seenNames := make(map[string]bool)
 	seenHashes := make(map[string]string)
 
@@ -412,7 +440,7 @@ func checkDuplicatePins(pins []pin) error {
 //   a) unknown pins are mentioned in |pinsets|
 //   b) unused pins are given in |pins|
 //   c) a pinset name is used twice
-func checkCertsInPinsets(pinsets []pinset, pins []pin) error {
+func checkCertsInPinsets(pinsets pinsets, pins pins) error {
 	pinNames := make(map[string]bool)
 	for _, pin := range pins {
 		pinNames[pin.name] = true
@@ -556,12 +584,13 @@ func writeExpectReportURIIds(out *bufio.Writer, entries []hsts) (map[string]int,
 	return ct, staple
 }
 
-func writeCertsOutput(out *bufio.Writer, pins []pin) {
+func writeCertsOutput(out *bufio.Writer, pins pins) {
 	out.WriteString(`// These are SubjectPublicKeyInfo hashes for public key pinning. The
 // hashes are SHA256 digests.
 
 `)
 
+	sort.Stable(pins)
 	for _, pin := range pins {
 		fmt.Fprintf(out, "static const char kSPKIHash_%s[] =\n", pin.name)
 		var s1, s2 string
@@ -659,6 +688,7 @@ static const char kNoReportURI[] = "";
 	pinsets := make(map[string]pinsetData)
 	pinsetNum := 0
 
+	sort.Stable(hsts.Pinsets)
 	for _, pinset := range hsts.Pinsets {
 		name := uppercaseFirstLetter(pinset.Name)
 		acceptableListName := fmt.Sprintf("k%sAcceptableCerts", name)
@@ -776,6 +806,9 @@ static const uint8_t kPreloadedHSTSData[] = {
 `)
 	fmt.Fprintf(out, "static const unsigned kPreloadedHSTSBits = %d;\n\n", bitLength)
 	fmt.Fprintf(out, "static const unsigned kHSTSRootPosition = %d;\n\n", rootPosition)
+
+	fmt.Printf("Bit length %d\n", bitLength)
+	fmt.Printf("Root position %d\n", rootPosition)
 
 	return nil
 }

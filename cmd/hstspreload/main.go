@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/chromium/hstspreload"
+	"github.com/chromium/hstspreload/batch"
 	"github.com/chromium/hstspreload/chromium/preloadlist"
 )
 
@@ -75,7 +76,7 @@ func main() {
 		os.Exit(0)
 	}
 	if args[0] == "batch" {
-		batch()
+		handleBatch()
 	}
 	if len(args) < 2 {
 		printHelp()
@@ -254,7 +255,7 @@ func printList(list []hstspreload.Issue, title string, fs string) {
 	fmt.Println()
 }
 
-func batch() {
+func handleBatch() {
 	var domains []string
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
@@ -265,7 +266,7 @@ func batch() {
 		os.Exit(1)
 	}
 
-	err := BatchPrint(domains)
+	err := batch.Print(domains)
 	if err != nil {
 		os.Exit(1)
 	}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/chromium/hstspreload/batch"
 	"github.com/chromium/hstspreload/chromium/preloadlist"
 )
 
@@ -14,7 +15,7 @@ func ScanPending() error {
 		return err
 	}
 
-	err = BatchPrint(domains)
+	err = batch.Print(domains)
 	if err != nil {
 		return err
 	}
@@ -29,7 +30,7 @@ func ScanPreloaded() error {
 		return err
 	}
 
-	err = BatchPrint(domains)
+	err = batch.Print(domains)
 	if err != nil {
 		return err
 	}

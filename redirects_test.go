@@ -115,7 +115,7 @@ func TestHTTPUnavailable(t *testing.T) {
 	// Test the helper
 	issues, cont := checkHSTSOverHTTP(u)
 	expected := Issues{Warnings: []Issue{{
-		Code:    "internal.redirects.http.does_not_exist",
+		Code:    "redirects.http.does_not_exist",
 		Message: "The site appears to be unavailable over plain HTTP (http://klugemedia.de). This can prevent users without a freshly updated modern browser from connecting to the site when they type/follow a URL with the http:// scheme (or with an unspecified scheme). However, this is okay if the site does not wish to support those users.",
 	}}}
 	if !issues.Match(expected) {
@@ -128,7 +128,7 @@ func TestHTTPUnavailable(t *testing.T) {
 	// Mini integration test
 	mainIssues, firstRedirectHSTSIssues := preloadableHTTPRedirectsURL(u, domain)
 	expected = Issues{
-		Warnings: []Issue{{Code: "internal.redirects.http.does_not_exist"}},
+		Warnings: []Issue{{Code: "redirects.http.does_not_exist"}},
 	}
 	if !mainIssues.Match(expected) {
 		t.Errorf(issuesShouldMatch, mainIssues, expected)

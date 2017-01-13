@@ -5,7 +5,7 @@
 
 HSTS is [HTTP Strict Transport Security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security), which is a policy system for web sites to express a desire only to be contacted over HTTPS.
 
-See <https://github.com/chromium/hstspreload.appspot.com> for the submission site code.
+See <https://github.com/chromium/hstspreload.org> for the submission site code.
 
 ## Usage
 

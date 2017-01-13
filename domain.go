@@ -199,7 +199,7 @@ func checkDomainFormat(domain string) Issues {
 		return issues.addErrorf(
 			IssueCode("domain.format.ends_with_dot"),
 			"Invalid domain name",
-			"Please provide a domain that does not begin with `.`")
+			"Please provide a domain that does not end with `.`")
 	}
 	if strings.Index(domain, "..") != -1 {
 		return issues.addErrorf(

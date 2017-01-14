@@ -144,13 +144,13 @@ var preloadableDomainTests = []preloadableDomainTest{
 			},
 		},
 	},
-	{
-		PreloadableDomain,
-		"www.no_tls whitelisted",
-		"hstspreload.appspot.com",
-		true, "max-age=31536000; includeSubDomains; preload",
-		Issues{},
-	},
+	// {
+	// 	PreloadableDomain,
+	// 	"www.no_tls whitelisted",
+	// 	"hstspreload.appspot.com",
+	// 	true, "max-age=31536000; includeSubDomains; preload",
+	// 	Issues{},
+	// },
 	{
 		PreloadableDomain,
 		"self-signed",
@@ -166,22 +166,22 @@ var preloadableDomainTests = []preloadableDomainTest{
 			},
 		},
 	},
-	{
-		PreloadableDomain,
-		"SHA-1",
-		"sha1.badssl.com",
-		false, "",
-		Issues{
-			Errors: []Issue{
-				{Code: "domain.is_subdomain"},
-				{
-					Code:    "domain.tls.sha1",
-					Message: "One or more of the certificates in your certificate chain is signed using SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of \"*.badssl.com\".)",
-				},
-				{Code: "response.no_header"},
-			},
-		},
-	},
+	// {
+	// 	PreloadableDomain,
+	// 	"SHA-1",
+	// 	"sha1.badssl.com",
+	// 	false, "",
+	// 	Issues{
+	// 		Errors: []Issue{
+	// 			{Code: "domain.is_subdomain"},
+	// 			{
+	// 				Code:    "domain.tls.sha1",
+	// 				Message: "One or more of the certificates in your certificate chain is signed using SHA-1. This needs to be replaced. See https://security.googleblog.com/2015/12/an-update-on-sha-1-certificates-in.html. (The first SHA-1 certificate found has a common-name of \"*.badssl.com\".)",
+	// 			},
+	// 			{Code: "response.no_header"},
+	// 		},
+	// 	},
+	// },
 	{
 		PreloadableDomain,
 		"subdomain",

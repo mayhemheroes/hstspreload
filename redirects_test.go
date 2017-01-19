@@ -246,7 +246,7 @@ var preloadableHTTPRedirectsTests = []preloadableHTTPRedirectsTest{
 				},
 				{
 					Code:    "redirects.http.www_first",
-					Message: "`http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`.",
+					Message: "`http://blogger.com` (HTTP) should immediately redirect to `https://blogger.com` (HTTPS) before adding the www subdomain. Right now, the first redirect is to `http://www.blogger.com/`. The extra redirect is required to ensure that any browser which supports HSTS will record the HSTS entry for the top level domain, not just the subdomain.",
 				},
 			},
 		},

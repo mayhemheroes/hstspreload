@@ -141,7 +141,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 			IssueCode("redirects.http.www_first"),
 			"HTTP redirects to www first",
 			"`%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
-				"before adding the www subdomain. Right now, the first redirect is to `%s`.",
+			   "before adding the www subdomain. Right now, the first redirect is to `%s`. " +
+         "The extra redirect is required to ensure that any browser which supports HSTS will " +
+         "record the HSTS entry for the top level domain, not just the subdomain.",
 			initialURL,
 			"https://"+domain,
 			chain[0],

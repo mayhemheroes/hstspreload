@@ -1,4 +1,4 @@
-// Package hstspreload has 5 parts:
+// Package hstspreload has 3 parts:
 //
 // - The `hstspreload` package with functions to check HSTS preload requirements.
 //

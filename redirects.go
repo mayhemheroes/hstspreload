@@ -63,7 +63,7 @@ func checkHSTSOverHTTP(initialURL string) (issues Issues, cont bool) {
 			"Unavailable over HTTP",
 			"The site appears to be unavailable over plain HTTP (%s). "+
 				"This can prevent users without a freshly updated modern browser from connecting to the site when they "+
-				"type/follow a URL with the http:// scheme (or with an unspecified scheme). "+
+				"visit a URL with the http:// scheme (or with an unspecified scheme). "+
 				"However, this is okay if the site does not wish to support those users.",
 			initialURL,
 		), false
@@ -141,9 +141,9 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 			IssueCode("redirects.http.www_first"),
 			"HTTP redirects to www first",
 			"`%s` (HTTP) should immediately redirect to `%s` (HTTPS) "+
-			   "before adding the www subdomain. Right now, the first redirect is to `%s`. " +
-         "The extra redirect is required to ensure that any browser which supports HSTS will " +
-         "record the HSTS entry for the top level domain, not just the subdomain.",
+				"before adding the www subdomain. Right now, the first redirect is to `%s`. "+
+				"The extra redirect is required to ensure that any browser which supports HSTS will "+
+				"record the HSTS entry for the top level domain, not just the subdomain.",
 			initialURL,
 			"https://"+domain,
 			chain[0],

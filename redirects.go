@@ -102,7 +102,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 		), firstRedirectHSTS
 	}
 
-	if chain[0].Scheme == httpsScheme && chain[0].Host == domain {
+	if chain[0].Scheme == httpsScheme && chain[0].Hostname() == domain {
 		// Check for HSTS on the first redirect.
 		resp, err := getFirstResponse(chain[0].String())
 		if err != nil {
@@ -133,7 +133,7 @@ func preloadableHTTPRedirectsURL(initialURL string, domain string) (general, fir
 		return general, firstRedirectHSTS
 	}
 
-	if chain[0].Host == "www."+domain {
+	if chain[0].Hostname() == "www."+domain {
 		// For simplicity, we use the same message for two cases:
 		// - http://example.com -> http://www.example.com
 		// - http://example.com -> https://www.example.com

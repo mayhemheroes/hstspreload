@@ -105,6 +105,27 @@ func TestIndirectInsecureRedirect(t *testing.T) {
 	}
 }
 
+func TestExplicitPortFirstRedirect(t *testing.T) {
+	skipIfShort(t)
+	t.Parallel()
+
+	u := "https://tls-v1-1.badssl.com"
+
+	chain, issues := preloadableRedirects(u)
+	if !chainsEqual(chain, []string{"https://tls-v1-1.badssl.com:1011/"}) {
+		t.Errorf("Unexpected chain: %v", chain)
+	}
+	if !issues.Match(Issues{}) {
+		t.Errorf(issuesShouldBeEmpty, issues)
+	}
+
+	httpsIssues := preloadableHTTPSRedirectsURL(u)
+	expected := Issues{}
+	if !httpsIssues.Match(expected) {
+		t.Errorf(issuesShouldMatch, httpsIssues, expected)
+	}
+}
+
 func TestHTTPUnavailable(t *testing.T) {
 	skipIfShort(t)
 	t.Parallel()

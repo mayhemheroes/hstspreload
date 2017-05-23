@@ -184,6 +184,24 @@ var preloadableDomainTests = []preloadableDomainTest{
 	},
 	{
 		PreloadableDomain,
+		"obsolete cipher suite",
+		"cbc.badssl.com",
+		false, "",
+		Issues{
+			Errors: []Issue{
+				{Code: "domain.is_subdomain"},
+				{Code: "response.no_header"},
+			},
+			Warnings: []Issue{
+				{
+					Code:    "tls.obsolete_cipher_suite",
+					Message: "We could not connect to your site using a modern, secure cipher suite. Check out your site at https://www.ssllabs.com/ssltest/",
+				},
+			},
+		},
+	},
+	{
+		PreloadableDomain,
 		"subdomain",
 		"en.wikipedia.org",
 		true, "max-age=31536000; includeSubDomains; preload",

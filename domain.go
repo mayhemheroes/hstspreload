@@ -68,6 +68,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 	issues = combineIssues(issues, respIssues)
 	if len(respIssues.Errors) == 0 {
 		issues = combineIssues(issues, checkChain(*resp.TLS))
+		issues = combineIssues(issues, checkCipher(*resp.TLS))
 
 		preloadableResponse := make(chan Issues)
 		httpRedirectsGeneral := make(chan Issues)
@@ -275,6 +276,34 @@ func checkSHA1(chain []*x509.Certificate) Issues {
 	}
 
 	return issues
+}
+
+func checkCipher(connState tls.ConnectionState) Issues {
+	issues := Issues{}
+
+	// No need to check the TLS version, since the modern ciphers are only supported on TLS 1.2
+
+	switch connState.CipherSuite {
+	case tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:
+		fallthrough
+	case tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:
+		fallthrough
+	case tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305:
+		fallthrough
+	case tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
+		fallthrough
+	case tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
+		fallthrough
+	case tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305:
+		return Issues{}
+	default:
+		return issues.addWarningf(
+			IssueCode("tls.obsolete_cipher_suite"),
+			"Obsolete Cipher Suite",
+			"We could not connect to your site using a modern, secure cipher suite. "+
+				"Check out your site at https://www.ssllabs.com/ssltest/",
+		)
+	}
 }
 
 func checkWWW(host string) Issues {

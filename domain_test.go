@@ -198,7 +198,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 			Warnings: []Issue{
 				{
 					Code:    "tls.obsolete_cipher_suite",
-					Message: "The site is using obsolete TLS settings. Check out the site at https://www.ssllabs.com/ssltest/",
+					Message: "The site is using obsolete TLS settings (cipher suite ID: 0xc014). Check out the site at https://www.ssllabs.com/ssltest/",
 				},
 			},
 		},

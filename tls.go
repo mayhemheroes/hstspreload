@@ -3,6 +3,7 @@ package hstspreload
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 )
 
 func checkChain(connState tls.ConnectionState) Issues {
@@ -53,8 +54,10 @@ func checkCipherSuite(connState tls.ConnectionState) Issues {
 		return issues.addWarningf(
 			IssueCode("tls.obsolete_cipher_suite"),
 			"Obsolete Cipher Suite",
-			"The site is using obsolete TLS settings. "+
+			fmt.Sprintf("The site is using obsolete TLS settings (cipher suite ID: %#x). "+
 				"Check out the site at https://www.ssllabs.com/ssltest/",
+				connState.CipherSuite,
+			),
 		)
 	}
 }

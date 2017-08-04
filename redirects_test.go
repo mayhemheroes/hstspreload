@@ -130,14 +130,14 @@ func TestHTTPUnavailable(t *testing.T) {
 	skipIfShort(t)
 	t.Parallel()
 
-	u := "http://klugemedia.de"
-	domain := "klugemedia.de"
+	u := "http://psa.gov"
+	domain := "psa.gov"
 
 	// Test the helper
 	issues, cont := checkHSTSOverHTTP(u)
 	expected := Issues{Warnings: []Issue{{
 		Code:    "redirects.http.does_not_exist",
-		Message: "The site appears to be unavailable over plain HTTP (http://klugemedia.de). This can prevent users without a freshly updated modern browser from connecting to the site when they visit a URL with the http:// scheme (or with an unspecified scheme). However, this is okay if the site does not wish to support those users.",
+		Message: "The site appears to be unavailable over plain HTTP (http://psa.gov). This can prevent users without a freshly updated modern browser from connecting to the site when they visit a URL with the http:// scheme (or with an unspecified scheme). However, this is okay if the site does not wish to support those users.",
 	}}}
 	if !issues.Match(expected) {
 		t.Errorf(issuesShouldMatch, issues, expected)

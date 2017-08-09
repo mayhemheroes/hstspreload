@@ -50,11 +50,18 @@ var whitelistedWWWeTLDs = map[string]bool{
 // To interpret `issues`, see the list of conventions in the
 // documentation for Issues.
 func PreloadableDomain(domain string) (header *string, issues Issues) {
+	header, issues, _ = PreloadableDomainResponse(domain)
+	return header, issues
+}
+
+// PreloadableDomainResponse is like PreloadableDomain, but also returns
+// the initial response over HTTPS.
+func PreloadableDomainResponse(domain string) (header *string, issues Issues, resp *http.Response) {
 	// Check domain format issues first, since we can report something
 	// useful even if the other checks fail.
 	issues = combineIssues(issues, checkDomainFormat(domain))
 	if len(issues.Errors) > 0 {
-		return header, issues
+		return header, issues, nil
 	}
 
 	// We don't currently allow automatic submissions of subdomains.
@@ -122,7 +129,7 @@ func PreloadableDomain(domain string) (header *string, issues Issues) {
 		issues = combineIssues(issues, <-www)
 	}
 
-	return header, issues
+	return header, issues, resp
 }
 
 // RemovableDomain checks whether the domain satisfies the requirements

@@ -33,19 +33,19 @@ var responseTests = []struct {
 	{
 		PreloadableResponse,
 		"good header",
-		[]string{"max-age=10886400; includeSubDomains; preload"},
+		[]string{"max-age=31536000; includeSubDomains; preload"},
 		Issues{},
 	},
 	{
 		PreloadableResponse,
 		"missing preload",
-		[]string{"max-age=10886400; includeSubDomains"},
+		[]string{"max-age=31536000; includeSubDomains"},
 		Issues{Errors: []Issue{{Code: "header.preloadable.preload.missing"}}},
 	},
 	{
 		PreloadableResponse,
 		"missing includeSubDomains",
-		[]string{"preload; max-age=10886400"},
+		[]string{"preload; max-age=31536000"},
 		Issues{Errors: []Issue{{Code: "header.preloadable.include_sub_domains.missing"}}},
 	},
 	{

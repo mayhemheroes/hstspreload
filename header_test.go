@@ -312,11 +312,20 @@ var preloadableHeaderStringTests = []struct {
 
 	{
 		"no issues",
-		"max-age=10886400; includeSubDomains; preload",
+		"max-age=31536000; includeSubDomains; preload",
 		Issues{},
 	},
 
 	/******** no errors, warnings only ********/
+
+	{
+		"max-age < 1 year",
+		"max-age=10886400; preload; includeSubDomains",
+		Issues{Warnings: []Issue{{
+			Code:    "header.preloadable.max_age.under_1_year",
+			Message: "The max-age is currently 10886400 seconds. We strongly encourage a max-age of at least 31536000 seconds (1 year).",
+		}}},
+	},
 
 	{
 		"max-age > 10 years",
@@ -343,12 +352,12 @@ var preloadableHeaderStringTests = []struct {
 	},
 	{
 		"missing preload",
-		"includeSubDomains; max-age=10886400",
+		"includeSubDomains; max-age=31536000",
 		Issues{Errors: []Issue{{Code: "header.preloadable.preload.missing"}}},
 	},
 	{
 		"missing includeSubdomains",
-		"preload; max-age=10886400",
+		"preload; max-age=31536000",
 		Issues{Errors: []Issue{{Code: "header.preloadable.include_sub_domains.missing"}}},
 	},
 	{
@@ -378,7 +387,7 @@ var preloadableHeaderStringTests = []struct {
 	},
 	{
 		"only max-age",
-		"max-age=12345678",
+		"max-age=123456789",
 		Issues{
 			Errors: []Issue{
 				{Code: "header.preloadable.include_sub_domains.missing"},

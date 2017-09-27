@@ -105,7 +105,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 		PreloadableDomain,
 		"valid HSTS",
 		"wikipedia.org",
-		true, "max-age=31536000; includeSubDomains; preload",
+		true, "max-age=106384710; includeSubDomains; preload",
 		Issues{},
 	},
 	{
@@ -204,7 +204,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 		PreloadableDomain,
 		"subdomain",
 		"en.wikipedia.org",
-		true, "max-age=31536000; includeSubDomains; preload",
+		true, "max-age=106384710; includeSubDomains; preload",
 		Issues{Errors: []Issue{{
 			Code:    "domain.is_subdomain",
 			Message: "`en.wikipedia.org` is a subdomain. Please preload `wikipedia.org` instead. (Due to the size of the preload list and the behaviour of cookies across subdomains, we only accept automated preload list submissions of whole registered domains.)",

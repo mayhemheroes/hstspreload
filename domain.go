@@ -214,12 +214,18 @@ func checkDomainFormat(domain string) Issues {
 			"Invalid domain name",
 			"Please provide a domain that does not contain `..`")
 	}
-	if strings.Count(domain, ".") < 1 {
+
+	ps, _ := publicsuffix.PublicSuffix(domain)
+	if ps == domain {
 		return issues.addErrorf(
-			IssueCode("domain.format.only_one_label"),
-			"Invalid domain name",
-			"Please provide a domain with least two labels "+
-				"(e.g. `example.com` rather than `example` or `com`).")
+			IssueCode("domain.format.public_suffix"),
+			"Domain is a TLD or public suffix",
+			"You have entered a public suffix (ccTLD, gTLD, or other domain listed at "+
+				"https://publicsuffix.org/), which cannot be submitted through this website. "+
+				"If you intended to query for a normal website, make sure to enter all of its labels "+
+				"(e.g. `example.com` rather than `example` or `com`). If you operate a TLD "+
+				"or public suffix and are interested in preloading HSTS for it, "+
+				"please see https://hstspreload.org/#tld")
 	}
 
 	domain = strings.ToLower(domain)

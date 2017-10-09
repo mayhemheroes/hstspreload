@@ -40,7 +40,7 @@ func ScanPreloaded() error {
 
 // PendingDomains gets the list of pending domains from the submission site.
 func pendingDomains() ([]string, error) {
-	resp, err := http.Get("https://hstspreload.appspot.com/api/v2/pending")
+	resp, err := http.Get("https://hstspreload.org/api/v2/pending")
 	if err != nil {
 		return []string{}, err
 	}

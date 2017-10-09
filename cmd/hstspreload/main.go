@@ -13,7 +13,7 @@ import (
 
 func printHelp() {
 	fmt.Printf(`hstspreload is a tool for checking conditions to be added to Chromium 's
-HSTS preload list. See hstspreload.appspot.com for more details.
+HSTS preload list. See hstspreload.org for more details.
 
 Usage:
 
@@ -30,7 +30,7 @@ The commands are:
                            Reads one domain per line from stdin, and outputs
                            JSON in non-deterministic domain order.
   status                 Check the preload status of a domain
-  scan-pending           Scan pending domains from hstspreload.appspot.com
+  scan-pending           Scan pending domains from hstspreload.org
 
 Examples:
 

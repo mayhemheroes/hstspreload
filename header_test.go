@@ -405,7 +405,7 @@ var preloadableHeaderStringTests = []struct {
 		"maxAge=100",
 		"includeSubDomains; preload; max-age=100",
 		Issues{Errors: []Issue{{
-			Code:    "header.preloadable.max_age.too_low",
+			Code:    "header.preloadable.max_age.below_1_year",
 			Message: "The max-age must be at least 31536000 seconds (≈ 1 year), but the header currently only has max-age=100.",
 		}}},
 	},
@@ -413,7 +413,7 @@ var preloadableHeaderStringTests = []struct {
 		"maxAge=10886400",
 		"includeSubDomains; preload; max-age=10886400",
 		Issues{Errors: []Issue{{
-			Code:    "header.preloadable.max_age.too_low",
+			Code:    "header.preloadable.max_age.below_1_year",
 			Message: "The max-age must be at least 31536000 seconds (≈ 1 year), but the header currently only has max-age=10886400.",
 		}}},
 	},

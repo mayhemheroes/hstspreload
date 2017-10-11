@@ -232,7 +232,7 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 			)
 		} else {
 			issues = issues.addErrorf(
-				"header.preloadable.max_age.too_low",
+				"header.preloadable.max_age.below_1_year",
 				"Max-age too low",
 				errorStr,
 			)

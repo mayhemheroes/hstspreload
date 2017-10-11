@@ -9,7 +9,7 @@ import (
 // This allows other programs to perform analysis or take actions
 // based on specific issues.
 //
-// Examples: "domain.is_subdomain", "domain.tls.cannot_connect", "header.preloadable.max_age.too_low"
+// Examples: "domain.is_subdomain", "domain.tls.cannot_connect", "header.preloadable.max_age.below_1_year"
 type IssueCode string
 
 // An Issue is an error or a warning relating to a site's HSTS preload

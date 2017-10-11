@@ -57,7 +57,7 @@ var responseTests = []struct {
 				{Code: "header.preloadable.preload.missing"},
 				{
 					Code:    "header.preloadable.max_age.too_low",
-					Message: "The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=100.",
+					Message: "The max-age must be at least 31536000 seconds (≈ 1 year), but the header currently only has max-age=100.",
 				},
 			},
 		},

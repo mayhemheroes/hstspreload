@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	hstsMinimumMaxAge = 86400 * 7 * 18 // 18 weeks
-
 	oneYear  = 86400 * 365
 	tenYears = 10 * oneYear
+
+	hstsMinimumMaxAge = oneYear
 )
 
 // MaxAge holds the max-age of an HSTS header in seconds.
@@ -220,7 +220,7 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 
 	case hstsHeader.MaxAge.Seconds < hstsMinimumMaxAge:
 		errorStr := fmt.Sprintf(
-			"The max-age must be at least 10886400 seconds (== 18 weeks), but the header currently only has max-age=%d.",
+			"The max-age must be at least 31536000 seconds (≈ 1 year), but the header currently only has max-age=%d.",
 			hstsHeader.MaxAge.Seconds,
 		)
 		if hstsHeader.MaxAge.Seconds == 0 {
@@ -237,15 +237,6 @@ func preloadableHeaderMaxAge(hstsHeader HSTSHeader) Issues {
 				errorStr,
 			)
 		}
-
-	case hstsHeader.MaxAge.Seconds < oneYear:
-		issues = issues.addWarningf(
-			"header.preloadable.max_age.under_1_year",
-			"Max-age < 1 year",
-			"The max-age is currently %d seconds. We strongly encourage a max-age of at least %d seconds (1 year).",
-			hstsHeader.MaxAge.Seconds,
-			oneYear,
-		)
 
 	case hstsHeader.MaxAge.Seconds > tenYears:
 		issues = issues.addWarningf(

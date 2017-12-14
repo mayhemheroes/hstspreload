@@ -21,6 +21,14 @@ const (
 	ForceHTTPS = "force-https"
 )
 
+type HstsPreloadStatus int
+
+const (
+	NotFound           HstsPreloadStatus = 1 << iota
+	ExactEntryFound
+	AncestorEntryFound
+)
+
 // PreloadList contains a parsed form of the Chromium Preload list.
 //
 // The full list contains information about more than just HSTS, but only
@@ -65,9 +73,20 @@ func (p PreloadList) Index() (idx IndexedEntries) {
 // Get acts similar to map access: it returns an entry from the index preload
 // list (if it is present), along with a boolean indicating if the entry is
 // present.
-func (idx IndexedEntries) Get(domain string) (Entry, bool) {
-	entry, ok := idx.index[strings.ToLower(domain)]
-	return entry, ok
+func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
+	domain = strings.ToLower(domain)
+	entry, ok := idx.index[domain]
+	if ok {
+		return entry, ExactEntryFound
+	} else {
+		for i := strings.Index(domain, "."); i != -1; domain = domain[i:] {
+			entry, ok = idx.index[domain]
+			if ok && entry.IncludeSubDomains {
+				return entry, AncestorEntryFound
+			}
+		}
+	}
+	return Entry{"", "", false}, NotFound
 }
 
 const (

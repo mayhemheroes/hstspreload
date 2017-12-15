@@ -21,11 +21,19 @@ const (
 	ForceHTTPS = "force-https"
 )
 
+// HstsPreloadStatus indicate if a domain is preloaded.
+//
+// A domain can be preloaded by virtual of itself being on the preload list,
+// or by having one of its ancestor domains on the list and having
+// "include_subdomains" set to true on that ancestor domain.
 type HstsPreloadStatus int
 
 const (
-	NotFound           HstsPreloadStatus = iota
+	// Domain not preloaded.
+	NotFound HstsPreloadStatus = iota
+	// Domain preloaded by itself.
 	ExactEntryFound
+	// Domain preloaded by virtue of its ancestor.
 	AncestorEntryFound
 )
 
@@ -70,15 +78,19 @@ func (p PreloadList) Index() (idx IndexedEntries) {
 	}
 }
 
-// Get acts similar to map access: it returns an entry from the index preload
-// list (if it is present), along with a boolean indicating if the entry is
-// present.
+// Get returns an entry from the index preloaed list along with a status
+// indicating how the entry is found. If the domain itself is on the preload
+// list, its entry is return. If one of the the domain's ancestor is on the
+// list, and "include_subdomains" is set on that ancestor domain, the ancestor
+// entry is return. Failing all that, a zero-value entry is returned.
 func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
+	// Check if the domain itself is on the list.
 	domain = strings.ToLower(domain)
 	entry, ok := idx.index[domain]
 	if ok {
 		return entry, ExactEntryFound
 	} else {
+		// Walk up the chain until we find an ancestor domain which includes subdomains.
 		for i := strings.Index(domain, "."); i != -1 && i != len(domain)-1; domain = domain[i+1:] {
 			entry, ok = idx.index[domain]
 			if ok && entry.IncludeSubDomains {

@@ -117,9 +117,9 @@ includeSubDomains: %s%t%s
 				bold, state.Mode, resetFormat,
 				bold, state.IncludeSubDomains, resetFormat)
 		} else if status == preloadlist.AncestorEntryFound {
-			fmt.Printf(`%s%s%s is preloaded by virtue of its parent domain:
+			fmt.Printf(`%s%s%s is preloaded by virtue of its ancestor domain:
 
-           parent: %s%s%s
+         ancestor: %s%s%s
              mode: %s%s%s
 includeSubDomains: %s%t%s
 

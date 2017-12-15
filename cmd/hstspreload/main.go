@@ -105,8 +105,8 @@ func main() {
 		}
 		idx := l.Index()
 		domain := args[1]
-		state, ok := idx.Get(domain)
-		if ok {
+		state, status := idx.Get(domain)
+		if status == preloadlist.ExactEntryFound {
 			fmt.Printf(`%s%s%s is preloaded:
 
              mode: %s%s%s
@@ -114,6 +114,18 @@ includeSubDomains: %s%t%s
 
 `,
 				underline, domain, resetFormat,
+				bold, state.Mode, resetFormat,
+				bold, state.IncludeSubDomains, resetFormat)
+		} else if status == preloadlist.AncestorEntryFound {
+			fmt.Printf(`%s%s%s is preloaded by virtue of its parent domain:
+
+           parent: %s%s%s
+             mode: %s%s%s
+includeSubDomains: %s%t%s
+
+`,
+				underline, domain, resetFormat,
+				bold, state.Name, resetFormat,
 				bold, state.Mode, resetFormat,
 				bold, state.IncludeSubDomains, resetFormat)
 		} else {
@@ -227,9 +239,9 @@ func probablyHeader(str string) bool {
 
 func probablyURL(str string) bool {
 	return strings.HasPrefix(str, "http://") ||
-		strings.HasPrefix(str, "https://") ||
-		strings.Contains(str, ":") ||
-		strings.Contains(str, "/")
+			strings.HasPrefix(str, "https://") ||
+			strings.Contains(str, ":") ||
+			strings.Contains(str, "/")
 }
 
 func probablyDomain(str string) bool {

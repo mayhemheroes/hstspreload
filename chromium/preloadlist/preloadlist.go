@@ -24,7 +24,7 @@ const (
 type HstsPreloadStatus int
 
 const (
-	NotFound           HstsPreloadStatus = 1 << iota
+	NotFound           HstsPreloadStatus = iota
 	ExactEntryFound
 	AncestorEntryFound
 )
@@ -79,11 +79,12 @@ func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
 	if ok {
 		return entry, ExactEntryFound
 	} else {
-		for i := strings.Index(domain, "."); i != -1; domain = domain[i:] {
+		for i := strings.Index(domain, "."); i != -1 && i != len(domain)-1; domain = domain[i+1:] {
 			entry, ok = idx.index[domain]
 			if ok && entry.IncludeSubDomains {
 				return entry, AncestorEntryFound
 			}
+			i = strings.Index(domain, ".")
 		}
 	}
 	return Entry{"", "", false}, NotFound

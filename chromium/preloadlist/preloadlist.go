@@ -29,11 +29,13 @@ const (
 type HstsPreloadStatus int
 
 const (
-	// Domain not preloaded.
+	// NotFound indicates that domain not preloaded.
 	NotFound HstsPreloadStatus = iota
-	// Domain preloaded by itself.
+	// ExactEntryFound indicates that the domain itself is on the preload list.
 	ExactEntryFound
-	// Domain preloaded by virtue of its ancestor.
+	// AncestorEntryFound indicates that the domain is preloaded
+	// because one of its ancestor domains is on the preload list and has
+	// "include_subdomains" set to true.
 	AncestorEntryFound
 )
 
@@ -89,15 +91,14 @@ func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
 	entry, ok := idx.index[domain]
 	if ok {
 		return entry, ExactEntryFound
-	} else {
-		// Walk up the chain until we find an ancestor domain which includes subdomains.
-		for i := strings.Index(domain, "."); i != -1 && i != len(domain)-1; domain = domain[i+1:] {
-			entry, ok = idx.index[domain]
-			if ok && entry.IncludeSubDomains {
-				return entry, AncestorEntryFound
-			}
-			i = strings.Index(domain, ".")
+	}
+	// Walk up the chain until we find an ancestor domain which includes subdomains.
+	for i := strings.Index(domain, "."); i != -1 && i != len(domain)-1; domain = domain[i+1:] {
+		entry, ok = idx.index[domain]
+		if ok && entry.IncludeSubDomains {
+			return entry, AncestorEntryFound
 		}
+		i = strings.Index(domain, ".")
 	}
 	return Entry{"", "", false}, NotFound
 }

@@ -21,9 +21,9 @@ const (
 	ForceHTTPS = "force-https"
 )
 
-// HstsPreloadStatus indicate if a domain is preloaded.
+// HstsPreloadStatus indicates if a domain is preloaded.
 //
-// A domain can be preloaded by virtual of itself being on the preload list,
+// A domain can be preloaded by virtue of itself being on the preload list,
 // or by having one of its ancestor domains on the list and having
 // "include_subdomains" set to true on that ancestor domain.
 type HstsPreloadStatus int
@@ -78,9 +78,9 @@ func (p PreloadList) Index() (idx IndexedEntries) {
 	}
 }
 
-// Get returns an entry from the index preloaed list along with a status
+// Get returns an entry from the index preload list along with a status
 // indicating how the entry is found. If the domain itself is on the preload
-// list, its entry is return. If one of the the domain's ancestor is on the
+// list, its entry is returned. If one of its ancestor domain is on the
 // list, and "include_subdomains" is set on that ancestor domain, the ancestor
 // entry is return. Failing all that, a zero-value entry is returned.
 func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {

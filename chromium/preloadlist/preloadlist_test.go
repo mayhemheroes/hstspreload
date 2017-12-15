@@ -70,10 +70,17 @@ func TestIndexing(t *testing.T) {
 	if entry.Name != "bar" || entry.Mode != "ForceHTTPS" {
 		t.Errorf("Wrong ancestor entry found.")
 	}
-	if entry.IncludeSubDomains {
+	if !entry.IncludeSubDomains {
 		t.Errorf("Ancestor entry does not include subdomains.")
 	}
 
+	entry, ok = idx.Get("bar")
+	if ok != ExactEntryFound {
+		t.Errorf("Entry should be present.")
+	}
+	if entry.Name != "bar" || entry.Mode != "ForceHTTPS" || !entry.IncludeSubDomains {
+		t.Errorf("Wrong entry entry found.")
+	}
 }
 
 func TestNewFromLatest(t *testing.T) {

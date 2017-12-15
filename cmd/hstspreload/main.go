@@ -239,9 +239,9 @@ func probablyHeader(str string) bool {
 
 func probablyURL(str string) bool {
 	return strings.HasPrefix(str, "http://") ||
-			strings.HasPrefix(str, "https://") ||
-			strings.Contains(str, ":") ||
-			strings.Contains(str, "/")
+		strings.HasPrefix(str, "https://") ||
+		strings.Contains(str, ":") ||
+		strings.Contains(str, "/")
 }
 
 func probablyDomain(str string) bool {

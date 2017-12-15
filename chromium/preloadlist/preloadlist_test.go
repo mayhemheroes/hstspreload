@@ -60,7 +60,7 @@ func TestIndexing(t *testing.T) {
 
 	entry, ok = idx.Get("test.example.com")
 	if ok == AncestorEntryFound {
-		t.Errorf("Ancestor entry should not be present.")
+		t.Errorf("Ancestor found, but it does not include subdomains.")
 	}
 
 	entry, ok = idx.Get("foo.bar")

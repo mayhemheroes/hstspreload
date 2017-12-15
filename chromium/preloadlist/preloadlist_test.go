@@ -60,7 +60,7 @@ func TestIndexing(t *testing.T) {
 
 	entry, ok = idx.Get("test.example.com")
 	if ok == AncestorEntryFound {
-		t.Errorf("Ancestor found, but it does not include subdomains.")
+		t.Errorf("Ancestor entry found, but it does not include subdomains.")
 	}
 
 	entry, ok = idx.Get("foo.bar")
@@ -79,7 +79,7 @@ func TestIndexing(t *testing.T) {
 		t.Errorf("Entry should be present.")
 	}
 	if entry.Name != "bar" || entry.Mode != "ForceHTTPS" || !entry.IncludeSubDomains {
-		t.Errorf("Wrong entry entry found.")
+		t.Errorf("Wrong entry found.")
 	}
 }
 

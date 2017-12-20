@@ -107,9 +107,8 @@ func parentDomain(domain string) (string, bool) {
 	dot := strings.Index(domain, ".")
 	if dot == -1 || dot == len(domain) {
 		return "", false
-	} else {
-		return domain[dot+1:], true
 	}
+	return domain[dot+1:], true
 }
 
 const (

@@ -81,7 +81,7 @@ func TestIndexing(t *testing.T) {
 	if ok != ExactEntryFound {
 		t.Errorf("Entry should be present.")
 	}
-	if entry.Name != "bar" || entry.Mode != "ForceHTTPS" || !entry.IncludeSubDomains {
+	if entry.Name != "bar" || entry.Mode != "force-https" || !entry.IncludeSubDomains {
 		t.Errorf("Wrong entry found.")
 	}
 }

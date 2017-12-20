@@ -12,7 +12,7 @@ func TestIndexing(t *testing.T) {
 		Entries: []Entry{
 			{
 				Name:              "garron.NET",
-				Mode:              "ForceHTTPS",
+				Mode:              "force-https",
 				IncludeSubDomains: true,
 			},
 			{
@@ -22,7 +22,7 @@ func TestIndexing(t *testing.T) {
 			},
 			{
 				Name:              "bar",
-				Mode:              "ForceHTTPS",
+				Mode:              "force-https",
 				IncludeSubDomains: true,
 			},
 		},
@@ -35,7 +35,7 @@ func TestIndexing(t *testing.T) {
 	}
 
 	_, ok := idx.Get("example")
-	if ok != NotFound {
+	if ok != EntryNotFound {
 		t.Errorf("Entry should not be present.")
 	}
 
@@ -43,7 +43,7 @@ func TestIndexing(t *testing.T) {
 	if ok != ExactEntryFound {
 		t.Errorf("Entry should be present.")
 	}
-	if entry.Mode != "ForceHTTPS" {
+	if entry.Mode != "force-https" {
 		t.Errorf("Map has invalid entry.")
 	}
 
@@ -62,12 +62,15 @@ func TestIndexing(t *testing.T) {
 	if ok == AncestorEntryFound {
 		t.Errorf("Ancestor entry found, but it does not include subdomains.")
 	}
+	if entry.IncludeSubDomains {
+		t.Errorf("Ancestory entry should not include subdomains.")
+	}
 
 	entry, ok = idx.Get("foo.bar")
 	if ok != AncestorEntryFound {
 		t.Errorf("Ancestor entry should be present.")
 	}
-	if entry.Name != "bar" || entry.Mode != "ForceHTTPS" {
+	if entry.Name != "bar" || entry.Mode != "force-https" {
 		t.Errorf("Wrong ancestor entry found.")
 	}
 	if !entry.IncludeSubDomains {

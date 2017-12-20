@@ -21,16 +21,16 @@ const (
 	ForceHTTPS = "force-https"
 )
 
-// HstsPreloadStatus indicates if a domain is preloaded.
+// HstsPreloadEntryFound indicates if a domain is preloaded.
 //
 // A domain can be preloaded by virtue of itself being on the preload list,
 // or by having one of its ancestor domains on the list and having
 // "include_subdomains" set to true on that ancestor domain.
-type HstsPreloadStatus int
+type HstsPreloadEntryFound int
 
 const (
-	// NotFound indicates that domain not preloaded.
-	NotFound HstsPreloadStatus = iota
+	// EntryNotFound indicates that domain not preloaded.
+	EntryNotFound HstsPreloadEntryFound = iota
 	// ExactEntryFound indicates that the domain itself is on the preload list.
 	ExactEntryFound
 	// AncestorEntryFound indicates that the domain is preloaded
@@ -82,10 +82,10 @@ func (p PreloadList) Index() (idx IndexedEntries) {
 
 // Get returns an entry from the index preload list along with a status
 // indicating how the entry is found. If the domain itself is on the preload
-// list, its entry is returned. If one of its ancestor domain is on the
-// list, and "include_subdomains" is set on that ancestor domain, the ancestor
-// entry is return. Failing all that, a zero-value entry is returned.
-func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
+// list, its entry is returned. If one of its ancestor domains with "include_subdomains"
+// set to true is on the list, the closest such ancestor entry is returned.
+// Failing all that, a zero-value entry is returned.
+func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadEntryFound) {
 	// Check if the domain itself is on the list.
 	domain = strings.ToLower(domain)
 	entry, ok := idx.index[domain]
@@ -93,14 +93,23 @@ func (idx IndexedEntries) Get(domain string) (Entry, HstsPreloadStatus) {
 		return entry, ExactEntryFound
 	}
 	// Walk up the chain until we find an ancestor domain which includes subdomains.
-	for i := strings.Index(domain, "."); i != -1 && i != len(domain)-1; domain = domain[i+1:] {
+	for domain, ok = parentDomain(domain); ok; domain, ok = parentDomain(domain) {
 		entry, ok = idx.index[domain]
 		if ok && entry.IncludeSubDomains {
 			return entry, AncestorEntryFound
 		}
-		i = strings.Index(domain, ".")
 	}
-	return Entry{"", "", false}, NotFound
+	return Entry{"", "", false}, EntryNotFound
+}
+
+// parentDomain finds the parent (immediate ancestor) domain of the input domain.
+func parentDomain(domain string) (string, bool) {
+	dot := strings.Index(domain, ".")
+	if dot == -1 || dot == len(domain) {
+		return "", false
+	} else {
+		return domain[dot+1:], true
+	}
 }
 
 const (

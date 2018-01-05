@@ -105,22 +105,24 @@ func main() {
 		}
 		idx := l.Index()
 		domain := args[1]
-		state, ok := idx.Get(domain)
-		if ok {
+		state, status := idx.Get(domain)
+		if status == preloadlist.EntryNotFound {
+			fmt.Printf(`%s%s%s is not preloaded.
+
+`,
+				underline, domain, resetFormat)
+		} else {
 			fmt.Printf(`%s%s%s is preloaded:
 
+           domain: %s%s%s
              mode: %s%s%s
 includeSubDomains: %s%t%s
 
 `,
 				underline, domain, resetFormat,
+				bold, state.Name, resetFormat,
 				bold, state.Mode, resetFormat,
 				bold, state.IncludeSubDomains, resetFormat)
-		} else {
-			fmt.Printf(`%s%s%s is not preloaded.
-
-`,
-				underline, domain, resetFormat)
 		}
 		os.Exit(0)
 

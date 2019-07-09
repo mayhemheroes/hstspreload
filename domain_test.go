@@ -2,9 +2,18 @@ package hstspreload
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 )
+
+/********/
+
+func TestMain(m *testing.M) {
+	os.Exit(testMainWrapper(m))
+}
+
+/******** Example for documentation ********/
 
 func ExamplePreloadableDomain() {
 	header, issues := PreloadableDomain("wikipedia.org")

@@ -29,6 +29,7 @@ func checkSingleHeader(resp *http.Response) (header *string, issues Issues) {
 }
 
 func checkResponse(resp *http.Response, headerCondition func(string) Issues) (header *string, issues Issues) {
+	// fmt.Printf("%#v\n", resp)
 	header, issues = checkSingleHeader(resp)
 	if len(issues.Errors) > 0 {
 		return nil, issues

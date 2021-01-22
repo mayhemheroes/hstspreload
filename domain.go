@@ -30,8 +30,8 @@ var clientWithTimeout = http.Client{
 // - `www` subdomains are commonly available over HTTP, but
 // - site owners have no way to serve valid HTTPS on the `www` subdomain.
 //
-// We whitelist such eTLDs to waive the `www` subdomain requirement.
-var whitelistedWWWeTLDs = map[string]bool{
+// We allowlist such eTLDs to waive the `www` subdomain requirement.
+var allowedWWWeTLDs = map[string]bool{
 	"appspot.com": true,
 }
 
@@ -106,8 +106,8 @@ func PreloadableDomainResponse(domain string) (header *string, issues Issues, re
 			eTLD, _ := publicsuffix.PublicSuffix(domain)
 
 			// Skip the WWW check if the domain is not eTLD+1, or if the
-			// eTLD is whitelisted.
-			if len(levelIssues.Errors) != 0 || whitelistedWWWeTLDs[eTLD] {
+			// eTLD is allowed.
+			if len(levelIssues.Errors) != 0 || allowedWWWeTLDs[eTLD] {
 				www <- Issues{}
 			} else {
 				www <- checkWWW(domain)

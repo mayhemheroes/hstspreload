@@ -137,7 +137,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 	},
 	{
 		PreloadableDomain,
-		"www.no_tls (not whitelisted)",
+		"www.no_tls (not allowed)",
 		"lgarron.github.io",
 		false, "",
 		Issues{
@@ -149,7 +149,7 @@ var preloadableDomainTests = []preloadableDomainTest{
 	},
 	{
 		PreloadableDomain,
-		"www.no_tls whitelisted",
+		"www.no_tls (allowed)",
 		"hstspreload.appspot.com",
 		true, "max-age=31536000; includeSubDomains; preload",
 		Issues{},

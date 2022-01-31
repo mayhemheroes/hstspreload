@@ -113,7 +113,7 @@ func parentDomain(domain string) (string, bool) {
 
 const (
 	// LatestChromiumURL is the URL of the latest preload list in the Chromium source.
-	LatestChromiumURL = "https://chromium.googlesource.com/chromium/src/+/master/net/http/transport_security_state_static.json?format=TEXT"
+	LatestChromiumURL = "https://chromium.googlesource.com/chromium/src/+/main/net/http/transport_security_state_static.json?format=TEXT"
 )
 
 // Parse reads a preload list in JSON format (with certain possible comments)

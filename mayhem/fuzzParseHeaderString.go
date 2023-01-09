@@ -1,4 +1,4 @@
-package fuzz
+package fuzzParseHeaderString
 
 import "github.com/chromium/hstspreload"
 
